@@ -1,0 +1,13 @@
+.vscode
+bin/build
+lib/cli.tgz
+node_modules/
+src/
+.editorconfig
+.eslintrc
+.gitignore
+.npmignore
+CHANGELOG.md
+tsconfig.json
+*.spec.ts
+*.tgz
