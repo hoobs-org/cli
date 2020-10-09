@@ -33,24 +33,23 @@ export default class Sockets {
 
                 for (let i = 0; i < lines.length; i += 1) {
                     if (lines[i] !== "") {
-                        const fields = lines[i].split("  ").map((item) => (item || "").trim()).filter((item) => item !== "");
+                        const fields = lines[i].split(" ").map((item) => (item || "").trim()).filter((item) => item !== "");
 
-                        let type = "general";
-
-                        if (fields.length >= 5) {
-                            if (fields[4].toLowerCase().startsWith("unix")) {
-                                type = "ipc";
-                            } else if (fields[4].toLowerCase().startsWith("dir")) {
-                                type = "watcher";
-                            }
+                        if (fields.length >= 5 && fields[4].toLowerCase().startsWith("unix")) {
+                            results.push({
+                                pid: fields.length >= 2 ? fields[1] : null,
+                                type: "ipc",
+                                user: fields.length >= 3 ? fields[2] : null,
+                                path: fields.length >= 8 ? fields[7] : null,
+                            });
+                        } else if (fields.length >= 5 && fields[4].toLowerCase().startsWith("dir")) {
+                            results.push({
+                                pid: fields.length >= 2 ? fields[1] : null,
+                                type: "watcher",
+                                user: fields.length >= 3 ? fields[2] : null,
+                                path: fields.length >= 9 ? fields[8] : null,
+                            });
                         }
-
-                        results.push({
-                            pid: fields.length >= 2 ? fields[1] : null,
-                            type,
-                            user: fields.length >= 3 ? fields[2] : null,
-                            path: fields.length >= 7 ? fields[6] : null,
-                        });
                     }
                 }
 
