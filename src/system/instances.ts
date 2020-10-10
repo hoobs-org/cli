@@ -19,7 +19,7 @@
 import Os from "os";
 import Unzip from "unzipper";
 import Archiver from "archiver";
-import Prompt from "prompts";
+import Inquirer from "inquirer";
 
 import {
     existsSync,
@@ -45,6 +45,8 @@ import {
     formatJson,
     sanitize,
 } from "../formatters";
+
+const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
 export interface InstanceRecord {
     id: string,
@@ -486,9 +488,9 @@ export default class Instances {
 
                 while (State.instances.findIndex((n) => n.port === port) >= 0) port += 1000;
 
-                const questions: Prompt.PromptObject<string>[] = [
+                prompt([
                     {
-                        type: "text",
+                        type: "input",
                         name: "name",
                         message: "enter a name for this instance",
                         validate: (value: string | undefined) => {
@@ -499,24 +501,19 @@ export default class Instances {
                         },
                     },
                     {
-                        type: "text",
+                        type: "number",
                         name: "port",
-                        initial: `${port}`,
+                        default: `${port}`,
                         message: "enter the port for the instance",
-                        format: (value: string | undefined) => parseInt(value || "0", 10),
-                        validate: (value: string | undefined) => {
-                            const parsed: number = parseInt(`${value || port || "0"}`, 10);
-
-                            if (Number.isNaN(parsed)) return "invalid port number";
-                            if (parsed < 1 || parsed > 65535) return "select a port between 1 and 65535";
-                            if (State.instances.findIndex((n) => n.port === parsed) >= 0) return "port is already in use";
+                        validate: (value: number | undefined) => {
+                            if (!value || Number.isNaN(value)) return "invalid port number";
+                            if (value < 1 || value > 65535) return "select a port between 1 and 65535";
+                            if (State.instances.findIndex((n) => n.port === value) >= 0) return "port is already in use";
 
                             return true;
                         },
                     },
-                ];
-
-                Prompt(questions).then((result) => {
+                ]).then((result) => {
                     if (result && result.name && result.port) {
                         const id = sanitize(result.name);
 

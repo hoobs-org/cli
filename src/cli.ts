@@ -31,6 +31,7 @@ import Editor from "./config/editor";
 import Extentions from "./extentions";
 import Cockpit from "./cockpit";
 import Plugins from "./plugins";
+import Writer from "./plugins/writer";
 import { Console, LogLevel } from "./logger";
 import { sanitize } from "./formatters";
 
@@ -57,78 +58,100 @@ export = function Command(): void {
 
             switch (action) {
                 case "add":
-                    if (command.instance && command.instance !== "" && State.id !== "api" && plugin) {
-                        if (plugin.startsWith("@")) {
-                            plugin = plugin.substring(1);
-                            scope = plugin.split("/").shift();
-                            plugin = plugin.split("/").pop();
-                        }
-
-                        if (plugin.indexOf("@") >= 0) {
-                            tag = plugin.split("@").pop();
-                            plugin = plugin.split("@").shift();
-                        }
-
-                        Plugins.install(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
-                            spinner = Spinner({
-                                stream: process.stdout,
-                            }).start();
-
-                            plugins = Plugins.installed();
-
-                            spinner.stop();
-
-                            if (plugins.length > 0) {
-                                Console.table(plugins.map((item) => ({
-                                    name: item.getPluginIdentifier(),
-                                    version: item.version,
-                                    path: item.getPluginPath(),
-                                })));
-                            }
-                        });
-                    } else {
+                    if (!command.instance || command.instance === "" || State.id === "api") {
                         Console.warn("please define a valid instance");
+
+                        return;
                     }
+
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
+                    if (plugin.startsWith("@")) {
+                        plugin = plugin.substring(1);
+                        scope = plugin.split("/").shift();
+                        plugin = plugin.split("/").pop();
+                    }
+
+                    if (plugin.indexOf("@") >= 0) {
+                        tag = plugin.split("@").pop();
+                        plugin = plugin.split("@").shift();
+                    }
+
+                    Plugins.install(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
+                        spinner = Spinner({
+                            stream: process.stdout,
+                        }).start();
+
+                        plugins = Plugins.installed();
+
+                        spinner.stop();
+
+                        if (plugins.length > 0) {
+                            Console.table(plugins.map((item) => ({
+                                name: item.getPluginIdentifier(),
+                                version: item.version,
+                                path: item.getPluginPath(),
+                            })));
+                        }
+                    });
 
                     break;
 
                 case "remove":
-                    if (command.instance && command.instance !== "" && State.id !== "api" && plugin) {
-                        if (plugin.startsWith("@")) {
-                            plugin = plugin.substring(1);
-                            scope = plugin.split("/").shift();
-                            plugin = plugin.split("/").pop();
-                        }
-
-                        if (plugin.indexOf("@") >= 0) {
-                            plugin = plugin.split("@").shift();
-                        }
-
-                        Plugins.uninstall(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).finally(() => {
-                            spinner = Spinner({
-                                stream: process.stdout,
-                            }).start();
-
-                            plugins = Plugins.installed();
-
-                            spinner.stop();
-
-                            if (plugins.length > 0) {
-                                Console.table(plugins.map((item) => ({
-                                    name: item.getPluginIdentifier(),
-                                    version: item.version,
-                                    path: item.getPluginPath(),
-                                })));
-                            }
-                        });
-                    } else {
+                    if (!command.instance || command.instance === "" || State.id === "api") {
                         Console.warn("please define a valid instance");
+
+                        return;
                     }
+
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
+                    if (plugin.startsWith("@")) {
+                        plugin = plugin.substring(1);
+                        scope = plugin.split("/").shift();
+                        plugin = plugin.split("/").pop();
+                    }
+
+                    if (plugin.indexOf("@") >= 0) {
+                        plugin = plugin.split("@").shift();
+                    }
+
+                    Plugins.uninstall(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).finally(() => {
+                        spinner = Spinner({
+                            stream: process.stdout,
+                        }).start();
+
+                        plugins = Plugins.installed();
+
+                        spinner.stop();
+
+                        if (plugins.length > 0) {
+                            Console.table(plugins.map((item) => ({
+                                name: item.getPluginIdentifier(),
+                                version: item.version,
+                                path: item.getPluginPath(),
+                            })));
+                        }
+                    });
 
                     break;
 
                 case "upgrade":
-                    if (command.instance && command.instance !== "" && State.id !== "api" && plugin) {
+                    if (!command.instance || command.instance === "" || State.id === "api") {
+                        Console.warn("please define a valid instance");
+
+                        return;
+                    }
+
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
+                    if (plugin) {
                         if (plugin.startsWith("@")) {
                             plugin = plugin.substring(1);
                             scope = plugin.split("/").shift();
@@ -153,7 +176,7 @@ export = function Command(): void {
                                 Console.table(plugins);
                             }
                         });
-                    } else if (command.instance && command.instance !== "" && State.id !== "api") {
+                    } else {
                         Plugins.upgrade().finally(() => {
                             spinner = Spinner({
                                 stream: process.stdout,
@@ -167,31 +190,60 @@ export = function Command(): void {
                                 Console.table(plugins);
                             }
                         });
-                    } else {
-                        Console.warn("please define a valid instance");
                     }
 
                     break;
 
                 case "list":
-                    if (command.instance && command.instance !== "" && State.id !== "api") {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
-
-                        plugins = Plugins.installed();
-
-                        spinner.stop();
-
-                        if (plugins.length > 0) {
-                            Console.table(plugins);
-                        } else {
-                            Console.warn("no plugins installed");
-                        }
-                    } else {
+                    if (!command.instance || command.instance === "" || State.id === "api") {
                         Console.warn("please define a valid instance");
+
+                        return;
                     }
 
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
+                    spinner = Spinner({
+                        stream: process.stdout,
+                    }).start();
+
+                    plugins = Plugins.installed();
+
+                    spinner.stop();
+
+                    if (plugins.length > 0) {
+                        Console.table(plugins);
+                    } else {
+                        Console.warn("no plugins installed");
+                    }
+
+                    break;
+
+                case "create":
+                    if (!name || name === "") {
+                        Console.warn("invalid plugin name");
+
+                        return;
+                    }
+
+                    if (process.env.USER === "root") {
+                        Console.warn("you are running as root, are you sure?");
+                    }
+
+                    if (plugin.startsWith("@")) {
+                        plugin = plugin.substring(1);
+                        scope = plugin.split("/").shift();
+                        plugin = plugin.split("/").pop();
+                    }
+
+                    if (plugin.indexOf("@") >= 0) {
+                        tag = plugin.split("@").pop();
+                        plugin = plugin.split("@").shift();
+                    }
+
+                    Writer.create(scope, plugin, tag);
                     break;
 
                 default:
@@ -210,6 +262,10 @@ export = function Command(): void {
             State.debug = command.debug;
             State.container = command.container;
             State.instances = Instances.list();
+
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+            }
 
             const spinner = Spinner({
                 stream: process.stdout,
@@ -242,6 +298,10 @@ export = function Command(): void {
             State.container = command.container;
             State.instances = Instances.list();
 
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+            }
+
             Editor.nano();
         });
 
@@ -262,6 +322,10 @@ export = function Command(): void {
 
             switch (action) {
                 case "create":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     Instances.createService(command.instance, parseInt(command.port, 10), command.skip).then((success) => {
                         if (success) {
                             spinner = Spinner({
@@ -279,6 +343,10 @@ export = function Command(): void {
                     break;
 
                 case "remove":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -296,6 +364,10 @@ export = function Command(): void {
                     break;
 
                 case "list":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -332,6 +404,12 @@ export = function Command(): void {
 
             switch (action) {
                 case "add":
+                    if (process.env.USER !== "root") {
+                        Console.warn("root is required, did you forget to use 'sudo'?");
+
+                        return;
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -351,6 +429,12 @@ export = function Command(): void {
                     break;
 
                 case "remove":
+                    if (process.env.USER !== "root") {
+                        Console.warn("root is required, did you forget to use 'sudo'?");
+
+                        return;
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -370,6 +454,10 @@ export = function Command(): void {
                     break;
 
                 case "list":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -399,6 +487,12 @@ export = function Command(): void {
 
             switch (action) {
                 case "upgrade":
+                    if (process.env.USER !== "root") {
+                        Console.warn("root is required, did you forget to use 'sudo'?");
+
+                        return;
+                    }
+
                     execSync("npm install -g --unsafe-perm @hoobs/hoobsd@latest", {
                         stdio: "inherit",
                     });
@@ -410,6 +504,10 @@ export = function Command(): void {
                     break;
 
                 case "backup":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -432,6 +530,10 @@ export = function Command(): void {
                     break;
 
                 case "restore":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     if (file && existsSync(file)) {
                         spinner = Spinner({
                             stream: process.stdout,
@@ -449,6 +551,10 @@ export = function Command(): void {
                     break;
 
                 case "clean":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -462,6 +568,10 @@ export = function Command(): void {
                     break;
 
                 case "reset":
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -475,6 +585,12 @@ export = function Command(): void {
                     break;
 
                 case "sockets":
+                    if (process.env.USER !== "root") {
+                        Console.warn("root is required, did you forget to use 'sudo'?");
+
+                        return;
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -502,6 +618,10 @@ export = function Command(): void {
         .action(() => {
             State.timestamps = false;
             State.instances = Instances.list();
+
+            if (process.env.USER === "root") {
+                Console.warn("you are running as root, are you sure?");
+            }
 
             const client = new Cockpit();
 

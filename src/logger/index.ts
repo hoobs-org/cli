@@ -90,7 +90,7 @@ class Logger {
             data = {
                 level,
                 timestamp: new Date().getTime(),
-                message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge"), ...parameters),
+                message: Utility.format(`${message || ""}`, ...parameters),
             };
         } else {
             data = message;
