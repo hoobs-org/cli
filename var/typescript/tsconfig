@@ -22,7 +22,6 @@
         "src/"
     ],
     "exclude": [
-        "**/*.test.js",
-        "var"
+        "**/*.test.js"
     ]
 }

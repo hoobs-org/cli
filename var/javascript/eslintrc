@@ -1,0 +1,34 @@
+{
+    "extends": "airbnb-base",
+    "rules": {
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "comma-dangle": [
+            "error",
+            "always-multiline"
+        ],
+        "max-len": [
+            "error",
+            {
+                "code": 220
+            }
+        ],
+        "no-new": "off",
+        "new-cap": "off",
+        "import/no-extraneous-dependencies": "off",
+        "import/no-cycle": "off"
+    }
+}

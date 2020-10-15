@@ -10,9 +10,7 @@
         "project": "./tsconfig.json"
     },
     "ignorePatterns": [
-        "bin/",
-        "lib/",
-        "var/"
+        "lib/"
     ],
     "rules": {
         "quotes": [
@@ -48,18 +46,12 @@
                 "code": 220
             }
         ],
-        "no-loop-func": "off",
-        "no-await-in-loop": "off",
-        "no-param-reassign": "off",
-        "spaced-comment": "off",
-        "no-console": "off",
-        "default-case": "off",
-        "no-new": "off",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
-        "class-methods-use-this": "off",
+        "import/no-extraneous-dependencies": "off",
         "import/no-cycle": "off",
-        "import/no-extraneous-dependencies": "off"
+        "no-new": "off",
+        "new-cap": "off"
     }
 }

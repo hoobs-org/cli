@@ -19,7 +19,7 @@
 import _ from "lodash";
 import Semver from "semver";
 import { spawn } from "child_process";
-import { join } from "path";
+import { join, dirname } from "path";
 import File from "fs-extra";
 import Inquirer from "inquirer";
 import Chalk from "chalk";
@@ -39,6 +39,19 @@ export default class Writer {
         if (!data.version || data.version === "") {
             data.version = "0.0.1";
         }
+
+        data.display = (await prompt([
+            {
+                type: "input",
+                name: "display",
+                message: "enter a display name for your plugin",
+                validate: (value: string | undefined) => {
+                    if (!value || value === "") return "a name is required";
+
+                    return true;
+                },
+            },
+        ])).display;
 
         const { preset } = (await prompt([{
             type: "list",
@@ -61,9 +74,10 @@ export default class Writer {
             case "default":
                 data = _.extend(data, {
                     typescript: true,
-                    hoobs: true,
+                    eslint: true,
                     homebridge: true,
                     gui: false,
+                    nodemon: false,
                     jest: false,
                 });
 
@@ -73,6 +87,8 @@ export default class Writer {
                 data = _.extend(data, (await Writer.features()));
                 break;
         }
+
+        data = _.extend(data, (await Writer.license()));
 
         if (data.homebridge && !data.name.startsWith("homebridge-")) {
             data.name = `homebridge-${data.name}`;
@@ -98,11 +114,12 @@ export default class Writer {
             }
         }
 
-        Console.info(`\n${Chalk.white("Plugin")}${Chalk.dim(":")} ${Chalk.cyan(data.identifier)}`);
+        Console.info(`\n${Chalk.white("Name")}${Chalk.dim(":")} ${Chalk.cyan(data.display)}`);
+        Console.info(`${Chalk.white("Plugin")}${Chalk.dim(":")} ${Chalk.cyan(data.identifier)}`);
         Console.info(`${Chalk.white("Version")}${Chalk.dim(":")} ${Chalk.cyan(data.version)}`);
         Console.info(`${Chalk.white("Language")}${Chalk.dim(":")} ${Chalk.cyan(data.typescript ? "Typescript" : "JavaScript")}`);
+        Console.info(`${Chalk.white("License")}${Chalk.dim(":")} ${Chalk.cyan(data.license)}`);
 
-        Console.info(`${Chalk.white("HOOBS Support")}${Chalk.dim(":")} ${Chalk.cyan(data.hoobs ? "True" : "False")}`);
         Console.info(`${Chalk.white("Homebridge Support")}${Chalk.dim(":")} ${Chalk.cyan(data.homebridge ? "True" : "False")}`);
         Console.info(`${Chalk.white("GUI Support")}${Chalk.dim(":")} ${Chalk.cyan(data.gui ? "True" : "False")}`);
         Console.info(`${Chalk.white("Unit Testing")}${Chalk.dim(":")} ${Chalk.cyan(data.jest ? "True" : "False")}\n`);
@@ -122,12 +139,32 @@ export default class Writer {
         Writer.npmignore(data);
         Writer.gitignore(data);
 
+        if (data.nodemon) {
+            Writer.nodemon(data);
+        }
+
         if (data.typescript) {
             Writer.tsconfig(data);
         }
 
         await Writer.dependencies(data, true);
         await Writer.dependencies(data);
+
+        if (data.eslint) {
+            Writer.eslintrc(data);
+        }
+
+        if (data.typescript) {
+            Writer.typescript(data);
+        } else {
+            Writer.javascript(data);
+        }
+
+        Writer.schema(data);
+
+        if (data.gui) {
+            Writer.gui(data);
+        }
 
         Console.info("Your plugin project has been created");
         Console.info(`Navigate to your plugin run ${Chalk.yellow(`cd ${data.name}`)}`);
@@ -136,6 +173,74 @@ export default class Writer {
             Console.info(`To build your plugin run ${Chalk.yellow(`${State.manager === "yarn" ? "yarn build" : "npm run build"}`)}`);
             Console.info(`The output will be located in ${Chalk.cyan(join(data.name, "lib"))}`);
         }
+    }
+
+    static gui(data: { [key: string]: any }): void {
+        File.ensureDirSync(data.path);
+        File.ensureDirSync(join(data.path, "static"));
+
+        File.writeFileSync(join(data.path, "static", "index.html"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/index.html")).toString());
+
+        if (data.typescript) {
+            File.ensureDirSync(join(data.path, "src"));
+            File.writeFileSync(join(data.path, "src", "routes.ts"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/typescript/routes.ts")).toString());
+        } else {
+            File.ensureDirSync(join(data.path, "lib"));
+            File.writeFileSync(join(data.path, "lib", "routes.js"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/javascript/routes.js")).toString());
+        }
+    }
+
+    static typescript(data: { [key: string]: any }): void {
+        File.ensureDirSync(data.path);
+        File.ensureDirSync(join(data.path, "src"));
+
+        File.writeFileSync(join(data.path, "src", "index.ts"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/typescript/index.ts")).toString());
+        File.writeFileSync(join(data.path, "src", "platform.ts"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/typescript/platform.ts")).toString());
+        File.writeFileSync(join(data.path, "src", "accessory.ts"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/typescript/accessory.ts")).toString());
+
+        let settings = "";
+
+        settings += `export const PLATFORM_NAME = "${data.display}";\n`;
+        settings += `export const PLUGIN_NAME = "${data.name}";\n`;
+
+        File.writeFileSync(join(data.path, "src", "settings.ts"), settings);
+    }
+
+    static javascript(data: { [key: string]: any }): void {
+        File.ensureDirSync(data.path);
+        File.ensureDirSync(join(data.path, "lib"));
+
+        File.writeFileSync(join(data.path, "lib", "index.js"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/javascript/index.js")).toString());
+        File.writeFileSync(join(data.path, "lib", "platform.js"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/javascript/platform.js")).toString());
+        File.writeFileSync(join(data.path, "lib", "accessory.js"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/javascript/accessory.js")).toString());
+
+        let settings = "";
+
+        settings += "module.exports = {\n";
+        settings += `    PLATFORM_NAME: "${data.display}",\n`;
+        settings += `    PLUGIN_NAME: "${data.name}",\n`;
+        settings += "};\n";
+
+        File.writeFileSync(join(data.path, "lib", "settings.js"), settings);
+    }
+
+    static schema(data: { [key: string]: any }): void {
+        File.writeFileSync(join(data.path, "config.schema.json"), formatJson({
+            pluginAlias: data.display,
+            pluginType: "platform",
+            singular: true,
+            schema: {
+                type: "object",
+                properties: {
+                    name: {
+                        title: "Name",
+                        type: "string",
+                        required: true,
+                        default: "",
+                    },
+                },
+            },
+        }));
     }
 
     static async features(): Promise<{ [key: string]: any }> {
@@ -149,10 +254,6 @@ export default class Writer {
                     value: "typescript",
                 },
                 {
-                    name: "HOOBS Support",
-                    value: "hoobs",
-                },
-                {
                     name: "Homebridge Support",
                     value: "homebridge",
                 },
@@ -161,23 +262,171 @@ export default class Writer {
                     value: "gui",
                 },
                 {
+                    name: "Nodemon (required Homebridge support)",
+                    value: "nodemon",
+                },
+                {
+                    name: "Linting (+ AirBnB)",
+                    value: "eslint",
+                },
+                {
                     name: "Unit Testing",
                     value: "jest",
                 },
             ],
             default: [
                 "typescript",
-                "hoobs",
                 "homebridge",
+                "eslint",
+                "jest",
             ],
         }]);
 
         return {
             typescript: results.options.indexOf("typescript") >= 0,
-            hoobs: results.options.indexOf("hoobs") >= 0,
             homebridge: results.options.indexOf("homebridge") >= 0,
             gui: results.options.indexOf("gui") >= 0,
+            eslint: results.options.indexOf("eslint") >= 0,
             jest: results.options.indexOf("jest") >= 0,
+        };
+    }
+
+    static async license(): Promise<{ [key: string]: any }> {
+        const results = await prompt([{
+            type: "list",
+            name: "license",
+            message: "Please select a license",
+            choices: [
+                {
+                    name: "Academic Free License v3.0",
+                    value: "AFL-3.0",
+                },
+                {
+                    name: "Apache License 2.0",
+                    value: "Apache-2.0",
+                },
+                {
+                    name: "Artistic License 2.0",
+                    value: "Artistic-2.0",
+                },
+                {
+                    name: "Boost Software License 1.0",
+                    value: "BSL-1.0",
+                },
+                {
+                    name: "BSD 2 Clause \"Simplified\" License",
+                    value: "BSD-2-Clause",
+                },
+                {
+                    name: "BSD 3 Clause \"New\" or \"Revised\" License",
+                    value: "BSD-3-Clause",
+                },
+                {
+                    name: "BSD 3 Clause Clear License",
+                    value: "BSD-3-Clause-Clear",
+                },
+                {
+                    name: "Creative Commons Zero v1.0 Universal",
+                    value: "CC0-1.0",
+                },
+                {
+                    name: "Creative Commons Attribution 4.0",
+                    value: "CC-BY-4.0",
+                },
+                {
+                    name: "Creative Commons Attribution Share Alike 4.0",
+                    value: "CC-BY-SA-4.0",
+                },
+                {
+                    name: "Do What The F*ck You Want To Public License",
+                    value: "WTFPL",
+                },
+                {
+                    name: "Educational Community License v2.0",
+                    value: "ECL-2.0",
+                },
+                {
+                    name: "Eclipse Public License 1.0",
+                    value: "EPL-1.0",
+                },
+                {
+                    name: "Eclipse Public License 2.0",
+                    value: "EPL-2.0",
+                },
+                {
+                    name: "European Union Public License 1.1",
+                    value: "EUPL-1.1",
+                },
+                {
+                    name: "GNU Affero General Public License v3.0",
+                    value: "AGPL-3.0",
+                },
+                {
+                    name: "GNU General Public License v2.0",
+                    value: "GPL-2.0",
+                },
+                {
+                    name: "GNU General Public License v3.0",
+                    value: "GPL-3.0",
+                },
+                {
+                    name: "GNU Lesser General Public License v2.1",
+                    value: "LGPL-2.1",
+                },
+                {
+                    name: "GNU Lesser General Public License v3.0",
+                    value: "LGPL-3.0",
+                },
+                {
+                    name: "ISC",
+                    value: "ISC",
+                },
+                {
+                    name: "LaTeX Project Public License v1.3c",
+                    value: "LPPL-1.3c",
+                },
+                {
+                    name: "Microsoft Public License",
+                    value: "MS-PL",
+                },
+                {
+                    name: "MIT",
+                    value: "MIT",
+                },
+                {
+                    name: "Mozilla Public License 2.0",
+                    value: "MPL-2.0",
+                },
+                {
+                    name: "Open Software License 3.0",
+                    value: "OSL-3.0",
+                },
+                {
+                    name: "PostgreSQL License",
+                    value: "PostgreSQL",
+                },
+                {
+                    name: "SIL Open Font License 1.1",
+                    value: "OFL-1.1",
+                },
+                {
+                    name: "NCSA Open Source License",
+                    value: "NCSA",
+                },
+                {
+                    name: "The Unlicense",
+                    value: "Unlicense",
+                },
+                {
+                    name: "zLib License",
+                    value: "Zlib",
+                },
+            ],
+            default: "Apache-2.0",
+        }]);
+
+        return {
+            license: results.license,
         };
     }
 
@@ -206,7 +455,27 @@ export default class Writer {
                     packages.push("jest");
                 }
 
-                packages.push("homebridge");
+                if (data.eslint) {
+                    packages.push("eslint");
+                }
+
+                if (data.eslint && data.typescript) {
+                    packages.push("@typescript-eslint/eslint-plugin");
+                    packages.push("@typescript-eslint/parser");
+                    packages.push("eslint-config-airbnb-typescript");
+                    packages.push("eslint-plugin-import");
+                    packages.push("eslint-plugin-jsx-a11y");
+                    packages.push("eslint-plugin-react");
+                    packages.push("eslint-plugin-react-hooks");
+                    packages.push("homebridge");
+                } else if (data.eslint) {
+                    packages.push("eslint-config-airbnb-base");
+                    packages.push("eslint-plugin-import");
+                }
+
+                if (data.nodemon) {
+                    packages.push("nodemon");
+                }
             } else {
                 packages.push("axios");
             }
@@ -228,13 +497,10 @@ export default class Writer {
 
     static package(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
-        File.ensureDirSync(join(data.path, "src"));
 
         const keywords: string[] = [];
 
-        if (data.hoobs) {
-            keywords.push("hoobs-plugin");
-        }
+        keywords.push("hoobs-plugin");
 
         if (data.homebridge) {
             keywords.push("homebridge-plugin");
@@ -253,7 +519,7 @@ export default class Writer {
         File.writeFileSync(join(data.path, "package.json"), formatJson({
             name: data.identifier,
             version: data.version,
-            license: "GPL-3.0",
+            license: data.license,
             keywords,
             main: data.typescript ? "lib/index.js" : "index.js",
             engines: {
@@ -265,140 +531,51 @@ export default class Writer {
         }));
     }
 
-    static tsconfig(data: { [key: string]: any }): void {
-        File.writeFileSync(join(data.path, "tsconfig.json"), formatJson({
-            extends: "@tsconfig/node10/tsconfig.json",
-            compilerOptions: {
-                target: "ES2018",
-                module: "commonjs",
-                lib: [
-                    "es2015",
-                    "es2016",
-                    "es2017",
-                    "es2018",
-                ],
-                declaration: true,
-                declarationMap: true,
-                sourceMap: true,
-                outDir: "./lib",
-                rootDir: "./src",
-                strict: true,
-                esModuleInterop: true,
-                preserveConstEnums: true,
+    static nodemon(data: { [key: string]: any }): void {
+        File.ensureDirSync(data.path);
+
+        const content: { [key: string]: any } = {
+            ignore: [],
+            signal: "SIGTERM",
+            env: {
+                NODE_OPTIONS: "--trace-warnings",
             },
-            include: [
-                "src/",
-            ],
-            exclude: [
-                "**/*.test.js",
-            ],
-        }));
+        };
+
+        if (data.typescript) {
+            content.watch = ["src"];
+            content.ext = "ts";
+            content.exec = `tsc && homebridge -I -D -P ${data.path}`;
+        } else {
+            content.watch = ["."];
+            content.exec = `homebridge -I -D -P ${data.path}`;
+        }
+
+        File.writeFileSync(join(data.path, "nodemon.json"), formatJson(content));
+    }
+
+    static eslintrc(data: { [key: string]: any }): void {
+        File.ensureDirSync(data.path);
+
+        if (data.typescript) {
+            File.writeFileSync(join(data.path, ".eslintrc"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/typescript/eslintrc")).toString());
+        } else {
+            File.writeFileSync(join(data.path, ".eslintrc"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/javascript/eslintrc")).toString());
+        }
+    }
+
+    static tsconfig(data: { [key: string]: any }): void {
+        File.ensureDirSync(data.path);
+        File.writeFileSync(join(data.path, "tsconfig.json"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/typescript/tsconfig")).toString());
     }
 
     static npmignore(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
-
-        let contents = "";
-
-        contents += "*.test.js\n";
-        contents += "*.tgz\n";
-        contents += ".vscode\n";
-        contents += ".editorconfig\n";
-        contents += ".eslintrc\n";
-        contents += ".gitignore\n";
-        contents += ".npmignore\n";
-        contents += "tsconfig.json\n";
-        contents += "node_modules/\n";
-        contents += "src/\n";
-
-        File.writeFileSync(join(data.path, ".npmignore"), contents);
+        File.writeFileSync(join(data.path, ".npmignore"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/npmignore")).toString());
     }
 
     static gitignore(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
-
-        let contents = "";
-
-        contents += "# Logs\n";
-        contents += "logs\n";
-        contents += "*.log\n";
-        contents += "npm-debug.log*\n";
-        contents += "yarn-debug.log*\n";
-        contents += "yarn-error.log*\n";
-        contents += "lerna-debug.log*\n\n";
-        contents += "# Diagnostic reports (https://nodejs.org/api/report.html)\n";
-        contents += "report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json\n\n";
-        contents += "# Runtime data\n";
-        contents += "pids\n";
-        contents += "*.pid\n";
-        contents += "*.seed\n";
-        contents += "*.pid.lock\n\n";
-        contents += "# Directory for instrumented libs generated by jscoverage/JSCover\n";
-        contents += "lib-cov\n\n";
-        contents += "# Coverage directory used by tools like istanbul\n";
-        contents += "coverage\n";
-        contents += "*.lcov\n\n";
-        contents += "# nyc test coverage\n";
-        contents += ".nyc_output\n\n";
-        contents += "# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)\n";
-        contents += ".grunt\n\n";
-        contents += "# Bower dependency directory (https://bower.io/)\n";
-        contents += "bower_components\n\n";
-        contents += "# node-waf configuration\n";
-        contents += ".lock-wscript\n\n";
-        contents += "# Compiled binary addons (https://nodejs.org/api/addons.html)\n";
-        contents += "lib/\n";
-        contents += "build/Release\n\n";
-        contents += "# Dependency directories\n";
-        contents += "node_modules/\n";
-        contents += "jspm_packages/\n\n";
-        contents += "# TypeScript v1 declaration files\n";
-        contents += "typings/\n\n";
-        contents += "# TypeScript cache\n";
-        contents += "*.tsbuildinfo\n\n";
-        contents += "# Optional npm cache directory\n";
-        contents += ".npm\n\n";
-        contents += "# Optional eslint cache\n";
-        contents += ".eslintcache\n\n";
-        contents += "# Microbundle cache\n";
-        contents += ".rpt2_cache/\n";
-        contents += ".rts2_cache_cjs/\n";
-        contents += ".rts2_cache_es/\n";
-        contents += ".rts2_cache_umd/\n\n";
-        contents += "# Optional REPL history\n";
-        contents += ".node_repl_history\n\n";
-        contents += "# Output of 'npm pack'\n";
-        contents += "*.tgz\n\n";
-        contents += "# Yarn Integrity file\n";
-        contents += ".yarn-integrity\n\n";
-        contents += "# dotenv environment variables file\n";
-        contents += ".env\n";
-        contents += ".env.test\n\n";
-        contents += "# parcel-bundler cache (https://parceljs.org/)\n";
-        contents += ".cache\n\n";
-        contents += "# Next.js build output\n";
-        contents += ".next\n\n";
-        contents += "# Nuxt.js build / generate output\n";
-        contents += ".nuxt\n";
-        contents += "dist\n\n";
-        contents += "# Gatsby files\n";
-        contents += ".cache/\n";
-        contents += "# Comment in the public line in if your project uses Gatsby and *not* Next.js\n";
-        contents += "# https://nextjs.org/blog/next-9-1#public-directory-support\n";
-        contents += "# public\n\n";
-        contents += "# vuepress build output\n";
-        contents += ".vuepress/dist\n\n";
-        contents += "# Serverless directories\n";
-        contents += ".serverless/\n\n";
-        contents += "# FuseBox cache\n";
-        contents += ".fusebox/\n\n";
-        contents += "# DynamoDB Local files\n";
-        contents += ".dynamodb/\n\n";
-        contents += "# TernJS port file\n";
-        contents += ".tern-port\n\n";
-        contents += "# macOS junk\n";
-        contents += ".DS_Store\n";
-
-        File.writeFileSync(join(data.path, ".gitignore"), contents);
+        File.writeFileSync(join(data.path, ".gitignore"), File.readFileSync(join(dirname(File.realpathSync(__filename)), "../../var/gitignore")).toString());
     }
 }

@@ -1,0 +1,10 @@
+*.test.js
+*.tgz
+.vscode
+.editorconfig
+.eslintrc
+.gitignore
+.npmignore
+tsconfig.json
+node_modules/
+src/
