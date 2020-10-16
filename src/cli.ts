@@ -305,7 +305,7 @@ export = function Command(): void {
 
                         State.id = "api";
 
-                        if (plugins.length > 0) {
+                        if (combined.length > 0) {
                             Console.table(combined);
                         } else {
                             Console.warn("no plugins installed");
