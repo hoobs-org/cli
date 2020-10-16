@@ -18,7 +18,15 @@
 
 import { spawn, execSync } from "child_process";
 import { join, dirname } from "path";
-import { existsSync, readFileSync, realpathSync } from "fs-extra";
+
+import {
+    existsSync,
+    readFileSync,
+    realpathSync,
+    unlinkSync,
+    removeSync,
+    ensureSymlinkSync,
+} from "fs-extra";
 
 import {
     uuid,
@@ -64,13 +72,27 @@ export default class Plugins {
                 const pjson = Plugins.loadPackage(directory);
 
                 if (existsSync(directory) && pjson) {
-                    const identifier: string = pjson.name;
-                    const name: string = identifier.split("/").shift() || "";
-                    const scope: string = identifier.split("/").pop() || "";
+                    const identifier = pjson.name.split("/");
+                    const name: string = identifier.shift() || "";
+                    const scope: string = identifier.pop() || "";
                     const library: string = dirname(pjson.main || "./index.js");
 
                     callback(name, scope, directory, pjson, library);
                 }
+            }
+        }
+    }
+
+    static linkLibs() {
+        ensureSymlinkSync(join(Paths.applicationPath(), "node_modules", "hap-nodejs"), join(Paths.storagePath(State.id), "node_modules", "hap-nodejs"));
+    }
+
+    static unlinkLibs() {
+        if (existsSync(join(Paths.storagePath(State.id), "node_modules", "hap-nodejs"))) {
+            try {
+                unlinkSync(join(Paths.storagePath(State.id), "node_modules", "hap-nodejs"));
+            } catch (_error) {
+                removeSync(join(Paths.storagePath(State.id), "node_modules", "hap-nodejs"));
             }
         }
     }
@@ -92,12 +114,16 @@ export default class Plugins {
 
             flags.push(`${name}@${tag}`);
 
+            Plugins.unlinkLibs();
+
             const proc = spawn(State.manager || "npm", flags, {
                 cwd: Paths.storagePath(State.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
             proc.on("close", async () => {
+                Plugins.linkLibs();
+
                 const path = join(Plugins.directory, name);
 
                 if (existsSync(path) && existsSync(join(path, "package.json"))) {
@@ -139,6 +165,7 @@ export default class Plugins {
                         }
                     }
 
+                    Plugins.unlinkLibs();
                     Config.saveConfig(config);
 
                     return resolve();
@@ -160,6 +187,8 @@ export default class Plugins {
             }
 
             flags.push(name);
+
+            Plugins.unlinkLibs();
 
             const proc = spawn(State.manager || "npm", flags, {
                 cwd: Paths.storagePath(State.id),
@@ -211,6 +240,8 @@ export default class Plugins {
             }
 
             if (name) flags.push(`${name}@${tag}`);
+
+            Plugins.unlinkLibs();
 
             const proc = spawn(State.manager || "npm", flags, {
                 cwd: Paths.storagePath(State.id),

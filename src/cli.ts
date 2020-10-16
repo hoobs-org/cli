@@ -16,9 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+/* eslint-disable arrow-body-style */
+
 import "source-map-support/register";
 
 import Program from "commander";
+import Inquirer from "inquirer";
 import Spinner from "ora";
 import { join } from "path";
 import { execSync } from "child_process";
@@ -35,6 +38,8 @@ import Writer from "./plugins/writer";
 import { Console, LogLevel } from "./logger";
 import { sanitize } from "./formatters";
 
+const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
+
 export = function Command(): void {
     Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
@@ -43,7 +48,7 @@ export = function Command(): void {
         .description("manage plugins for a given instance")
         .option("-i, --instance <name>", "set the instance name")
         .option("-c, --container", "run in a container")
-        .action((action, name, command) => {
+        .action(async (action, name, command) => {
             let spinner: Spinner.Ora;
 
             State.id = sanitize(command.instance);
@@ -51,15 +56,16 @@ export = function Command(): void {
             State.container = command.container;
             State.instances = Instances.list();
 
-            let plugin = name;
-            let plugins = [];
+            let combined: { [key: string]: any }[] = [];
+            let plugin: string = name;
+            let plugins: { [key: string]: any }[] = [];
             let scope = "";
             let tag = "latest";
 
             switch (action) {
                 case "add":
-                    if (!command.instance || command.instance === "" || State.id === "api") {
-                        Console.warn("please define a valid instance");
+                    if (State.instances.length === 0) {
+                        Console.warn("no instances defined");
 
                         return;
                     }
@@ -68,15 +74,31 @@ export = function Command(): void {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
+                    if (!command.instance || command.instance === "" || State.id === "api") {
+                        const { instance } = (await prompt([{
+                            type: "list",
+                            name: "instance",
+                            message: "Please select an instance",
+                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                return {
+                                    name: item.display,
+                                    value: item.id,
+                                };
+                            }),
+                        }]));
+
+                        State.id = instance;
+                    }
+
                     if (plugin.startsWith("@")) {
                         plugin = plugin.substring(1);
-                        scope = plugin.split("/").shift();
-                        plugin = plugin.split("/").pop();
+                        scope = plugin.split("/").shift() || "";
+                        plugin = plugin.split("/").pop() || "";
                     }
 
                     if (plugin.indexOf("@") >= 0) {
-                        tag = plugin.split("@").pop();
-                        plugin = plugin.split("@").shift();
+                        tag = plugin.split("@").pop() || "latest";
+                        plugin = plugin.split("@").shift() || "";
                     }
 
                     Plugins.install(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
@@ -89,19 +111,21 @@ export = function Command(): void {
                         spinner.stop();
 
                         if (plugins.length > 0) {
-                            Console.table(plugins.map((item) => ({
-                                name: item.getPluginIdentifier(),
+                            Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                 version: item.version,
-                                path: item.getPluginPath(),
+                                path: item.directory,
                             })));
+                        } else {
+                            Console.warn("no plugins installed");
                         }
                     });
 
                     break;
 
                 case "remove":
-                    if (!command.instance || command.instance === "" || State.id === "api") {
-                        Console.warn("please define a valid instance");
+                    if (State.instances.length === 0) {
+                        Console.warn("no instances defined");
 
                         return;
                     }
@@ -110,14 +134,30 @@ export = function Command(): void {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
+                    if (!command.instance || command.instance === "" || State.id === "api") {
+                        const { instance } = (await prompt([{
+                            type: "list",
+                            name: "instance",
+                            message: "Please select an instance",
+                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                return {
+                                    name: item.display,
+                                    value: item.id,
+                                };
+                            }),
+                        }]));
+
+                        State.id = instance;
+                    }
+
                     if (plugin.startsWith("@")) {
                         plugin = plugin.substring(1);
-                        scope = plugin.split("/").shift();
-                        plugin = plugin.split("/").pop();
+                        scope = plugin.split("/").shift() || "";
+                        plugin = plugin.split("/").pop() || "";
                     }
 
                     if (plugin.indexOf("@") >= 0) {
-                        plugin = plugin.split("@").shift();
+                        plugin = plugin.split("@").shift() || "";
                     }
 
                     Plugins.uninstall(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).finally(() => {
@@ -130,19 +170,21 @@ export = function Command(): void {
                         spinner.stop();
 
                         if (plugins.length > 0) {
-                            Console.table(plugins.map((item) => ({
-                                name: item.getPluginIdentifier(),
+                            Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                 version: item.version,
-                                path: item.getPluginPath(),
+                                path: item.directory,
                             })));
+                        } else {
+                            Console.warn("no plugins installed");
                         }
                     });
 
                     break;
 
                 case "upgrade":
-                    if (!command.instance || command.instance === "" || State.id === "api") {
-                        Console.warn("please define a valid instance");
+                    if (State.instances.length === 0) {
+                        Console.warn("no instances defined");
 
                         return;
                     }
@@ -151,16 +193,32 @@ export = function Command(): void {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
+                    if (!command.instance || command.instance === "" || State.id === "api") {
+                        const { instance } = (await prompt([{
+                            type: "list",
+                            name: "instance",
+                            message: "Please select an instance",
+                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                return {
+                                    name: item.display,
+                                    value: item.id,
+                                };
+                            }),
+                        }]));
+
+                        State.id = instance;
+                    }
+
                     if (plugin) {
                         if (plugin.startsWith("@")) {
                             plugin = plugin.substring(1);
-                            scope = plugin.split("/").shift();
-                            plugin = plugin.split("/").pop();
+                            scope = plugin.split("/").shift() || "";
+                            plugin = plugin.split("/").pop() || "";
                         }
 
                         if (plugin.indexOf("@") >= 0) {
-                            tag = plugin.split("@").pop();
-                            plugin = plugin.split("@").shift();
+                            tag = plugin.split("@").pop() || "latest";
+                            plugin = plugin.split("@").shift() || "";
                         }
 
                         Plugins.upgrade(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
@@ -173,7 +231,13 @@ export = function Command(): void {
                             spinner.stop();
 
                             if (plugins.length > 0) {
-                                Console.table(plugins);
+                                Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                    name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                    version: item.version,
+                                    path: item.directory,
+                                })));
+                            } else {
+                                Console.warn("no plugins installed");
                             }
                         });
                     } else {
@@ -187,7 +251,13 @@ export = function Command(): void {
                             spinner.stop();
 
                             if (plugins.length > 0) {
-                                Console.table(plugins);
+                                Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                    name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                    version: item.version,
+                                    path: item.directory,
+                                })));
+                            } else {
+                                Console.warn("no plugins installed");
                             }
                         });
                     }
@@ -195,7 +265,7 @@ export = function Command(): void {
                     break;
 
                 case "list":
-                    if (!command.instance || command.instance === "" || State.id === "api") {
+                    if (State.id === "api") {
                         Console.warn("please define a valid instance");
 
                         return;
@@ -209,14 +279,51 @@ export = function Command(): void {
                         stream: process.stdout,
                     }).start();
 
-                    plugins = Plugins.installed();
+                    if (!command.instance || command.instance === "") {
+                        for (let i = 0; i < State.instances.length; i += 1) {
+                            if (State.instances[i].type === "bridge") {
+                                State.id = State.instances[i].id;
 
-                    spinner.stop();
+                                plugins = Plugins.installed();
 
-                    if (plugins.length > 0) {
-                        Console.table(plugins);
+                                combined = [...combined, ...(plugins.map((item) => ({
+                                    instance: State.id,
+                                    name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                    version: item.version,
+                                    path: item.directory,
+                                })))];
+                            }
+                        }
+
+                        combined.sort((a, b) => {
+                            if (a.name < b.name) return -1;
+                            if (a.name > b.name) return 1;
+                            return 0;
+                        });
+
+                        spinner.stop();
+
+                        State.id = "api";
+
+                        if (plugins.length > 0) {
+                            Console.table(combined);
+                        } else {
+                            Console.warn("no plugins installed");
+                        }
                     } else {
-                        Console.warn("no plugins installed");
+                        plugins = Plugins.installed();
+
+                        spinner.stop();
+
+                        if (plugins.length > 0) {
+                            Console.table(plugins.map((item) => ({
+                                name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                version: item.version,
+                                path: item.directory,
+                            })));
+                        } else {
+                            Console.warn("no plugins installed");
+                        }
                     }
 
                     break;
@@ -234,13 +341,13 @@ export = function Command(): void {
 
                     if (plugin.startsWith("@")) {
                         plugin = plugin.substring(1);
-                        scope = plugin.split("/").shift();
-                        plugin = plugin.split("/").pop();
+                        scope = plugin.split("/").shift() || "";
+                        plugin = plugin.split("/").pop() || "";
                     }
 
                     if (plugin.indexOf("@") >= 0) {
-                        tag = plugin.split("@").pop();
-                        plugin = plugin.split("@").shift();
+                        tag = plugin.split("@").pop() || "";
+                        plugin = plugin.split("@").shift() || "";
                     }
 
                     Writer.create(scope, plugin, tag);
@@ -292,14 +399,36 @@ export = function Command(): void {
         .description("manage the configuration for a given instance")
         .option("-i, --instance <name>", "set the instance name")
         .option("-c, --container", "run in a container")
-        .action((command) => {
+        .action(async (command) => {
             State.id = sanitize(command.instance || "api");
             State.timestamps = false;
             State.container = command.container;
             State.instances = Instances.list();
 
+            if (State.instances.length === 0) {
+                Console.warn("no instances defined");
+
+                return;
+            }
+
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+            }
+
+            if (!command.instance || command.instance === "" || State.id === "api") {
+                const { instance } = (await prompt([{
+                    type: "list",
+                    name: "instance",
+                    message: "Please select an instance",
+                    choices: State.instances.map((item) => {
+                        return {
+                            name: item.display,
+                            value: item.id,
+                        };
+                    }),
+                }]));
+
+                State.id = instance;
             }
 
             Editor.nano();

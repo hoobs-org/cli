@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import File from "fs-extra";
-import { join } from "path";
+import { dirname, join } from "path";
 import State from "../state";
 
 export default class Paths {
@@ -57,6 +57,10 @@ export default class Paths {
         }
 
         return false;
+    }
+
+    static applicationPath(): string {
+        return join(dirname(File.realpathSync(__filename)), "../../");
     }
 
     static storagePath(instance?: string): string {
