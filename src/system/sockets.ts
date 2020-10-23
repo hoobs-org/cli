@@ -40,14 +40,12 @@ export default class Sockets {
                                 pid: fields.length >= 2 ? fields[1] : null,
                                 type: "ipc",
                                 user: fields.length >= 3 ? fields[2] : null,
-                                path: fields.length >= 8 ? fields[7] : null,
                             });
                         } else if (fields.length >= 5 && fields[4].toLowerCase().startsWith("dir")) {
                             results.push({
                                 pid: fields.length >= 2 ? fields[1] : null,
                                 type: "watcher",
                                 user: fields.length >= 3 ? fields[2] : null,
-                                path: fields.length >= 9 ? fields[8] : null,
                             });
                         }
                     }
