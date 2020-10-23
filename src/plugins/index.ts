@@ -75,7 +75,7 @@ export default class Plugins {
                     const identifier = pjson.name.split("/");
                     const name: string = identifier.shift() || "";
                     const scope: string = identifier.pop() || "";
-                    const library: string = dirname(pjson.main || "./index.js");
+                    const library: string = pjson.main || "./index.js";
 
                     callback(name, scope, directory, pjson, library);
                 }
