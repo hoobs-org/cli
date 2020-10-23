@@ -16,8 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-/* eslint-disable arrow-body-style */
-
 import "source-map-support/register";
 
 import Program from "commander";
@@ -88,12 +86,10 @@ export = function Command(): void {
                                 type: "list",
                                 name: "instance",
                                 message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                    return {
-                                        name: item.display,
-                                        value: item.id,
-                                    };
-                                }),
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                    name: item.display,
+                                    value: item.id,
+                                })),
                             }]));
 
                             State.id = instance;
@@ -148,12 +144,10 @@ export = function Command(): void {
                                 type: "list",
                                 name: "instance",
                                 message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                    return {
-                                        name: item.display,
-                                        value: item.id,
-                                    };
-                                }),
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                    name: item.display,
+                                    value: item.id,
+                                })),
                             }]));
 
                             State.id = instance;
@@ -207,12 +201,10 @@ export = function Command(): void {
                                 type: "list",
                                 name: "instance",
                                 message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                    return {
-                                        name: item.display,
-                                        value: item.id,
-                                    };
-                                }),
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                    name: item.display,
+                                    value: item.id,
+                                })),
                             }]));
 
                             State.id = instance;
@@ -435,12 +427,10 @@ export = function Command(): void {
                         type: "list",
                         name: "instance",
                         message: "Please select an instance",
-                        choices: State.instances.map((item) => {
-                            return {
-                                name: item.display,
-                                value: item.id,
-                            };
-                        }),
+                        choices: State.instances.map((item) => ({
+                            name: item.display,
+                            value: item.id,
+                        })),
                     }]));
 
                     State.id = instance;
@@ -569,12 +559,10 @@ export = function Command(): void {
                                 type: "list",
                                 name: "instance",
                                 message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                    return {
-                                        name: item.display,
-                                        value: item.id,
-                                    };
-                                }),
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                    name: item.display,
+                                    value: item.id,
+                                })),
                             }]));
 
                             command.instance = instance;
