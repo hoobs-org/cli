@@ -10,7 +10,7 @@ sudo hoobs initilize
 ```
 
 Available options
-| Flag              | Action                                                     |
+| Flag              | Description                                                |
 | ----------------- | ---------------------------------------------------------- |
 | -p, --port <port> | Sets the port for the API, if not set the CLI will ask you |
 | -s, --skip        | This will skip the systemd or launchd service create       |
@@ -29,7 +29,7 @@ sudo hoobs instance create
 ```
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Defines a name for the instance                      |
 | -p, --port <port>     | Sets the port for the instance                       |
@@ -48,7 +48,7 @@ sudo hoobs instance remove
 > This will remove all configs and plugins.
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Defines instance to be removed                       |
 | -s, --skip            | This will skip the systemd or launchd service create |
@@ -80,7 +80,7 @@ sudo hoobs plugin add my-plugin
 You can also define a version using the standard syntax `my-plugin@1.0.0`.
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Defines instance to install this plugin              |
 | -c, --container       | This changes the paths needed for Docker containers  |
@@ -95,7 +95,7 @@ sudo hoobs plugin remove my-plugin
 ```
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Defines instance to install this plugin              |
 | -c, --container       | This changes the paths needed for Docker containers  |
@@ -118,7 +118,7 @@ sudo hoobs plugin upgrade my-plugin
 You can also define a version using the standard syntax `my-plugin@1.0.0`.
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Defines instance to upgrade                          |
 | -c, --container       | This changes the paths needed for Docker containers  |
@@ -133,7 +133,7 @@ sudo hoobs plugin list
 ```
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Defines the instance to list                         |
 | -c, --container       | This changes the paths needed for Docker containers  |
@@ -169,7 +169,7 @@ This command can configure the API as well as instances.
 > This uses nano, you may need to install it on your system.
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Defines the instance to configure                    |
 | -c, --container       | This changes the paths needed for Docker containers  |
@@ -186,7 +186,7 @@ sudo hoobs log
 You can also display debug information after the fact. This comes in handy if you can't tuen on debug mode.
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -i, --instance <name> | Show the log from a single instance                  |
 | -t, --tail <lines>    | Set the number of lines to show, default 50          |
@@ -206,7 +206,7 @@ sudo hoobs extention add ffmpeg
 ```
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -c, --container       | This changes the paths needed for Docker containers  |
 
@@ -218,7 +218,7 @@ sudo hoobs extention remove ffmpeg
 ```
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -c, --container       | This changes the paths needed for Docker containers  |
 
@@ -230,7 +230,7 @@ sudo hoobs extention list
 ```
 
 Available options
-| Flag                  | Action                                               |
+| Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -c, --container       | This changes the paths needed for Docker containers  |
 
