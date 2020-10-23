@@ -368,7 +368,7 @@ export = function Command(): void {
     Program.command("log")
         .description("show the combined log from the api and instances")
         .option("-i, --instance <name>", "set the instance name")
-        .option("-t, --tail", "set the number of lines")
+        .option("-t, --tail <lines>", "set the number of lines")
         .option("-d, --debug", "turn on debug level logging")
         .option("-c, --container", "run in a container")
         .action((command) => {
