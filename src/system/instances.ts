@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+/* eslint-disable arrow-body-style */
+
 import Os from "os";
 import Unzip from "unzipper";
 import Archiver from "archiver";
@@ -123,7 +125,7 @@ export default class Instances {
         return instances;
     }
 
-    static renameInstance(name: string, display: string) {
+    static renameInstance(name: string, display: string): Promise<boolean> {
         return new Promise((resolve) => {
             if (!name) return resolve(false);
 
@@ -142,7 +144,7 @@ export default class Instances {
         });
     }
 
-    static removeSystemd(id: string) {
+    static removeSystemd(id: string): Promise<boolean> {
         return new Promise((resolve) => {
             if (existsSync(`/etc/systemd/system/${id}.hoobsd.service`)) {
                 try {
@@ -161,7 +163,7 @@ export default class Instances {
         });
     }
 
-    static removeLaunchd(id: string) {
+    static removeLaunchd(id: string): Promise<boolean> {
         return new Promise((resolve) => {
             if (existsSync(`/Library/LaunchDaemons/org.hoobsd.${id}.plist`)) {
                 try {
@@ -178,11 +180,12 @@ export default class Instances {
         });
     }
 
-    static removeService(name: string) {
+    static removeService(name: string, skip?: boolean): Promise<boolean> {
         return new Promise((resolve) => {
-            const type = Instances.initSystem();
+            let type = Instances.initSystem();
 
-            if (!name || !type) return resolve(false);
+            if (!name) return resolve(false);
+            if (skip) type = null;
 
             const id = sanitize(name);
             const index = State.instances.findIndex((n: InstanceRecord) => n.id === id);
@@ -195,6 +198,11 @@ export default class Instances {
                                 State.instances.splice(index, 1);
 
                                 writeFileSync(Paths.instancesPath(), formatJson(State.instances));
+
+                                removeSync(join(Paths.storagePath(), id));
+                                removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                                removeSync(join(Paths.storagePath(), `${id}.persist`));
+                                removeSync(join(Paths.storagePath(), `${id}.conf`));
                             }
 
                             return resolve(success);
@@ -208,6 +216,11 @@ export default class Instances {
                                 State.instances.splice(index, 1);
 
                                 writeFileSync(Paths.instancesPath(), formatJson(State.instances));
+
+                                removeSync(join(Paths.storagePath(), id));
+                                removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                                removeSync(join(Paths.storagePath(), `${id}.persist`));
+                                removeSync(join(Paths.storagePath(), `${id}.conf`));
                             }
 
                             return resolve(success);
@@ -219,6 +232,11 @@ export default class Instances {
 
                         writeFileSync(Paths.instancesPath(), formatJson(State.instances));
 
+                        removeSync(join(Paths.storagePath(), id));
+                        removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                        removeSync(join(Paths.storagePath(), `${id}.persist`));
+                        removeSync(join(Paths.storagePath(), `${id}.conf`));
+
                         return resolve(true);
                 }
             }
@@ -227,7 +245,7 @@ export default class Instances {
         });
     }
 
-    static createSystemd(name: string, port: number) {
+    static createSystemd(name: string, port: number): Promise<boolean> {
         return new Promise((resolve) => {
             const id = sanitize(name);
             const display = name;
@@ -305,7 +323,7 @@ export default class Instances {
         });
     }
 
-    static createLaunchd(name: string, port: number) {
+    static createLaunchd(name: string, port: number): Promise<boolean> {
         return new Promise((resolve) => {
             const id = sanitize(name);
             const display = name;
@@ -430,21 +448,21 @@ export default class Instances {
                 id,
                 type,
                 display,
-                port,
+                port: parseInt(`${port}`, 10),
             });
         } else {
             instances.push({
                 id,
                 type,
                 display,
-                port,
+                port: parseInt(`${port}`, 10),
             });
         }
 
         writeFileSync(Paths.instancesPath(), formatJson(instances));
     }
 
-    static createService(name: string, port: number, skip?: boolean) {
+    static createService(name: string, port: number, skip?: boolean): Promise<boolean> {
         return new Promise((resolve) => {
             let type = "";
 
@@ -482,10 +500,6 @@ export default class Instances {
                         break;
                 }
             } else {
-                port = port || 50826;
-
-                while (State.instances.findIndex((n) => n.port === port) >= 0) port += 1000;
-
                 prompt([
                     {
                         type: "input",
@@ -501,7 +515,13 @@ export default class Instances {
                     {
                         type: "number",
                         name: "port",
-                        default: `${port}`,
+                        default: () => {
+                            port = port || 50826;
+
+                            while (State.instances.findIndex((n) => parseInt(`${n.port}`, 10) === port) >= 0) port += 1000;
+
+                            return `${port}`;
+                        },
                         message: "enter the port for the instance",
                         validate: (value: number | undefined) => {
                             if (!value || Number.isNaN(value)) return "invalid port number";

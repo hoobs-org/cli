@@ -434,13 +434,72 @@ export = function Command(): void {
             Editor.nano();
         });
 
+    Program.command("initilize")
+        .description("initial setup")
+        .option("-p, --port <port>", "change the port the bridge runs on")
+        .option("-s, --skip", "skip init system intergration")
+        .option("-c, --container", "run in a container")
+        .action(async (command) => {
+            let spinner: Spinner.Ora;
+
+            State.timestamps = false;
+            State.container = command.container;
+            State.instances = Instances.list();
+
+            let instances = [];
+
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+            }
+
+            let success = true;
+
+            if (State.instances.findIndex((n) => n.id === "api") >= 0) {
+                Console.warn("this system is already initilized.");
+            } else {
+                if (Number.isNaN(parseInt(command.port, 10))) {
+                    command.port = parseInt((await prompt([
+                        {
+                            type: "number",
+                            name: "port",
+                            default: "50826",
+                            message: "enter the port for the api",
+                            validate: (value: number | undefined) => {
+                                if (!value || Number.isNaN(value)) return "invalid port number";
+                                if (value < 1 || value > 65535) return "select a port between 1 and 65535";
+                                if (State.instances.findIndex((n) => n.port === value) >= 0) return "port is already in use";
+
+                                return true;
+                            },
+                        },
+                    ])).port, 10);
+                }
+
+                success = await Instances.createService("API", parseInt(command.port, 10), command.skip);
+            }
+
+            if (success) {
+                spinner = Spinner({
+                    stream: process.stdout,
+                }).start();
+
+                instances = Instances.list();
+
+                spinner.stop();
+
+                if (instances.length > 0) Console.table(instances);
+            } else {
+                Console.error("unable to initilize system.");
+            }
+        });
+
     Program.command("instance [action]")
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-s, --skip", "skip init system intergration")
         .option("-c, --container", "run in a container")
-        .action((action, command) => {
+        .action(async (action, command) => {
             let spinner: Spinner.Ora;
 
             State.timestamps = false;
@@ -455,19 +514,27 @@ export = function Command(): void {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
-                    Instances.createService(command.instance, parseInt(command.port, 10), command.skip).then((success) => {
-                        if (success) {
-                            spinner = Spinner({
-                                stream: process.stdout,
-                            }).start();
+                    if (await Instances.createService(command.instance, parseInt(command.port, 10), command.skip)) {
+                        spinner = Spinner({
+                            stream: process.stdout,
+                        }).start();
 
-                            instances = Instances.list();
+                        instances = Instances.list();
 
-                            spinner.stop();
+                        spinner.stop();
 
-                            if (instances.length > 0) Console.table(instances);
+                        if (instances.length > 0) {
+                            Console.table(instances.map((item) => ({
+                                id: item.id,
+                                type: item.type,
+                                display: item.display,
+                                running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                port: item.port,
+                            })));
                         }
-                    });
+                    } else {
+                        Console.error("unable to create instance.");
+                    }
 
                     break;
 
@@ -476,19 +543,51 @@ export = function Command(): void {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
+                    if (!command.instance || command.instance === "") {
+                        const { instance } = (await prompt([{
+                            type: "list",
+                            name: "instance",
+                            message: "Please select an instance",
+                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                return {
+                                    name: item.display,
+                                    value: item.id,
+                                };
+                            }),
+                        }]));
 
-                    Instances.removeService(command.instance).then((success) => {
-                        spinner.stop();
+                        command.instance = instance;
+                    }
 
-                        if (success) {
+                    if (sanitize(command.instance) !== "api" && !existsSync(join(Paths.storagePath(), `${sanitize(command.instance)}.sock`))) {
+                        spinner = Spinner({
+                            stream: process.stdout,
+                        }).start();
+
+                        if (await Instances.removeService(command.instance, command.skip)) {
                             instances = Instances.list();
 
-                            if (instances.length > 0) Console.table(instances);
+                            spinner.stop();
+
+                            if (instances.length > 0) {
+                                Console.table(instances.map((item) => ({
+                                    id: item.id,
+                                    type: item.type,
+                                    display: item.display,
+                                    running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                    port: item.port,
+                                })));
+                            }
+                        } else {
+                            spinner.stop();
+
+                            Console.error("unable to remove instance.");
                         }
-                    });
+                    } else if (sanitize(command.instance) !== "api") {
+                        Console.warn("this instance is currently running, shut down this instance before removing.");
+                    } else {
+                        Console.warn("this is not an instance, to remove the api run a system reset.");
+                    }
 
                     break;
 
@@ -506,7 +605,13 @@ export = function Command(): void {
                     spinner.stop();
 
                     if (instances.length > 0) {
-                        Console.table(instances);
+                        Console.table(instances.map((item) => ({
+                            id: item.id,
+                            type: item.type,
+                            display: item.display,
+                            running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                            port: item.port,
+                        })));
                     } else {
                         Console.warn("no instances");
                     }
