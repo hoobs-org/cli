@@ -56,6 +56,16 @@ export = function Command(): void {
             State.container = command.container;
             State.instances = Instances.list();
 
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+            }
+
+            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                Console.warn("system is not initilized, please initilize the system first.");
+
+                return;
+            }
+
             let combined: { [key: string]: any }[] = [];
             let plugin: string = name;
             let plugins: { [key: string]: any }[] = [];
@@ -64,30 +74,30 @@ export = function Command(): void {
 
             switch (action) {
                 case "add":
-                    if (State.instances.length === 0) {
+                    if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
 
                         return;
                     }
 
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     if (!command.instance || command.instance === "" || State.id === "api") {
-                        const { instance } = (await prompt([{
-                            type: "list",
-                            name: "instance",
-                            message: "Please select an instance",
-                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                return {
-                                    name: item.display,
-                                    value: item.id,
-                                };
-                            }),
-                        }]));
+                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.instances.filter((item) => item.type === "bridge")[0].id;
+                        } else {
+                            const { instance } = (await prompt([{
+                                type: "list",
+                                name: "instance",
+                                message: "Please select an instance",
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                    return {
+                                        name: item.display,
+                                        value: item.id,
+                                    };
+                                }),
+                            }]));
 
-                        State.id = instance;
+                            State.id = instance;
+                        }
                     }
 
                     if (plugin.startsWith("@")) {
@@ -124,30 +134,30 @@ export = function Command(): void {
                     break;
 
                 case "remove":
-                    if (State.instances.length === 0) {
+                    if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
 
                         return;
                     }
 
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     if (!command.instance || command.instance === "" || State.id === "api") {
-                        const { instance } = (await prompt([{
-                            type: "list",
-                            name: "instance",
-                            message: "Please select an instance",
-                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                return {
-                                    name: item.display,
-                                    value: item.id,
-                                };
-                            }),
-                        }]));
+                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.instances.filter((item) => item.type === "bridge")[0].id;
+                        } else {
+                            const { instance } = (await prompt([{
+                                type: "list",
+                                name: "instance",
+                                message: "Please select an instance",
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                    return {
+                                        name: item.display,
+                                        value: item.id,
+                                    };
+                                }),
+                            }]));
 
-                        State.id = instance;
+                            State.id = instance;
+                        }
                     }
 
                     if (plugin.startsWith("@")) {
@@ -183,30 +193,30 @@ export = function Command(): void {
                     break;
 
                 case "upgrade":
-                    if (State.instances.length === 0) {
+                    if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
 
                         return;
                     }
 
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     if (!command.instance || command.instance === "" || State.id === "api") {
-                        const { instance } = (await prompt([{
-                            type: "list",
-                            name: "instance",
-                            message: "Please select an instance",
-                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                return {
-                                    name: item.display,
-                                    value: item.id,
-                                };
-                            }),
-                        }]));
+                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.instances.filter((item) => item.type === "bridge")[0].id;
+                        } else {
+                            const { instance } = (await prompt([{
+                                type: "list",
+                                name: "instance",
+                                message: "Please select an instance",
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                    return {
+                                        name: item.display,
+                                        value: item.id,
+                                    };
+                                }),
+                            }]));
 
-                        State.id = instance;
+                            State.id = instance;
+                        }
                     }
 
                     if (plugin) {
@@ -269,10 +279,6 @@ export = function Command(): void {
                         Console.warn("please define a valid instance");
 
                         return;
-                    }
-
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
                     spinner = Spinner({
@@ -374,6 +380,12 @@ export = function Command(): void {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
             }
 
+            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                Console.warn("system is not initilized, please initilize the system first.");
+
+                return;
+            }
+
             const spinner = Spinner({
                 stream: process.stdout,
             }).start();
@@ -384,7 +396,7 @@ export = function Command(): void {
                 instance = sanitize(command.instance);
             }
 
-            const messages = Console.load(parseInt(command.tail, 10) || 500, instance!);
+            const messages = Console.load(parseInt(command.tail, 10) || 50, instance!);
 
             spinner.stop();
 
@@ -405,30 +417,34 @@ export = function Command(): void {
             State.container = command.container;
             State.instances = Instances.list();
 
-            if (State.instances.length === 0) {
-                Console.warn("no instances defined");
-
-                return;
-            }
-
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
             }
 
-            if (!command.instance || command.instance === "" || State.id === "api") {
-                const { instance } = (await prompt([{
-                    type: "list",
-                    name: "instance",
-                    message: "Please select an instance",
-                    choices: State.instances.map((item) => {
-                        return {
-                            name: item.display,
-                            value: item.id,
-                        };
-                    }),
-                }]));
+            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                Console.warn("system is not initilized, please initilize the system first.");
 
-                State.id = instance;
+                return;
+            }
+
+            if (!command.instance || command.instance === "" || State.id === "api") {
+                if (State.instances.length === 1) {
+                    State.id = State.instances[0].id;
+                } else {
+                    const { instance } = (await prompt([{
+                        type: "list",
+                        name: "instance",
+                        message: "Please select an instance",
+                        choices: State.instances.map((item) => {
+                            return {
+                                name: item.display,
+                                value: item.id,
+                            };
+                        }),
+                    }]));
+
+                    State.id = instance;
+                }
             }
 
             Editor.nano();
@@ -508,12 +524,18 @@ export = function Command(): void {
 
             let instances = [];
 
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+            }
+
+            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                Console.warn("system is not initilized, please initilize the system first.");
+
+                return;
+            }
+
             switch (action) {
                 case "create":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     if (await Instances.createService(command.instance, parseInt(command.port, 10), command.skip)) {
                         spinner = Spinner({
                             stream: process.stdout,
@@ -539,24 +561,24 @@ export = function Command(): void {
                     break;
 
                 case "remove":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     if (!command.instance || command.instance === "") {
-                        const { instance } = (await prompt([{
-                            type: "list",
-                            name: "instance",
-                            message: "Please select an instance",
-                            choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
-                                return {
-                                    name: item.display,
-                                    value: item.id,
-                                };
-                            }),
-                        }]));
+                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
+                            command.instance = State.instances.filter((item) => item.type === "bridge")[0].id;
+                        } else {
+                            const { instance } = (await prompt([{
+                                type: "list",
+                                name: "instance",
+                                message: "Please select an instance",
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => {
+                                    return {
+                                        name: item.display,
+                                        value: item.id,
+                                    };
+                                }),
+                            }]));
 
-                        command.instance = instance;
+                            command.instance = instance;
+                        }
                     }
 
                     if (sanitize(command.instance) !== "api" && !existsSync(join(Paths.storagePath(), `${sanitize(command.instance)}.sock`))) {
@@ -592,10 +614,6 @@ export = function Command(): void {
                     break;
 
                 case "list":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -644,6 +662,12 @@ export = function Command(): void {
                         return;
                     }
 
+                    if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                        Console.warn("system is not initilized, please initilize the system first.");
+
+                        return;
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -669,6 +693,12 @@ export = function Command(): void {
                         return;
                     }
 
+                    if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                        Console.warn("system is not initilized, please initilize the system first.");
+
+                        return;
+                    }
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -690,6 +720,12 @@ export = function Command(): void {
                 case "list":
                     if (process.env.USER !== "root") {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+                    }
+
+                    if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                        Console.warn("system is not initilized, please initilize the system first.");
+
+                        return;
                     }
 
                     spinner = Spinner({

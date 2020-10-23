@@ -19,6 +19,7 @@
 /* eslint-disable arrow-body-style */
 
 import Os from "os";
+import Chalk from "chalk";
 import Unzip from "unzipper";
 import Archiver from "archiver";
 import Inquirer from "inquirer";
@@ -496,6 +497,15 @@ export default class Instances {
 
                     default:
                         Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                        if (sanitize(name) === "api") {
+                            console.log("api created you can start the api with this command");
+                            console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
+                        } else {
+                            console.log("instance created you can start the instance with this command");
+                            console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${sanitize(name)}'`));
+                        }
+
                         resolve(true);
                         break;
                 }
@@ -556,6 +566,15 @@ export default class Instances {
 
                             default:
                                 Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+
+                                if (id === "api") {
+                                    console.log("api created you can start the api with this command");
+                                    console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
+                                } else {
+                                    console.log("instance created you can start the instance with this command");
+                                    console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${id}'`));
+                                }
+
                                 resolve(true);
                                 break;
                         }
