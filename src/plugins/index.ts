@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import { spawn, execSync } from "child_process";
-import { join, dirname } from "path";
+import { join } from "path";
 
 import {
     existsSync,
