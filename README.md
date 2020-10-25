@@ -306,13 +306,6 @@ sudo hoobs system reset
 
 > This will keep you backup folder, so it is wise to create a backup before running this command.
 
-#### **sockets**
-This will list all open sockets used by HOOBS. This is helpful for debugging instances that will not start.
-
-```
-sudo hoobs system sockets
-```
-
 ## **remote**
 This will start a remote terminal session with HOOBS support.
 

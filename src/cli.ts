@@ -28,7 +28,6 @@ import { existsSync, copyFileSync } from "fs-extra";
 import Paths from "./system/paths";
 import State from "./state";
 import Instances from "./system/instances";
-import Sockets from "./system/sockets";
 import Editor from "./config/editor";
 import Extentions from "./extentions";
 import Cockpit from "./cockpit";
@@ -855,29 +854,6 @@ export = function Command(): void {
                     spinner.stop();
 
                     Console.info("configuration and plugins removed");
-
-                    break;
-
-                case "sockets":
-                    if (process.env.USER !== "root") {
-                        Console.warn("root is required, did you forget to use 'sudo'?");
-
-                        return;
-                    }
-
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
-
-                    Sockets.list().then((results) => {
-                        spinner.stop();
-
-                        if (results.length > 0) {
-                            Console.table(results);
-                        } else {
-                            Console.warn("no sockets started");
-                        }
-                    });
 
                     break;
 
