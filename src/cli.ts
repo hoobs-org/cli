@@ -802,6 +802,8 @@ export = function Command(): void {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
+                    Console.warn("this will remove all current settings and plugins and replace it with the backup");
+
                     if (file && existsSync(file)) {
                         spinner = Spinner({
                             stream: process.stdout,
@@ -823,6 +825,8 @@ export = function Command(): void {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
 
+                    Console.warn("this will remove the connection to homekit, you will need to re-pair");
+
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -839,6 +843,8 @@ export = function Command(): void {
                     if (process.env.USER !== "root") {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
+
+                    Console.warn("this will remove all settings and plugins, you will need to restore or initilize this device");
 
                     spinner = Spinner({
                         stream: process.stdout,
