@@ -73,6 +73,7 @@ export = function Command(): void {
 
             switch (action) {
                 case "add":
+                case "install":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
 
@@ -131,6 +132,7 @@ export = function Command(): void {
                     break;
 
                 case "remove":
+                case "uninstall":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
 
@@ -187,6 +189,7 @@ export = function Command(): void {
 
                     break;
 
+                case "update":
                 case "upgrade":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
@@ -267,6 +270,7 @@ export = function Command(): void {
 
                     break;
 
+                case "ls":
                 case "list":
                     if (State.id === "api") {
                         Console.warn("please define a valid instance");
@@ -526,6 +530,7 @@ export = function Command(): void {
             }
 
             switch (action) {
+                case "add":
                 case "create":
                     if (await Instances.createService(command.instance, parseInt(command.port, 10), command.skip)) {
                         spinner = Spinner({
@@ -602,6 +607,7 @@ export = function Command(): void {
 
                     break;
 
+                case "ls":
                 case "list":
                     spinner = Spinner({
                         stream: process.stdout,
@@ -645,6 +651,7 @@ export = function Command(): void {
 
             switch (action) {
                 case "add":
+                case "install":
                     if (process.env.USER !== "root") {
                         Console.warn("root is required, did you forget to use 'sudo'?");
 
@@ -676,6 +683,7 @@ export = function Command(): void {
                     break;
 
                 case "remove":
+                case "uninstall":
                     if (process.env.USER !== "root") {
                         Console.warn("root is required, did you forget to use 'sudo'?");
 
@@ -706,6 +714,7 @@ export = function Command(): void {
 
                     break;
 
+                case "ls":
                 case "list":
                     if (process.env.USER !== "root") {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -809,7 +818,7 @@ export = function Command(): void {
 
                     break;
 
-                case "clean":
+                case "purge":
                     if (process.env.USER !== "root") {
                         Console.warn("you are running in user mode, did you forget to use 'sudo'?");
                     }
@@ -818,11 +827,11 @@ export = function Command(): void {
                         stream: process.stdout,
                     }).start();
 
-                    Instances.clean();
+                    Instances.purge();
 
                     spinner.stop();
 
-                    Console.info("bridge caches cleaned");
+                    Console.info("bridge caches purged");
 
                     break;
 

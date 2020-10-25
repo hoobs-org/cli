@@ -21,7 +21,7 @@ This controls instances on the system. It can be used to list, create and remove
 
 > This also creates and starts systemd and launchd services. If your system doesn't have either of these systems, the CLI will not attempt this.
 
-#### **create**
+#### **add**
 This will create an instance.
 
 ```
@@ -37,6 +37,9 @@ Available options
 | -c, --container       | This changes the paths needed for Docker containers  |
 
 > If the instance name or port is not set the CLI will ask for this information.
+
+#### **create**
+This is an alias for **add**.
 
 #### **remove**
 This will remove an instance.
@@ -63,6 +66,9 @@ This will show a list of instances on the system including the API. It will also
 sudo hoobs instance list
 ```
 
+#### **ls**
+This is an aliad for **list**.
+
 ## **plugin [action]**
 This allows you to install, remove and list plugins from any instance.
 
@@ -87,6 +93,9 @@ Available options
 
 > If the instance name is not set the CLI will ask for this information.
 
+#### **install [name]**
+This is an alias for **add**.
+
 #### **remove [name]**
 This will uninstall a plugin from an instance.
 
@@ -101,6 +110,9 @@ Available options
 | -c, --container       | This changes the paths needed for Docker containers  |
 
 > If the instance name is not set the CLI will ask for this information.
+
+#### **uninstall [name]**
+This is an alias for **remove**.
 
 #### **upgrade <name>**
 This will upgrade a single plugin or all plugins from an instance.
@@ -125,6 +137,9 @@ Available options
 
 > If the instance name is not set the CLI will ask for this information.
 
+#### **update <name>**
+This is an alias for **upgrade**.
+
 #### **list**
 This will list plugins for all or a single instance.
 
@@ -139,6 +154,9 @@ Available options
 | -c, --container       | This changes the paths needed for Docker containers  |
 
 > If an instance is not defined, the CLI will include the instance in the list.
+
+#### **ls**
+This is an aliad for **list**.
 
 #### **create**
 This command is used by developers to quickly create a new plugin project. It will create a new folder for your project and add example files depending on the options you choose.
@@ -210,6 +228,9 @@ Available options
 | --------------------- | ---------------------------------------------------- |
 | -c, --container       | This changes the paths needed for Docker containers  |
 
+#### **install [name]**
+This is an alias for **add**.
+
 #### **remove [name]**
 This disables an extention.
 
@@ -222,6 +243,9 @@ Available options
 | --------------------- | ---------------------------------------------------- |
 | -c, --container       | This changes the paths needed for Docker containers  |
 
+#### **uninstall [name]**
+This is an alias for **remove**.
+
 #### **list**
 This will list all available extetntions and if they are enabled.
 
@@ -233,6 +257,9 @@ Available options
 | Flag                  | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | -c, --container       | This changes the paths needed for Docker containers  |
+
+#### **ls**
+This is an aliad for **list**.
 
 ## **system <action>**
 This command manages the system. You can upgrade HOOBS, backuup and restore the system. You can also clean the caches or completly reset the system.
@@ -261,11 +288,11 @@ This will restore the system with the file you select
 sudo hoobs system restore ~/backups/my-backup.zip
 ```
 
-#### **clean**
-This will clean all persisted and cache files from all instances.
+#### **purge**
+This will purge all persisted and cache files from all instances.
 
 ```
-sudo hoobs system clean
+sudo hoobs system purge
 ```
 
 > This will require you to re-pair with Apple Home.
