@@ -20,6 +20,7 @@ import "source-map-support/register";
 
 import Program from "commander";
 import Inquirer from "inquirer";
+import Chalk from "chalk";
 import Spinner from "ora";
 import { join } from "path";
 import { execSync } from "child_process";
@@ -778,7 +779,7 @@ export = function Command(): void {
 
                         spinner.stop();
 
-                        Console.info("backup complete");
+                        Console.info(`backup created ${Chalk.yellow(join(process.cwd(), filename))}`);
                     }).catch((error) => {
                         spinner.stop();
 
