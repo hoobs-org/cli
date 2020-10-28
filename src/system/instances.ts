@@ -187,17 +187,103 @@ export default class Instances {
         return new Promise((resolve) => {
             let type = Instances.initSystem();
 
-            if (!name) return resolve(false);
-            if (skip) type = null;
+            if (!name) {
+                resolve(false);
+            } else {
+                if (skip) type = null;
 
-            const id = sanitize(name);
-            const index = State.instances.findIndex((n: InstanceRecord) => n.id === id);
+                const id = sanitize(name);
+                const index = State.instances.findIndex((n: InstanceRecord) => n.id === id);
 
-            if (index >= 0) {
-                switch (type) {
-                    case "systemd":
-                        Instances.removeSystemd(id).then((success) => {
-                            if (success) {
+                if (index >= 0) {
+                    switch (type) {
+                        case "systemd":
+                            Instances.removeSystemd(id).then((success) => {
+                                if (success) {
+                                    Socket.emit(Events.NOTIFICATION, {
+                                        instance: "api",
+                                        data: {
+                                            title: "Instance Removed",
+                                            description: `Instance "${name} removed.`,
+                                            type: NotificationType.WARN,
+                                            icon: "layers",
+                                        },
+                                    }).then(() => {
+                                        State.instances.splice(index, 1);
+
+                                        writeFileSync(Paths.instancesPath(), formatJson(State.instances));
+
+                                        removeSync(join(Paths.storagePath(), id));
+                                        removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                                        removeSync(join(Paths.storagePath(), `${id}.persist`));
+                                        removeSync(join(Paths.storagePath(), `${id}.conf`));
+
+                                        resolve(true);
+                                    });
+                                } else {
+                                    Socket.emit(Events.NOTIFICATION, {
+                                        instance: "api",
+                                        data: {
+                                            title: "Instance Not Removed",
+                                            description: `Unable to remove instance "${name}.`,
+                                            type: NotificationType.ERROR,
+                                        },
+                                    }).then(() => {
+                                        resolve(false);
+                                    });
+                                }
+                            });
+
+                            break;
+
+                        case "launchd":
+                            Instances.removeLaunchd(id).then((success) => {
+                                if (success) {
+                                    Socket.emit(Events.NOTIFICATION, {
+                                        instance: "api",
+                                        data: {
+                                            title: "Instance Removed",
+                                            description: `Instance "${name} removed.`,
+                                            type: NotificationType.WARN,
+                                            icon: "layers",
+                                        },
+                                    }).then(() => {
+                                        State.instances.splice(index, 1);
+
+                                        writeFileSync(Paths.instancesPath(), formatJson(State.instances));
+
+                                        removeSync(join(Paths.storagePath(), id));
+                                        removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                                        removeSync(join(Paths.storagePath(), `${id}.persist`));
+                                        removeSync(join(Paths.storagePath(), `${id}.conf`));
+
+                                        resolve(true);
+                                    });
+                                } else {
+                                    Socket.emit(Events.NOTIFICATION, {
+                                        instance: "api",
+                                        data: {
+                                            title: "Instance Not Removed",
+                                            description: `Unable to remove instance "${name}.`,
+                                            type: NotificationType.ERROR,
+                                        },
+                                    }).then(() => {
+                                        resolve(false);
+                                    });
+                                }
+                            });
+
+                            break;
+                        default:
+                            Socket.emit(Events.NOTIFICATION, {
+                                instance: "api",
+                                data: {
+                                    title: "Instance Removed",
+                                    description: `Instance "${name} removed.`,
+                                    type: NotificationType.WARN,
+                                    icon: "layers",
+                                },
+                            }).then(() => {
                                 State.instances.splice(index, 1);
 
                                 writeFileSync(Paths.instancesPath(), formatJson(State.instances));
@@ -207,101 +293,22 @@ export default class Instances {
                                 removeSync(join(Paths.storagePath(), `${id}.persist`));
                                 removeSync(join(Paths.storagePath(), `${id}.conf`));
 
-                                Socket.fetch(Events.NOTIFICATION, {
-                                    instance: "api",
-                                    data: {
-                                        title: "Instance Removed",
-                                        description: `Instance "${name} removed.`,
-                                        type: NotificationType.WARN,
-                                        icon: "layers",
-                                    },
-                                });
-                            } else {
-                                Socket.fetch(Events.NOTIFICATION, {
-                                    instance: "api",
-                                    data: {
-                                        title: "Instance Not Removed",
-                                        description: `Unable to remove instance "${name}.`,
-                                        type: NotificationType.ERROR,
-                                    },
-                                });
-                            }
-
-                            return resolve(success);
-                        });
-
-                        break;
-
-                    case "launchd":
-                        Instances.removeLaunchd(id).then((success) => {
-                            if (success) {
-                                State.instances.splice(index, 1);
-
-                                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
-
-                                removeSync(join(Paths.storagePath(), id));
-                                removeSync(join(Paths.storagePath(), `${id}.accessories`));
-                                removeSync(join(Paths.storagePath(), `${id}.persist`));
-                                removeSync(join(Paths.storagePath(), `${id}.conf`));
-
-                                Socket.fetch(Events.NOTIFICATION, {
-                                    instance: "api",
-                                    data: {
-                                        title: "Instance Removed",
-                                        description: `Instance "${name} removed.`,
-                                        type: NotificationType.WARN,
-                                        icon: "layers",
-                                    },
-                                });
-                            } else {
-                                Socket.fetch(Events.NOTIFICATION, {
-                                    instance: "api",
-                                    data: {
-                                        title: "Instance Not Removed",
-                                        description: `Unable to remove instance "${name}.`,
-                                        type: NotificationType.ERROR,
-                                    },
-                                });
-                            }
-
-                            return resolve(success);
-                        });
-
-                        break;
-                    default:
-                        State.instances.splice(index, 1);
-
-                        writeFileSync(Paths.instancesPath(), formatJson(State.instances));
-
-                        removeSync(join(Paths.storagePath(), id));
-                        removeSync(join(Paths.storagePath(), `${id}.accessories`));
-                        removeSync(join(Paths.storagePath(), `${id}.persist`));
-                        removeSync(join(Paths.storagePath(), `${id}.conf`));
-
-                        Socket.fetch(Events.NOTIFICATION, {
-                            instance: "api",
-                            data: {
-                                title: "Instance Removed",
-                                description: `Instance "${name} removed.`,
-                                type: NotificationType.WARN,
-                                icon: "layers",
-                            },
-                        });
-
-                        return resolve(true);
+                                resolve(true);
+                            });
+                    }
+                } else {
+                    Socket.emit(Events.NOTIFICATION, {
+                        instance: "api",
+                        data: {
+                            title: "Instance Not Removed",
+                            description: `Unable to remove instance "${name}.`,
+                            type: NotificationType.ERROR,
+                        },
+                    }).then(() => {
+                        resolve(false);
+                    });
                 }
             }
-
-            Socket.fetch(Events.NOTIFICATION, {
-                instance: "api",
-                data: {
-                    title: "Instance Not Removed",
-                    description: `Unable to remove instance "${name}.`,
-                    type: NotificationType.ERROR,
-                },
-            });
-
-            return resolve(false);
         });
     }
 
@@ -539,9 +546,7 @@ export default class Instances {
                     case "systemd":
                         Instances.createSystemd(name, port).then((success) => {
                             if (success) {
-                                Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
-
-                                Socket.fetch(Events.NOTIFICATION, {
+                                Socket.emit(Events.NOTIFICATION, {
                                     instance: "api",
                                     data: {
                                         title: "Instance Added",
@@ -549,19 +554,23 @@ export default class Instances {
                                         type: NotificationType.SUCCESS,
                                         icon: "layers",
                                     },
+                                }).then(() => {
+                                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                                    resolve(true);
                                 });
                             } else {
-                                Socket.fetch(Events.NOTIFICATION, {
+                                Socket.emit(Events.NOTIFICATION, {
                                     instance: "api",
                                     data: {
                                         title: "Instance Not Added",
                                         description: `Unable to create instance "${name}.`,
                                         type: NotificationType.ERROR,
                                     },
+                                }).then(() => {
+                                    resolve(false);
                                 });
                             }
-
-                            resolve(success);
                         });
 
                         break;
@@ -569,9 +578,7 @@ export default class Instances {
                     case "launchd":
                         Instances.createLaunchd(name, port).then((success) => {
                             if (success) {
-                                Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
-
-                                Socket.fetch(Events.NOTIFICATION, {
+                                Socket.emit(Events.NOTIFICATION, {
                                     instance: "api",
                                     data: {
                                         title: "Instance Added",
@@ -579,35 +586,29 @@ export default class Instances {
                                         type: NotificationType.SUCCESS,
                                         icon: "layers",
                                     },
+                                }).then(() => {
+                                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                                    resolve(true);
                                 });
                             } else {
-                                Socket.fetch(Events.NOTIFICATION, {
+                                Socket.emit(Events.NOTIFICATION, {
                                     instance: "api",
                                     data: {
                                         title: "Instance Not Added",
                                         description: `Unable to create instance "${name}.`,
                                         type: NotificationType.ERROR,
                                     },
+                                }).then(() => {
+                                    resolve(false);
                                 });
                             }
-
-                            resolve(success);
                         });
 
                         break;
 
                     default:
-                        Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
-
-                        if (sanitize(name) === "api") {
-                            console.log("api created you can start the api with this command");
-                            console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
-                        } else {
-                            console.log("instance created you can start the instance with this command");
-                            console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${sanitize(name)}'`));
-                        }
-
-                        Socket.fetch(Events.NOTIFICATION, {
+                        Socket.emit(Events.NOTIFICATION, {
                             instance: "api",
                             data: {
                                 title: "Instance Added",
@@ -615,9 +616,20 @@ export default class Instances {
                                 type: NotificationType.SUCCESS,
                                 icon: "layers",
                             },
+                        }).then(() => {
+                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                            if (sanitize(name) === "api") {
+                                console.log("api created you can start the api with this command");
+                                console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
+                            } else {
+                                console.log("instance created you can start the instance with this command");
+                                console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${sanitize(name)}'`));
+                            }
+
+                            resolve(true);
                         });
 
-                        resolve(true);
                         break;
                 }
             } else {
@@ -660,9 +672,7 @@ export default class Instances {
                             case "systemd":
                                 Instances.createSystemd(result.name, result.port).then((success) => {
                                     if (success) {
-                                        Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
-
-                                        Socket.fetch(Events.NOTIFICATION, {
+                                        Socket.emit(Events.NOTIFICATION, {
                                             instance: "api",
                                             data: {
                                                 title: "Instance Added",
@@ -670,19 +680,23 @@ export default class Instances {
                                                 type: NotificationType.SUCCESS,
                                                 icon: "layers",
                                             },
+                                        }).then(() => {
+                                            Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+
+                                            resolve(true);
                                         });
                                     } else {
-                                        Socket.fetch(Events.NOTIFICATION, {
+                                        Socket.emit(Events.NOTIFICATION, {
                                             instance: "api",
                                             data: {
                                                 title: "Instance Not Added",
                                                 description: `Unable to create instance "${result.name}.`,
                                                 type: NotificationType.ERROR,
                                             },
+                                        }).then(() => {
+                                            resolve(false);
                                         });
                                     }
-
-                                    resolve(success);
                                 });
 
                                 break;
@@ -690,9 +704,7 @@ export default class Instances {
                             case "launchd":
                                 Instances.createLaunchd(result.name, result.port).then((success) => {
                                     if (success) {
-                                        Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
-
-                                        Socket.fetch(Events.NOTIFICATION, {
+                                        Socket.emit(Events.NOTIFICATION, {
                                             instance: "api",
                                             data: {
                                                 title: "Instance Added",
@@ -700,35 +712,29 @@ export default class Instances {
                                                 type: NotificationType.SUCCESS,
                                                 icon: "layers",
                                             },
+                                        }).then(() => {
+                                            Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+
+                                            resolve(true);
                                         });
                                     } else {
-                                        Socket.fetch(Events.NOTIFICATION, {
+                                        Socket.emit(Events.NOTIFICATION, {
                                             instance: "api",
                                             data: {
                                                 title: "Instance Not Added",
                                                 description: `Unable to create instance "${result.name}.`,
                                                 type: NotificationType.ERROR,
                                             },
+                                        }).then(() => {
+                                            resolve(false);
                                         });
                                     }
-
-                                    resolve(success);
                                 });
 
                                 break;
 
                             default:
-                                Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
-
-                                if (id === "api") {
-                                    console.log("api created you can start the api with this command");
-                                    console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
-                                } else {
-                                    console.log("instance created you can start the instance with this command");
-                                    console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${id}'`));
-                                }
-
-                                Socket.fetch(Events.NOTIFICATION, {
+                                Socket.emit(Events.NOTIFICATION, {
                                     instance: "api",
                                     data: {
                                         title: "Instance Added",
@@ -736,9 +742,20 @@ export default class Instances {
                                         type: NotificationType.SUCCESS,
                                         icon: "layers",
                                     },
+                                }).then(() => {
+                                    Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+
+                                    if (id === "api") {
+                                        console.log("api created you can start the api with this command");
+                                        console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
+                                    } else {
+                                        console.log("instance created you can start the instance with this command");
+                                        console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${id}'`));
+                                    }
+
+                                    resolve(true);
                                 });
 
-                                resolve(true);
                                 break;
                         }
                     } else {
@@ -749,23 +766,27 @@ export default class Instances {
         });
     }
 
-    static purge(): void {
-        if (existsSync(join(Paths.storagePath(), `${State.id}.persist`))) removeSync(join(Paths.storagePath(), `${State.id}.persist`));
+    static purge(): Promise<void> {
+        return new Promise((resolve) => {
+            if (existsSync(join(Paths.storagePath(), `${State.id}.persist`))) removeSync(join(Paths.storagePath(), `${State.id}.persist`));
 
-        ensureDirSync(join(Paths.storagePath(), `${State.id}.persist`));
+            ensureDirSync(join(Paths.storagePath(), `${State.id}.persist`));
 
-        if (existsSync(join(Paths.storagePath(), `${State.id}.accessories`))) removeSync(join(Paths.storagePath(), `${State.id}.accessories`));
+            if (existsSync(join(Paths.storagePath(), `${State.id}.accessories`))) removeSync(join(Paths.storagePath(), `${State.id}.accessories`));
 
-        ensureDirSync(join(Paths.storagePath(), `${State.id}.accessories`));
+            ensureDirSync(join(Paths.storagePath(), `${State.id}.accessories`));
 
-        Socket.fetch(Events.NOTIFICATION, {
-            instance: State.id,
-            data: {
-                title: "Caches Purged",
-                description: "Accessory and connection cache purged.",
-                type: NotificationType.SUCCESS,
-                icon: "memory",
-            },
+            Socket.emit(Events.NOTIFICATION, {
+                instance: State.id,
+                data: {
+                    title: "Caches Purged",
+                    description: "Accessory and connection cache purged.",
+                    type: NotificationType.SUCCESS,
+                    icon: "memory",
+                },
+            }).then(() => {
+                resolve();
+            });
         });
     }
 

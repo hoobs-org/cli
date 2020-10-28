@@ -126,6 +126,8 @@ export = function Command(): void {
                         } else {
                             Console.warn("no plugins installed");
                         }
+
+                        process.exit();
                     });
 
                     break;
@@ -184,6 +186,8 @@ export = function Command(): void {
                         } else {
                             Console.warn("no plugins installed");
                         }
+
+                        process.exit();
                     });
 
                     break;
@@ -244,6 +248,8 @@ export = function Command(): void {
                             } else {
                                 Console.warn("no plugins installed");
                             }
+
+                            process.exit();
                         });
                     } else {
                         Plugins.upgrade().finally(() => {
@@ -264,6 +270,8 @@ export = function Command(): void {
                             } else {
                                 Console.warn("no plugins installed");
                             }
+
+                            process.exit();
                         });
                     }
 
@@ -462,8 +470,6 @@ export = function Command(): void {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
             }
 
-            let success = true;
-
             if (State.instances.findIndex((n) => n.id === "api") >= 0) {
                 Console.warn("this system is already initilized.");
             } else {
@@ -485,21 +491,23 @@ export = function Command(): void {
                     ])).port, 10);
                 }
 
-                success = await Instances.createService("API", parseInt(command.port, 10), command.skip);
-            }
+                Instances.createService("API", parseInt(command.port, 10), command.skip).then((results) => {
+                    if (results) {
+                        spinner = Spinner({
+                            stream: process.stdout,
+                        }).start();
 
-            if (success) {
-                spinner = Spinner({
-                    stream: process.stdout,
-                }).start();
+                        instances = Instances.list();
 
-                instances = Instances.list();
+                        spinner.stop();
 
-                spinner.stop();
+                        if (instances.length > 0) Console.table(instances);
+                    } else {
+                        Console.error("unable to initilize system.");
+                    }
 
-                if (instances.length > 0) Console.table(instances);
-            } else {
-                Console.error("unable to initilize system.");
+                    process.exit();
+                });
             }
         });
 
@@ -531,27 +539,31 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "create":
-                    if (await Instances.createService(command.instance, parseInt(command.port, 10), command.skip)) {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
+                    Instances.createService(command.instance, parseInt(command.port, 10), command.skip).then((results) => {
+                        if (results) {
+                            spinner = Spinner({
+                                stream: process.stdout,
+                            }).start();
 
-                        instances = Instances.list();
+                            instances = Instances.list();
 
-                        spinner.stop();
+                            spinner.stop();
 
-                        if (instances.length > 0) {
-                            Console.table(instances.map((item) => ({
-                                id: item.id,
-                                type: item.type,
-                                display: item.display,
-                                running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
-                                port: item.port,
-                            })));
+                            if (instances.length > 0) {
+                                Console.table(instances.map((item) => ({
+                                    id: item.id,
+                                    type: item.type,
+                                    display: item.display,
+                                    running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                    port: item.port,
+                                })));
+                            }
+                        } else {
+                            Console.error("unable to create instance.");
                         }
-                    } else {
-                        Console.error("unable to create instance.");
-                    }
+
+                        process.exit();
+                    });
 
                     break;
 
@@ -579,25 +591,29 @@ export = function Command(): void {
                             stream: process.stdout,
                         }).start();
 
-                        if (await Instances.removeService(command.instance, command.skip)) {
-                            instances = Instances.list();
+                        Instances.removeService(command.instance, command.skip).then((results) => {
+                            if (results) {
+                                instances = Instances.list();
 
-                            spinner.stop();
+                                spinner.stop();
 
-                            if (instances.length > 0) {
-                                Console.table(instances.map((item) => ({
-                                    id: item.id,
-                                    type: item.type,
-                                    display: item.display,
-                                    running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
-                                    port: item.port,
-                                })));
+                                if (instances.length > 0) {
+                                    Console.table(instances.map((item) => ({
+                                        id: item.id,
+                                        type: item.type,
+                                        display: item.display,
+                                        running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                        port: item.port,
+                                    })));
+                                }
+                            } else {
+                                spinner.stop();
+
+                                Console.error("unable to remove instance.");
                             }
-                        } else {
-                            spinner.stop();
 
-                            Console.error("unable to remove instance.");
-                        }
+                            process.exit();
+                        });
                     } else if (sanitize(command.instance) !== "api") {
                         Console.warn("this instance is currently running, shut down this instance before removing.");
                     } else {
@@ -677,6 +693,8 @@ export = function Command(): void {
                         } else {
                             Extentions.list();
                         }
+
+                        process.exit();
                     });
 
                     break;
@@ -709,6 +727,8 @@ export = function Command(): void {
                         } else {
                             Extentions.list();
                         }
+
+                        process.exit();
                     });
 
                     break;
@@ -830,11 +850,12 @@ export = function Command(): void {
                         stream: process.stdout,
                     }).start();
 
-                    Instances.purge();
+                    Instances.purge().then(() => {
+                        spinner.stop();
 
-                    spinner.stop();
-
-                    Console.info("bridge caches purged");
+                        Console.info("bridge caches purged");
+                        process.exit();
+                    });
 
                     break;
 

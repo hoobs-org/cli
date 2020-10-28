@@ -166,10 +166,7 @@ export default class Plugins {
                         }
                     }
 
-                    Plugins.unlinkLibs();
-                    Config.saveConfig(config);
-
-                    Socket.fetch(Events.NOTIFICATION, {
+                    Socket.emit(Events.NOTIFICATION, {
                         instance: State.id,
                         data: {
                             title: "Plugin Installed",
@@ -177,21 +174,24 @@ export default class Plugins {
                             type: NotificationType.SUCCESS,
                             icon: "extension",
                         },
+                    }).then(() => {
+                        Plugins.unlinkLibs();
+                        Config.saveConfig(config);
+
+                        resolve();
                     });
-
-                    return resolve();
+                } else {
+                    Socket.emit(Events.NOTIFICATION, {
+                        instance: State.id,
+                        data: {
+                            title: "Plugin Not Installed",
+                            description: `Unable to install ${name}.`,
+                            type: NotificationType.ERROR,
+                        },
+                    }).then(() => {
+                        reject();
+                    });
                 }
-
-                Socket.fetch(Events.NOTIFICATION, {
-                    instance: State.id,
-                    data: {
-                        title: "Plugin Not Installed",
-                        description: `Unable to install ${name}.`,
-                        type: NotificationType.ERROR,
-                    },
-                });
-
-                return reject();
             });
         });
     }
@@ -236,9 +236,7 @@ export default class Plugins {
                         index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
                     }
 
-                    Config.saveConfig(config);
-
-                    Socket.fetch(Events.NOTIFICATION, {
+                    Socket.emit(Events.NOTIFICATION, {
                         instance: State.id,
                         data: {
                             title: "Plugin Uninstalled",
@@ -246,21 +244,23 @@ export default class Plugins {
                             type: NotificationType.WARN,
                             icon: "extension",
                         },
+                    }).then(() => {
+                        Config.saveConfig(config);
+
+                        resolve();
                     });
-
-                    return resolve();
+                } else {
+                    Socket.emit(Events.NOTIFICATION, {
+                        instance: State.id,
+                        data: {
+                            title: "Plugin Not Uninstalled",
+                            description: `Unable to uninstall ${name}.`,
+                            type: NotificationType.ERROR,
+                        },
+                    }).then(() => {
+                        reject();
+                    });
                 }
-
-                Socket.fetch(Events.NOTIFICATION, {
-                    instance: State.id,
-                    data: {
-                        title: "Plugin Not Uninstalled",
-                        description: `Unable to uninstall ${name}.`,
-                        type: NotificationType.ERROR,
-                    },
-                });
-
-                return reject();
             });
         });
     }
@@ -288,9 +288,7 @@ export default class Plugins {
             });
 
             proc.on("close", () => {
-                Config.touchConfig();
-
-                Socket.fetch(Events.NOTIFICATION, {
+                Socket.emit(Events.NOTIFICATION, {
                     instance: State.id,
                     data: {
                         title: name ? "Plugin Upgraded" : "Plugins Upgraded",
@@ -298,9 +296,11 @@ export default class Plugins {
                         type: NotificationType.SUCCESS,
                         icon: "extension",
                     },
-                });
+                }).then(() => {
+                    Config.touchConfig();
 
-                return resolve();
+                    resolve();
+                });
             });
         });
     }

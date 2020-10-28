@@ -30,25 +30,25 @@ export default class Extentions {
 
     static enable(name: string): Promise<{ [key: string]: any }> {
         return new Promise((resolve) => {
-            let results: { [key: string]: any } = {};
-
             switch (name) {
                 case "ffmpeg":
-                    results = Ffmpeg.enable();
-
-                    if (results.error) {
-                        return resolve({
-                            success: false,
-                            error: results.error,
-                        });
-                    }
-
-                    return resolve({
-                        success: true,
+                    Ffmpeg.enable().then((results) => {
+                        if (results.error) {
+                            resolve({
+                                success: false,
+                                error: results.error,
+                            });
+                        } else {
+                            resolve({
+                                success: true,
+                            });
+                        }
                     });
 
+                    break;
+
                 default:
-                    return resolve({
+                    resolve({
                         success: false,
                         warning: "invalid extention",
                     });

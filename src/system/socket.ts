@@ -22,10 +22,10 @@ import { join } from "path";
 import Paths from "./paths";
 import { Events } from "../logger";
 
-const sockets: { [key: string]: any } = [];
+const sockets: { [key: string]: any } = {};
 
 export default class Socket {
-    static fetch(event: Events, body: any): Promise<any> {
+    static emit(event: Events, body: any): Promise<any> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
@@ -47,24 +47,14 @@ export default class Socket {
             }
 
             sockets["api.sock"].connectTo("api.sock", () => {
-                sockets["api.sock"].of["api.sock"].on(session, () => {
-                    sockets["api.sock"].of["api.sock"].off(session, "*");
-                    sockets["api.sock"].disconnect();
-
-                    resolve();
-                });
-
-                sockets["api.sock"].of["api.sock"].on("error", () => {
-                    sockets["api.sock"].of["api.sock"].off(session, "*");
-                    sockets["api.sock"].disconnect();
-
-                    resolve();
-                });
-
                 sockets["api.sock"].of["api.sock"].emit(event, {
                     session,
                     body,
                 });
+
+                setTimeout(() => {
+                    resolve();
+                }, 500);
             });
         });
     }
