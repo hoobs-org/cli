@@ -46,6 +46,35 @@ export interface Message {
     message: string,
 }
 
+export const enum NotificationType {
+    INFO = "info",
+    SUCCESS = "success",
+    WARN = "warn",
+    ERROR = "error",
+    DEBUG = "debug",
+}
+
+export const enum Events {
+    PING = "ping",
+    PONG = "pong",
+    LOG = "log",
+    LISTENING = "listening",
+    MONITOR = "monitor",
+    HEARTBEAT = "heartbeat",
+    NOTIFICATION = "notification",
+    ACCESSORY_CHANGE = "accessory_change",
+    PUBLISH_SETUP_URI = "publish_setup_uri",
+    REQUEST = "request",
+    COMPLETE = "complete",
+    SHELL_OUTPUT = "shell_output",
+    SHELL_INPUT = "shell_input",
+    SHELL_RESIZE = "shell_resize",
+    SHELL_CLEAR = "shell_clear",
+    SHELL_CONNECT = "shell_connect",
+    SHELL_DISCONNECT = "shell_disconnect",
+    SHUTDOWN = "shutdown",
+}
+
 const CONSOLE_LOG = console.log;
 const CONSOLE_ERROR = console.error;
 

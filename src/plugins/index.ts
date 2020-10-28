@@ -39,8 +39,9 @@ import {
 
 import State from "../state";
 import Paths from "../system/paths";
+import Socket from "../system/socket";
 import Config from "../config";
-import { Console } from "../logger";
+import { Console, Events, NotificationType } from "../logger";
 import { loadJson } from "../formatters";
 
 export default class Plugins {
@@ -168,8 +169,27 @@ export default class Plugins {
                     Plugins.unlinkLibs();
                     Config.saveConfig(config);
 
+                    Socket.fetch(Events.NOTIFICATION, {
+                        instance: State.id,
+                        data: {
+                            title: "Plugin Installed",
+                            description: `${tag !== "latest" ? `${name} ${tag}` : name} has been installed.`,
+                            type: NotificationType.SUCCESS,
+                            icon: "extension",
+                        },
+                    });
+
                     return resolve();
                 }
+
+                Socket.fetch(Events.NOTIFICATION, {
+                    instance: State.id,
+                    data: {
+                        title: "Plugin Not Installed",
+                        description: `Unable to install ${name}.`,
+                        type: NotificationType.ERROR,
+                    },
+                });
 
                 return reject();
             });
@@ -218,8 +238,27 @@ export default class Plugins {
 
                     Config.saveConfig(config);
 
+                    Socket.fetch(Events.NOTIFICATION, {
+                        instance: State.id,
+                        data: {
+                            title: "Plugin Uninstalled",
+                            description: `${name} has been removed.`,
+                            type: NotificationType.WARN,
+                            icon: "extension",
+                        },
+                    });
+
                     return resolve();
                 }
+
+                Socket.fetch(Events.NOTIFICATION, {
+                    instance: State.id,
+                    data: {
+                        title: "Plugin Not Uninstalled",
+                        description: `Unable to uninstall ${name}.`,
+                        type: NotificationType.ERROR,
+                    },
+                });
 
                 return reject();
             });
@@ -250,6 +289,16 @@ export default class Plugins {
 
             proc.on("close", () => {
                 Config.touchConfig();
+
+                Socket.fetch(Events.NOTIFICATION, {
+                    instance: State.id,
+                    data: {
+                        title: name ? "Plugin Upgraded" : "Plugins Upgraded",
+                        description: name ? `${tag !== "latest" ? `${name} ${tag}` : name} has been upgraded.` : "All plugins have been upgraded",
+                        type: NotificationType.SUCCESS,
+                        icon: "extension",
+                    },
+                });
 
                 return resolve();
             });
