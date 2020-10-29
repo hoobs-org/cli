@@ -43,6 +43,8 @@ export = function Command(): void {
     Program.allowUnknownOption();
 
     Program.command("plugin [action] [name]")
+        .alias("plugins")
+        .alias("p")
         .description("manage plugins for a given instance")
         .option("-i, --instance <name>", "set the instance name")
         .option("-c, --container", "run in a container")
@@ -71,6 +73,8 @@ export = function Command(): void {
             let tag = "latest";
 
             switch (action) {
+                case "i":
+                case "a":
                 case "add":
                 case "install":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
@@ -132,6 +136,8 @@ export = function Command(): void {
 
                     break;
 
+                case "r":
+                case "rm":
                 case "remove":
                 case "uninstall":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
@@ -192,8 +198,9 @@ export = function Command(): void {
 
                     break;
 
+                case "u":
+                case "up":
                 case "update":
-                case "upgrade":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
 
@@ -370,6 +377,7 @@ export = function Command(): void {
         });
 
     Program.command("log")
+        .alias("l")
         .description("show the combined log from the api and instances")
         .option("-i, --instance <name>", "set the instance name")
         .option("-t, --tail <lines>", "set the number of lines")
@@ -412,6 +420,7 @@ export = function Command(): void {
         });
 
     Program.command("config")
+        .alias("c")
         .description("manage the configuration for a given instance")
         .option("-i, --instance <name>", "set the instance name")
         .option("-c, --container", "run in a container")
@@ -453,6 +462,7 @@ export = function Command(): void {
         });
 
     Program.command("initilize")
+        .alias("init")
         .description("initial setup")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-s, --skip", "skip init system intergration")
@@ -512,6 +522,7 @@ export = function Command(): void {
         });
 
     Program.command("instance [action]")
+        .alias("i")
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
@@ -537,6 +548,7 @@ export = function Command(): void {
             }
 
             switch (action) {
+                case "a":
                 case "add":
                 case "create":
                     Instances.createService(command.instance, parseInt(command.port, 10), command.skip).then((results) => {
@@ -567,6 +579,8 @@ export = function Command(): void {
 
                     break;
 
+                case "r":
+                case "rm":
                 case "remove":
                     if (!command.instance || command.instance === "") {
                         if (State.instances.filter((item) => item.type === "bridge").length === 1) {
@@ -653,6 +667,7 @@ export = function Command(): void {
         });
 
     Program.command("extention [action] [name]")
+        .alias("e")
         .description("manage extentions")
         .option("-c, --container", "run in a container")
         .action((action, name, command) => {
@@ -699,6 +714,7 @@ export = function Command(): void {
 
                     break;
 
+                case "rm":
                 case "remove":
                 case "uninstall":
                     if (process.env.USER !== "root") {
@@ -763,6 +779,7 @@ export = function Command(): void {
         });
 
     Program.command("system <action> [file]")
+        .alias("sys")
         .description("reboot, reset and upgrade this device")
         .option("-c, --container", "run in a container")
         .action((action, file, command) => {
@@ -773,6 +790,7 @@ export = function Command(): void {
             State.instances = Instances.list();
 
             switch (action) {
+                case "up":
                 case "upgrade":
                     if (process.env.USER !== "root") {
                         Console.warn("root is required, did you forget to use 'sudo'?");
@@ -885,6 +903,7 @@ export = function Command(): void {
         });
 
     Program.command("remote")
+        .alias("cockpit")
         .description("start a remote support session")
         .action(() => {
             State.timestamps = false;
