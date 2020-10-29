@@ -284,14 +284,14 @@ export default class Instances {
                                     icon: "layers",
                                 },
                             }).then(() => {
-                                State.instances.splice(index, 1);
-
-                                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
-
                                 removeSync(join(Paths.storagePath(), id));
                                 removeSync(join(Paths.storagePath(), `${id}.accessories`));
                                 removeSync(join(Paths.storagePath(), `${id}.persist`));
                                 removeSync(join(Paths.storagePath(), `${id}.conf`));
+
+                                State.instances.splice(index, 1);
+
+                                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
 
                                 resolve(true);
                             });
@@ -617,8 +617,6 @@ export default class Instances {
                                 icon: "layers",
                             },
                         }).then(() => {
-                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
-
                             if (sanitize(name) === "api") {
                                 console.log("api created you can start the api with this command");
                                 console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
@@ -626,6 +624,8 @@ export default class Instances {
                                 console.log("instance created you can start the instance with this command");
                                 console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${sanitize(name)}'`));
                             }
+
+                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
 
                             resolve(true);
                         });
