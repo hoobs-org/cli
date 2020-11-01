@@ -58,6 +58,7 @@
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/no-loop-func": "off",
         "class-methods-use-this": "off",
         "import/no-cycle": "off",
         "import/no-extraneous-dependencies": "off"

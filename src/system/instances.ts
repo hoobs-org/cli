@@ -651,7 +651,7 @@ export default class Instances {
                         default: () => {
                             port = port || 50826;
 
-                            while (State.instances.findIndex((n) => parseInt(`${n.port}`, 10) === port) >= 0) port += 1000;
+                            while (State.instances.findIndex((item) => parseInt(`${item.port}`, 10) === port) >= 0) port += 1000;
 
                             return `${port}`;
                         },
