@@ -38,7 +38,7 @@
         "archiver": "^5.0.2",
         "as-table": "^1.0.55",
         "chalk": "^4.1.0",
-        "commander": "^6.1.0",
+        "commander": "^6.2.0",
         "fs-extra": "^9.0.1",
         "hap-nodejs": "^0.8.2",
         "inquirer": "^7.3.3",
