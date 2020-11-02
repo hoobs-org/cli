@@ -790,7 +790,14 @@ export default class Instances {
         });
     }
 
-    static reset(): void {
+    static reset(skip?: boolean): void {
+        let type = "";
+
+        if (!skip) {
+            type = Instances.initSystem() || "";
+        }
+
+        const instances = Instances.list();
         const entries = readdirSync(Paths.storagePath());
 
         for (let i = 0; i < entries.length; i += 1) {
@@ -802,6 +809,18 @@ export default class Instances {
                 } else {
                     unlinkSync(path);
                 }
+            }
+        }
+
+        for (let i = 0; i < instances.length; i += 1) {
+            switch (type) {
+                case "systemd":
+                    Instances.removeSystemd(instances[i].id);
+                    break;
+
+                case "launchd":
+                    Instances.removeLaunchd(instances[i].id);
+                    break;
             }
         }
     }
@@ -856,8 +875,14 @@ export default class Instances {
         }
     }
 
-    static restore(file: string, remove?: boolean): Promise<void> {
+    static restore(file: string, remove?: boolean, skip?: boolean): Promise<void> {
         return new Promise((resolve) => {
+            let type = "";
+
+            if (!skip) {
+                type = Instances.initSystem() || "";
+            }
+
             const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
             const entries = readdirSync(Paths.storagePath());
 
@@ -898,6 +923,46 @@ export default class Instances {
                                 cwd: Paths.storagePath(instances[i].id),
                                 stdio: "inherit",
                             });
+                        }
+                    }
+
+                    const bridges = instances.filter((item) => item.type === "bridge");
+
+                    for (let i = 0; i < bridges.length; i += 1) {
+                        switch (type) {
+                            case "systemd":
+                                Instances.createSystemd(bridges[i].display, bridges[i].port);
+                                break;
+
+                            case "launchd":
+                                Instances.createLaunchd(bridges[i].display, bridges[i].port);
+                                break;
+                        }
+                    }
+
+                    const api = instances.find((item) => item.type === "api");
+
+                    if (api) {
+                        switch (type) {
+                            case "systemd":
+                                if (existsSync("/etc/systemd/system/api.hoobsd.service")) {
+                                    execSync("systemctl stop api.hoobsd.service");
+                                    execSync("systemctl start api.hoobsd.service");
+                                } else {
+                                    Instances.createSystemd(api.display, api.port);
+                                }
+
+                                break;
+
+                            case "launchd":
+                                if (existsSync("/Library/LaunchDaemons/org.hoobsd.api.plist")) {
+                                    execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.api.plist");
+                                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.api.plist");
+                                } else {
+                                    Instances.createLaunchd(api.display, api.port);
+                                }
+
+                                break;
                         }
                     }
 
