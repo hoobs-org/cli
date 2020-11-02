@@ -47,6 +47,12 @@ export = function Command(): void {
         .option("-i, --instance <name>", "set the instance name")
         .option("-c, --container", "run in a container")
         .action(async (action, name, command) => {
+            if (action !== "create" && process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                return;
+            }
+
             let spinner: Spinner.Ora;
 
             State.id = sanitize(command.instance);
@@ -54,11 +60,7 @@ export = function Command(): void {
             State.container = command.container;
             State.instances = Instances.list();
 
-            if (process.env.USER !== "root") {
-                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-            }
-
-            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+            if (action !== "create" && State.instances.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
@@ -376,13 +378,15 @@ export = function Command(): void {
         .option("-d, --debug", "turn on debug level logging")
         .option("-c, --container", "run in a container")
         .action((command) => {
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                return;
+            }
+
             State.debug = command.debug;
             State.container = command.container;
             State.instances = Instances.list();
-
-            if (process.env.USER !== "root") {
-                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-            }
 
             if (State.instances.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
@@ -416,14 +420,16 @@ export = function Command(): void {
         .option("-i, --instance <name>", "set the instance name")
         .option("-c, --container", "run in a container")
         .action(async (command) => {
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                return;
+            }
+
             State.id = sanitize(command.instance || "api");
             State.timestamps = false;
             State.container = command.container;
             State.instances = Instances.list();
-
-            if (process.env.USER !== "root") {
-                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-            }
 
             if (State.instances.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
@@ -458,6 +464,12 @@ export = function Command(): void {
         .option("-s, --skip", "skip init system intergration")
         .option("-c, --container", "run in a container")
         .action(async (command) => {
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                return;
+            }
+
             let spinner: Spinner.Ora;
 
             State.timestamps = false;
@@ -465,10 +477,6 @@ export = function Command(): void {
             State.instances = Instances.list();
 
             let instances = [];
-
-            if (process.env.USER !== "root") {
-                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-            }
 
             if (State.instances.findIndex((n) => n.id === "api") >= 0) {
                 Console.warn("this system is already initilized.");
@@ -518,6 +526,12 @@ export = function Command(): void {
         .option("-s, --skip", "skip init system intergration")
         .option("-c, --container", "run in a container")
         .action(async (action, command) => {
+            if (process.env.USER !== "root") {
+                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                return;
+            }
+
             let spinner: Spinner.Ora;
 
             State.timestamps = false;
@@ -525,10 +539,6 @@ export = function Command(): void {
             State.instances = Instances.list();
 
             let instances = [];
-
-            if (process.env.USER !== "root") {
-                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-            }
 
             if (State.instances.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
@@ -657,6 +667,12 @@ export = function Command(): void {
         .description("manage extentions")
         .option("-c, --container", "run in a container")
         .action((action, name, command) => {
+            if (process.env.USER !== "root") {
+                Console.warn("root is required, did you forget to use 'sudo'?");
+
+                return;
+            }
+
             let spinner: Spinner.Ora;
 
             State.timestamps = false;
@@ -668,12 +684,6 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "install":
-                    if (process.env.USER !== "root") {
-                        Console.warn("root is required, did you forget to use 'sudo'?");
-
-                        return;
-                    }
-
                     if (State.instances.findIndex((n) => n.id === "api") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
@@ -703,12 +713,6 @@ export = function Command(): void {
                 case "rm":
                 case "remove":
                 case "uninstall":
-                    if (process.env.USER !== "root") {
-                        Console.warn("root is required, did you forget to use 'sudo'?");
-
-                        return;
-                    }
-
                     if (State.instances.findIndex((n) => n.id === "api") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
@@ -737,10 +741,6 @@ export = function Command(): void {
 
                 case "ls":
                 case "list":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     if (State.instances.findIndex((n) => n.id === "api") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
@@ -768,6 +768,12 @@ export = function Command(): void {
         .description("reboot, reset and upgrade this device")
         .option("-c, --container", "run in a container")
         .action((action, file, command) => {
+            if (process.env.USER !== "root") {
+                Console.warn("root is required, did you forget to use 'sudo'?");
+
+                return;
+            }
+
             let spinner: Spinner.Ora;
 
             State.timestamps = false;
@@ -776,12 +782,6 @@ export = function Command(): void {
 
             switch (action) {
                 case "upgrade":
-                    if (process.env.USER !== "root") {
-                        Console.warn("root is required, did you forget to use 'sudo'?");
-
-                        return;
-                    }
-
                     execSync("npm install -g --unsafe-perm @hoobs/hoobsd@latest", {
                         stdio: "inherit",
                     });
@@ -793,10 +793,6 @@ export = function Command(): void {
                     break;
 
                 case "backup":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
@@ -819,10 +815,6 @@ export = function Command(): void {
                     break;
 
                 case "restore":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     Console.warn("this will remove all current settings and plugins and replace it with the backup");
 
                     if (file && existsSync(file)) {
@@ -842,10 +834,6 @@ export = function Command(): void {
                     break;
 
                 case "purge":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     Console.warn("this will remove the connection to homekit, you will need to re-pair");
 
                     spinner = Spinner({
@@ -862,10 +850,6 @@ export = function Command(): void {
                     break;
 
                 case "reset":
-                    if (process.env.USER !== "root") {
-                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-                    }
-
                     Console.warn("this will remove all settings and plugins, you will need to restore or initilize this device");
 
                     spinner = Spinner({
@@ -889,12 +873,12 @@ export = function Command(): void {
     Program.command("remote")
         .description("start a remote support session")
         .action(() => {
-            State.timestamps = false;
-            State.instances = Instances.list();
-
             if (process.env.USER === "root") {
                 Console.warn("you are running as root, are you sure?");
             }
+
+            State.timestamps = false;
+            State.instances = Instances.list();
 
             const client = new Cockpit();
 
