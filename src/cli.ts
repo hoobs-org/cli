@@ -42,10 +42,14 @@ export = function Command(): void {
     Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
+    Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { State.mode = mode; })
+        .option("-d, --debug", "turn on debug level logging", () => { State.debug = true; })
+        .option("-v, --verbose", "turn on verbose logging", () => { State.verbose = true; })
+        .option("-c, --container", "run in a container", () => { State.container = true; });
+
     Program.command("plugin [action] [name]")
         .description("manage plugins for a given instance")
         .option("-i, --instance <name>", "set the instance name")
-        .option("-c, --container", "run in a container")
         .action(async (action, name, command) => {
             if (action !== "create" && process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -53,11 +57,7 @@ export = function Command(): void {
                 return;
             }
 
-            let spinner: Spinner.Ora;
-
             State.id = sanitize(command.instance);
-            State.timestamps = false;
-            State.container = command.container;
             State.instances = Instances.list();
 
             if (action !== "create" && State.instances.findIndex((n) => n.id === "api") === -1) {
@@ -66,6 +66,7 @@ export = function Command(): void {
                 return;
             }
 
+            let spinner: Spinner.Ora;
             let combined: { [key: string]: any }[] = [];
             let plugin: string = name;
             let plugins: { [key: string]: any }[] = [];
@@ -375,8 +376,6 @@ export = function Command(): void {
         .description("show the combined log from the api and instances")
         .option("-i, --instance <name>", "set the instance name")
         .option("-t, --tail <lines>", "set the number of lines")
-        .option("-d, --debug", "turn on debug level logging")
-        .option("-c, --container", "run in a container")
         .action((command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -384,8 +383,6 @@ export = function Command(): void {
                 return;
             }
 
-            State.debug = command.debug;
-            State.container = command.container;
             State.instances = Instances.list();
 
             if (State.instances.findIndex((n) => n.id === "api") === -1) {
@@ -393,6 +390,8 @@ export = function Command(): void {
 
                 return;
             }
+
+            State.timestamps = true;
 
             const spinner = Spinner({
                 stream: process.stdout,
@@ -418,7 +417,6 @@ export = function Command(): void {
     Program.command("config")
         .description("manage the configuration for a given instance")
         .option("-i, --instance <name>", "set the instance name")
-        .option("-c, --container", "run in a container")
         .action(async (command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -427,8 +425,6 @@ export = function Command(): void {
             }
 
             State.id = sanitize(command.instance || "api");
-            State.timestamps = false;
-            State.container = command.container;
             State.instances = Instances.list();
 
             if (State.instances.findIndex((n) => n.id === "api") === -1) {
@@ -462,7 +458,6 @@ export = function Command(): void {
         .description("initial setup")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-s, --skip", "skip init system intergration")
-        .option("-c, --container", "run in a container")
         .action(async (command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -470,12 +465,9 @@ export = function Command(): void {
                 return;
             }
 
-            let spinner: Spinner.Ora;
-
-            State.timestamps = false;
-            State.container = command.container;
             State.instances = Instances.list();
 
+            let spinner: Spinner.Ora;
             let instances = [];
 
             if (State.instances.findIndex((n) => n.id === "api") >= 0) {
@@ -524,7 +516,6 @@ export = function Command(): void {
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-s, --skip", "skip init system intergration")
-        .option("-c, --container", "run in a container")
         .action(async (action, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -532,12 +523,9 @@ export = function Command(): void {
                 return;
             }
 
-            let spinner: Spinner.Ora;
-
-            State.timestamps = false;
-            State.container = command.container;
             State.instances = Instances.list();
 
+            let spinner: Spinner.Ora;
             let instances = [];
 
             if (State.instances.findIndex((n) => n.id === "api") === -1) {
@@ -665,20 +653,16 @@ export = function Command(): void {
 
     Program.command("extention [action] [name]")
         .description("manage extentions")
-        .option("-c, --container", "run in a container")
-        .action((action, name, command) => {
+        .action((action, name) => {
             if (process.env.USER !== "root") {
                 Console.warn("root is required, did you forget to use 'sudo'?");
 
                 return;
             }
 
-            let spinner: Spinner.Ora;
-
-            State.timestamps = false;
-            State.container = command.container;
             State.instances = Instances.list();
 
+            let spinner: Spinner.Ora;
             let list: { [key: string]: any }[] = [];
 
             switch (action) {
@@ -766,23 +750,20 @@ export = function Command(): void {
 
     Program.command("system <action> [file]")
         .description("reboot, reset and upgrade this device")
-        .option("-c, --container", "run in a container")
-        .action(async (action, file, command) => {
+        .action(async (action, file) => {
             if (process.env.USER !== "root") {
                 Console.warn("root is required, did you forget to use 'sudo'?");
 
                 return;
             }
 
+            State.instances = Instances.list();
+
             const flags: string[] = [];
             const list: { [key: string]: any}[] = [];
 
             let spinner: Spinner.Ora;
             let entries: string[] = [];
-
-            State.timestamps = false;
-            State.container = command.container;
-            State.instances = Instances.list();
 
             switch (action) {
                 case "upgrade":
@@ -935,7 +916,6 @@ export = function Command(): void {
                 Console.warn("you are running as root, are you sure?");
             }
 
-            State.timestamps = false;
             State.instances = Instances.list();
 
             const client = new Cockpit();

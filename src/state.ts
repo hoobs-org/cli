@@ -22,10 +22,13 @@ import { InstanceRecord } from "./system/instances";
 import { loadJson } from "./formatters";
 
 export interface Application {
+    mode: string;
+
     id: string,
     display: string,
 
     debug: boolean,
+    verbose: boolean;
     timestamps: boolean,
     container: boolean,
 
@@ -37,11 +40,14 @@ export interface Application {
 }
 
 const state: Application = {
+    mode: "production",
+
     id: "default",
     display: "Default",
 
     debug: false,
-    timestamps: true,
+    verbose: false,
+    timestamps: false,
     container: false,
 
     version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
