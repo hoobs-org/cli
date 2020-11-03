@@ -790,12 +790,14 @@ export default class Instances {
         });
     }
 
-    static reset(skip?: boolean): void {
+    static async reset(skip?: boolean): Promise<void> {
         let type = "";
 
         if (!skip) {
             type = Instances.initSystem() || "";
         }
+
+        await Instances.backup();
 
         const instances = Instances.list();
         const entries = readdirSync(Paths.storagePath());
@@ -833,8 +835,8 @@ export default class Instances {
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.hbf`));
-                resolve(`${filename}.hbf`);
+                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.hbak`));
+                resolve(`${filename}.hbak`);
             });
 
             archive.on("error", (error) => {

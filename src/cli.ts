@@ -24,7 +24,7 @@ import Chalk from "chalk";
 import Spinner from "ora";
 import { join } from "path";
 import { execSync } from "child_process";
-import { existsSync, copyFileSync } from "fs-extra";
+import { existsSync, copyFileSync, readdirSync } from "fs-extra";
 import Paths from "./system/paths";
 import State from "./state";
 import Instances from "./system/instances";
@@ -767,14 +767,18 @@ export = function Command(): void {
     Program.command("system <action> [file]")
         .description("reboot, reset and upgrade this device")
         .option("-c, --container", "run in a container")
-        .action((action, file, command) => {
+        .action(async (action, file, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("root is required, did you forget to use 'sudo'?");
 
                 return;
             }
 
+            const flags: string[] = [];
+            const list: { [key: string]: any}[] = [];
+
             let spinner: Spinner.Ora;
+            let entries: string[] = [];
 
             State.timestamps = false;
             State.container = command.container;
@@ -782,35 +786,89 @@ export = function Command(): void {
 
             switch (action) {
                 case "upgrade":
-                    execSync("npm install -g --unsafe-perm @hoobs/hoobsd@latest", {
-                        stdio: "inherit",
-                    });
-
-                    execSync("npm install -g --unsafe-perm @hoobs/cli@latest", {
-                        stdio: "inherit",
-                    });
-
-                    break;
-
-                case "backup":
                     spinner = Spinner({
                         stream: process.stdout,
                     }).start();
 
-                    Instances.backup().then((filename) => {
-                        copyFileSync(
-                            join(Paths.backupPath(), filename),
-                            join(process.cwd(), filename),
-                        );
+                    await Instances.backup();
 
-                        spinner.stop();
+                    spinner.stop();
 
-                        Console.info(`backup created ${Chalk.yellow(join(process.cwd(), filename))}`);
-                    }).catch((error) => {
-                        spinner.stop();
+                    if (State.manager === "yarn") {
+                        flags.push("global");
+                        flags.push("upgrade");
+                        flags.push("--ignore-engines");
+                    } else {
+                        flags.push("install");
+                        flags.push("-g");
+                        flags.push("--unsafe-perm");
+                    }
 
-                        Console.error(error.message || "unable to create backup");
+                    execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/hoobsd@latest`, {
+                        stdio: "inherit",
                     });
+
+                    execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/cli@latest`, {
+                        stdio: "inherit",
+                    });
+
+                    if ((Extentions.list().find((item) => item.feature === "gui") || {}).enabled) {
+                        execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/gui@latest`, {
+                            stdio: "inherit",
+                        });
+                    }
+
+                    if ((Extentions.list().find((item) => item.feature === "touch") || {}).enabled) {
+                        execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/touch@latest`, {
+                            stdio: "inherit",
+                        });
+                    }
+
+                    break;
+
+                case "backup":
+                    switch (file) {
+                        case "ls":
+                        case "list":
+                            entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".hbak"));
+
+                            for (let i = 0; i < entries.length; i += 1) {
+                                list.push({
+                                    date: (new Date(parseInt(entries[i].replace(".hbak", "").replace("backup-", ""), 10))).toLocaleString(),
+                                    path: join(Paths.backupPath(), entries[i]),
+                                });
+                            }
+
+                            if (list.length > 0) {
+                                Console.table(list);
+                            } else {
+                                Console.warn("no backups");
+                            }
+
+                            break;
+
+                        default:
+                            spinner = Spinner({
+                                stream: process.stdout,
+                            }).start();
+
+                            Instances.backup().then((filename) => {
+                                copyFileSync(
+                                    join(Paths.backupPath(), filename),
+                                    join(process.cwd(), filename),
+                                );
+
+                                spinner.stop();
+
+                                Console.info(`backup created ${Chalk.yellow(join(process.cwd(), filename))}`);
+                            }).catch((error) => {
+                                spinner.stop();
+
+                                Console.error(error.message || "unable to create backup");
+                            });
+
+                            break;
+                    }
 
                     break;
 
