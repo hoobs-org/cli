@@ -31,7 +31,7 @@
     },
     "preferGlobal": true,
     "scripts": {
-        "build": "bin/build",
+        "build": "bin/build --lint --pack",
         "hoobs": "sudo bin/hoobs --mode development"
     },
     "dependencies": {

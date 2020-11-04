@@ -35,11 +35,15 @@ Program.version(pjson.version, "-v, --version", "output the current version")
 
 Program.command("cli", { isDefault: true })
     .description("build hoobs cli")
-    .action(() => {
-        execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, {
-            cwd: root,
-            stdio: "inherit",
-        });
+    .option("-l, --lint", "lint the code before building")
+    .option("-p, --pack", "create pack file for offline testing")
+    .action((command) => {
+        if (command.lint) {
+            execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, {
+                cwd: root,
+                stdio: "inherit",
+            });
+        }
 
         if (!existsSync(join(root, "lib"))) {
             mkdirSync(join(root, "lib"));
@@ -55,20 +59,22 @@ Program.command("cli", { isDefault: true })
             stdio: "inherit",
         });
 
-        execSync("npm pack", {
-            cwd: root,
-            stdio: "inherit",
-        });
+        if (command.pack) {
+            execSync("npm pack", {
+                cwd: root,
+                stdio: "inherit",
+            });
 
-        execSync(`mv ${join(root, `hoobs-cli-${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, {
-            cwd: root,
-            stdio: "inherit",
-        });
+            execSync(`mv ${join(root, `hoobs-cli-${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, {
+                cwd: root,
+                stdio: "inherit",
+            });
 
-        execSync(`chmod 755 ${join(root, "lib", "package.tgz")}`, {
-            cwd: root,
-            stdio: "inherit",
-        });
+            execSync(`chmod 755 ${join(root, "lib", "package.tgz")}`, {
+                cwd: root,
+                stdio: "inherit",
+            });
+        }
     });
 
 Program.command("publish")
