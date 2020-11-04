@@ -75,6 +75,13 @@ Program.command("cli", { isDefault: true })
                 stdio: "inherit",
             });
         }
+
+        if (process.env.SUDO_USER && process.env.SUDO_USER !== process.env.USER) {
+            execSync(`chown -R ${process.env.SUDO_USER} ${join(root, "lib")}`, {
+                cwd: root,
+                stdio: "inherit",
+            });
+        }
     });
 
 Program.command("publish")
