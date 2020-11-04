@@ -811,11 +811,11 @@ export = function Command(): void {
                     switch (file) {
                         case "ls":
                         case "list":
-                            entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".hbak"));
+                            entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".backup"));
 
                             for (let i = 0; i < entries.length; i += 1) {
                                 list.push({
-                                    date: (new Date(parseInt(entries[i].replace(".hbak", "").replace("backup-", ""), 10))).toLocaleString(),
+                                    date: (new Date(parseInt(entries[i].replace(".backup", ""), 10))).toLocaleString(),
                                     path: join(Paths.backupPath(), entries[i]),
                                 });
                             }

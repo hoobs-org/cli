@@ -829,14 +829,24 @@ export default class Instances {
 
     static backup(): Promise<string> {
         return new Promise((resolve, reject) => {
-            const filename = `backup-${new Date().getTime()}`;
+            writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
+                date: (new Date()).getTime(),
+                type: "full",
+                product: "hoobs",
+                generator: "hoobs-cli",
+                version: State.version,
+            }));
+
+            const filename = `${new Date().getTime()}`;
             const entries = readdirSync(Paths.storagePath());
             const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.hbak`));
-                resolve(`${filename}.hbak`);
+                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.backup`));
+                unlinkSync(join(Paths.storagePath(), "meta"));
+
+                resolve(`${filename}.backup`);
             });
 
             archive.on("error", (error) => {
