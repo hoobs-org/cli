@@ -1,6 +1,6 @@
 .vscode
 bin/build
-lib/cli.tgz
+lib/*.tgz
 node_modules/
 src/
 .editorconfig
