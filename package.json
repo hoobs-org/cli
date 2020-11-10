@@ -1,6 +1,6 @@
 {
     "name": "@hoobs/cli",
-    "version": "4.0.0",
+    "version": "4.0.3",
     "description": "Command line interface for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
     "keywords": [
