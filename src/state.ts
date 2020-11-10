@@ -24,19 +24,19 @@ import { loadJson } from "./formatters";
 export interface Application {
     mode: string;
 
-    id: string,
-    display: string,
+    id: string;
+    display: string;
 
-    debug: boolean,
+    debug: boolean;
     verbose: boolean;
-    timestamps: boolean,
-    container: boolean,
+    timestamps: boolean;
+    container: boolean;
 
-    version: string,
-    manager: string,
-    instances: InstanceRecord[],
+    version: string;
+    manager: string;
+    instances: InstanceRecord[];
 
-    plugins: { [key: string]: any },
+    plugins: { [key: string]: any };
 }
 
 const state: Application = {

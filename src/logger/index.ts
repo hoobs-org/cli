@@ -37,13 +37,13 @@ export const enum LogLevel {
 }
 
 export interface Message {
-    level: LogLevel,
-    instance?: string,
-    display?: string,
-    timestamp: number,
-    plugin?: string,
-    prefix?: string,
-    message: string,
+    level: LogLevel;
+    instance?: string;
+    display?: string;
+    timestamp: number;
+    plugin?: string;
+    prefix?: string;
+    message: string;
 }
 
 export const enum NotificationType {

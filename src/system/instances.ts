@@ -55,17 +55,17 @@ import {
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
 export interface InstanceRecord {
-    id: string,
-    type: string,
-    display: string,
-    port: number,
+    id: string;
+    type: string;
+    display: string;
+    port: number;
     pin?: string;
     username?: string;
     ports?: { [key: string]: number};
     autostart?: number;
-    host?: string,
-    plugins?: string,
-    service?: string,
+    host?: string;
+    plugins?: string;
+    service?: string;
 }
 
 export default class Instances {
