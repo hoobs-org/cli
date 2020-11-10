@@ -43,6 +43,7 @@ import { join, basename } from "path";
 import State from "../state";
 import Paths from "./paths";
 import Socket from "./socket";
+import Config from "../config";
 import { Events, NotificationType } from "../logger";
 
 import {
@@ -58,6 +59,10 @@ export interface InstanceRecord {
     type: string,
     display: string,
     port: number,
+    pin?: string;
+    username?: string;
+    ports?: { [key: string]: number};
+    autostart?: number;
     host?: string,
     plugins?: string,
     service?: string,
@@ -126,25 +131,6 @@ export default class Instances {
         }
 
         return instances;
-    }
-
-    static renameInstance(name: string, display: string): Promise<boolean> {
-        return new Promise((resolve) => {
-            if (!name) return resolve(false);
-
-            const id = sanitize(name);
-            const index = State.instances.findIndex((n) => n.id === id);
-
-            if (index >= 0) {
-                State.instances[index].display = display;
-
-                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
-
-                return resolve(true);
-            }
-
-            return resolve(false);
-        });
     }
 
     static removeSystemd(id: string): Promise<boolean> {
@@ -487,7 +473,7 @@ export default class Instances {
         });
     }
 
-    static appendInstance(id: string, display: string, type: string, port: number) {
+    static appendInstance(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
         const instances: InstanceRecord[] = [];
 
         for (let i = 0; i < State.instances.length; i += 1) {
@@ -499,6 +485,9 @@ export default class Instances {
                     type: instance.type,
                     display: instance.display,
                     port: instance.port,
+                    pin: instance.pin,
+                    username: instance.username,
+                    autostart: 0,
                 });
             } else {
                 instances.push({
@@ -506,6 +495,9 @@ export default class Instances {
                     type: instance.type,
                     display: instance.display,
                     port: instance.port,
+                    pin: instance.pin,
+                    username: instance.username,
+                    autostart: instance.autostart,
                 });
             }
         }
@@ -516,6 +508,9 @@ export default class Instances {
                 type,
                 display,
                 port: parseInt(`${port}`, 10),
+                pin,
+                username,
+                autostart: 0,
             });
         } else {
             instances.push({
@@ -523,13 +518,16 @@ export default class Instances {
                 type,
                 display,
                 port: parseInt(`${port}`, 10),
+                pin,
+                username,
+                autostart: autostart || 0,
             });
         }
 
         writeFileSync(Paths.instancesPath(), formatJson(instances));
     }
 
-    static createService(name: string, port: number, skip?: boolean): Promise<boolean> {
+    static createService(name: string, port: number, pin: string, autostart: number, skip?: boolean): Promise<boolean> {
         return new Promise((resolve) => {
             let type = "";
 
@@ -555,7 +553,7 @@ export default class Instances {
                                         icon: "layers",
                                     },
                                 }).then(() => {
-                                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
 
                                     resolve(true);
                                 });
@@ -587,7 +585,7 @@ export default class Instances {
                                         icon: "layers",
                                     },
                                 }).then(() => {
-                                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
 
                                     resolve(true);
                                 });
@@ -625,7 +623,7 @@ export default class Instances {
                                 console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${sanitize(name)}'`));
                             }
 
-                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
 
                             resolve(true);
                         });
@@ -664,6 +662,24 @@ export default class Instances {
                             return true;
                         },
                     },
+                    {
+                        type: "input",
+                        name: "pin",
+                        message: "enter a pin for the bridge",
+                        default: "031-45-154",
+                    },
+                    {
+                        type: "number",
+                        name: "autostart",
+                        default: "0",
+                        message: "delay the start of the bridge (in seconds)?",
+                        validate: (value: number | undefined) => {
+                            if (!value || Number.isNaN(value)) return "invalid number";
+                            if (value < -1 || value > 500) return "select a port between -1 and 500";
+
+                            return true;
+                        },
+                    },
                 ]).then((result) => {
                     if (result && result.name && result.port) {
                         const id = sanitize(result.name);
@@ -681,7 +697,7 @@ export default class Instances {
                                                 icon: "layers",
                                             },
                                         }).then(() => {
-                                            Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+                                            Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
 
                                             resolve(true);
                                         });
@@ -713,7 +729,7 @@ export default class Instances {
                                                 icon: "layers",
                                             },
                                         }).then(() => {
-                                            Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+                                            Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
 
                                             resolve(true);
                                         });
@@ -743,7 +759,7 @@ export default class Instances {
                                         icon: "layers",
                                     },
                                 }).then(() => {
-                                    Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+                                    Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
 
                                     if (id === "api") {
                                         console.log("api created you can start the api with this command");

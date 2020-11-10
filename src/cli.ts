@@ -457,6 +457,7 @@ export = function Command(): void {
     Program.command("initilize")
         .description("initial setup")
         .option("-p, --port <port>", "change the port the bridge runs on")
+        .option("-n, --pin <pin>", "set the pin for the bridge")
         .option("-s, --skip", "skip init system intergration")
         .action(async (command) => {
             if (process.env.USER !== "root") {
@@ -491,7 +492,7 @@ export = function Command(): void {
                     ])).port, 10);
                 }
 
-                Instances.createService("API", parseInt(command.port, 10), command.skip).then((results) => {
+                Instances.createService("API", parseInt(command.port, 10), command.pin || "031-45-154", command.skip).then((results) => {
                     if (results) {
                         spinner = Spinner({
                             stream: process.stdout,
@@ -501,7 +502,17 @@ export = function Command(): void {
 
                         spinner.stop();
 
-                        if (instances.length > 0) Console.table(instances);
+                        if (instances.length > 0) {
+                            Console.table(instances.map((item) => ({
+                                id: item.id,
+                                type: item.type,
+                                display: item.display,
+                                running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                port: item.port,
+                                pin: item.pin,
+                                username: item.username,
+                            })));
+                        }
                     } else {
                         Console.error("unable to initilize system.");
                     }
@@ -537,7 +548,7 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "create":
-                    Instances.createService(command.instance, parseInt(command.port, 10), command.skip).then((results) => {
+                    Instances.createService(command.instance, parseInt(command.port, 10), command.skip, 0).then((results) => {
                         if (results) {
                             spinner = Spinner({
                                 stream: process.stdout,
@@ -554,6 +565,8 @@ export = function Command(): void {
                                     display: item.display,
                                     running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
                                     port: item.port,
+                                    pin: item.pin,
+                                    username: item.username,
                                 })));
                             }
                         } else {
@@ -603,6 +616,8 @@ export = function Command(): void {
                                         display: item.display,
                                         running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
                                         port: item.port,
+                                        pin: item.pin,
+                                        username: item.username,
                                     })));
                                 }
                             } else {
@@ -638,6 +653,8 @@ export = function Command(): void {
                             display: item.display,
                             running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
                             port: item.port,
+                            pin: item.pin,
+                            username: item.username,
                         })));
                     } else {
                         Console.warn("no instances");
