@@ -950,99 +950,131 @@ export default class Instances {
         }
     }
 
+    static metadata(file: string): Promise<{ [key: string]: any }> {
+        return new Promise((resolve) => {
+            let results: { [key: string]: any } = {};
+
+            createReadStream(file)
+                .pipe(Unzip.Parse())
+                .on("entry", async (entry) => {
+                    const filename = entry.path;
+
+                    if (filename === "meta") {
+                        const content = await entry.buffer();
+
+                        try {
+                            results = JSON.parse(content);
+                        } catch (_error) {
+                            results = {};
+                        }
+                    } else {
+                        entry.autodrain();
+
+                        resolve(results);
+                    }
+                });
+        });
+    }
+
     static restore(file: string, remove?: boolean, skip?: boolean): Promise<void> {
         return new Promise((resolve) => {
-            let type = "";
+            Instances.metadata(file).then((metadata) => {
+                if (metadata.type === "full") {
+                    let type = "";
 
-            if (!skip) {
-                type = Instances.initSystem() || "";
-            }
+                    if (!skip) {
+                        type = Instances.initSystem() || "";
+                    }
 
-            const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
-            const entries = readdirSync(Paths.storagePath());
+                    const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
+                    const entries = readdirSync(Paths.storagePath());
 
-            for (let i = 0; i < entries.length; i += 1) {
-                const path = join(Paths.storagePath(), entries[i]);
+                    for (let i = 0; i < entries.length; i += 1) {
+                        const path = join(Paths.storagePath(), entries[i]);
 
-                if (path !== Paths.backupPath()) {
-                    if (lstatSync(path).isDirectory()) {
-                        removeSync(path);
+                        if (path !== Paths.backupPath()) {
+                            if (lstatSync(path).isDirectory()) {
+                                removeSync(path);
+                            } else {
+                                unlinkSync(path);
+                            }
+                        }
+                    }
+
+                    if (remove) {
+                        renameSync(file, filename);
                     } else {
-                        unlinkSync(path);
-                    }
-                }
-            }
-
-            if (remove) {
-                renameSync(file, filename);
-            } else {
-                copyFileSync(file, filename);
-            }
-
-            createReadStream(filename).pipe(Unzip.Extract({
-                path: Paths.storagePath(),
-            })).on("finish", () => {
-                unlinkSync(filename);
-
-                setTimeout(() => {
-                    const instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-
-                    for (let i = 0; i < instances.length; i += 1) {
-                        if (State.manager === "yarn") {
-                            execSync("yarn install --unsafe-perm --ignore-engines", {
-                                cwd: Paths.storagePath(instances[i].id),
-                                stdio: "inherit",
-                            });
-                        } else {
-                            execSync("npm install --unsafe-perm", {
-                                cwd: Paths.storagePath(instances[i].id),
-                                stdio: "inherit",
-                            });
-                        }
+                        copyFileSync(file, filename);
                     }
 
-                    const bridges = instances.filter((item) => item.type === "bridge");
+                    createReadStream(filename).pipe(Unzip.Extract({
+                        path: Paths.storagePath(),
+                    })).on("finish", () => {
+                        unlinkSync(filename);
 
-                    for (let i = 0; i < bridges.length; i += 1) {
-                        switch (type) {
-                            case "systemd":
-                                Instances.createSystemd(bridges[i].display, bridges[i].port);
-                                break;
+                        setTimeout(() => {
+                            const instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
 
-                            case "launchd":
-                                Instances.createLaunchd(bridges[i].display, bridges[i].port);
-                                break;
-                        }
-                    }
-
-                    const api = instances.find((item) => item.type === "api");
-
-                    if (api) {
-                        switch (type) {
-                            case "systemd":
-                                if (existsSync("/etc/systemd/system/api.hoobsd.service")) {
-                                    execSync("systemctl stop api.hoobsd.service");
-                                    execSync("systemctl start api.hoobsd.service");
+                            for (let i = 0; i < instances.length; i += 1) {
+                                if (State.manager === "yarn") {
+                                    execSync("yarn install --unsafe-perm --ignore-engines", {
+                                        cwd: Paths.storagePath(instances[i].id),
+                                        stdio: "inherit",
+                                    });
                                 } else {
-                                    Instances.createSystemd(api.display, api.port);
+                                    execSync("npm install --unsafe-perm", {
+                                        cwd: Paths.storagePath(instances[i].id),
+                                        stdio: "inherit",
+                                    });
                                 }
+                            }
 
-                                break;
+                            const bridges = instances.filter((item) => item.type === "bridge");
 
-                            case "launchd":
-                                if (existsSync("/Library/LaunchDaemons/org.hoobsd.api.plist")) {
-                                    execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.api.plist");
-                                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.api.plist");
-                                } else {
-                                    Instances.createLaunchd(api.display, api.port);
+                            for (let i = 0; i < bridges.length; i += 1) {
+                                switch (type) {
+                                    case "systemd":
+                                        Instances.createSystemd(bridges[i].display, bridges[i].port);
+                                        break;
+
+                                    case "launchd":
+                                        Instances.createLaunchd(bridges[i].display, bridges[i].port);
+                                        break;
                                 }
+                            }
 
-                                break;
-                        }
-                    }
+                            const api = instances.find((item) => item.type === "api");
 
+                            if (api) {
+                                switch (type) {
+                                    case "systemd":
+                                        if (existsSync("/etc/systemd/system/api.hoobsd.service")) {
+                                            execSync("systemctl stop api.hoobsd.service");
+                                            execSync("systemctl start api.hoobsd.service");
+                                        } else {
+                                            Instances.createSystemd(api.display, api.port);
+                                        }
+
+                                        break;
+
+                                    case "launchd":
+                                        if (existsSync("/Library/LaunchDaemons/org.hoobsd.api.plist")) {
+                                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.api.plist");
+                                            execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.api.plist");
+                                        } else {
+                                            Instances.createLaunchd(api.display, api.port);
+                                        }
+
+                                        break;
+                                }
+                            }
+
+                            resolve();
+                        }, 1000);
+                    });
+                } else {
                     resolve();
-                }, 1000);
+                }
             });
         });
     }
