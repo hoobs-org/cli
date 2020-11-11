@@ -636,6 +636,48 @@ export = function Command(): void {
 
                     break;
 
+                case "export":
+                    if (!command.instance || command.instance === "") {
+                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
+                            command.instance = State.instances.filter((item) => item.type === "bridge")[0].id;
+                        } else {
+                            const { instance } = (await prompt([{
+                                type: "list",
+                                name: "instance",
+                                message: "Please select an instance",
+                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                    name: item.display,
+                                    value: item.id,
+                                })),
+                            }]));
+
+                            command.instance = instance;
+                        }
+                    }
+
+                    if (sanitize(command.instance) !== "api") {
+                        spinner = Spinner({
+                            stream: process.stdout,
+                        }).start();
+
+                        Instances.export(command.instance).then((filename) => {
+                            copyFileSync(
+                                join(Paths.backupPath(), filename),
+                                join(process.cwd(), `${sanitize(command.instance)}.instance`),
+                            );
+
+                            spinner.stop();
+
+                            Console.info(`instance exported ${Chalk.yellow(join(process.cwd(), filename))}`);
+                        }).catch((error) => {
+                            spinner.stop();
+
+                            Console.error(error.message || "unable to create backup");
+                        });
+                    }
+
+                    break;
+
                 case "ls":
                 case "list":
                     spinner = Spinner({
@@ -853,7 +895,7 @@ export = function Command(): void {
                             Instances.backup().then((filename) => {
                                 copyFileSync(
                                     join(Paths.backupPath(), filename),
-                                    join(process.cwd(), filename),
+                                    join(process.cwd(), "hoobs.backup"),
                                 );
 
                                 spinner.stop();

@@ -843,6 +843,53 @@ export default class Instances {
         }
     }
 
+    static export(id: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            id = sanitize(id);
+
+            const instance = State.instances.find((item) => item.id === id);
+
+            writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
+                date: (new Date()).getTime(),
+                type: "instance",
+                data: {
+                    type: instance?.type,
+                    ports: instance?.ports,
+                    autostart: instance?.autostart,
+                },
+                product: "hoobs",
+                generator: "hoobs-cli",
+                version: State.version,
+            }));
+
+            if (!instance) reject(new Error("instance does not exist"));
+
+            const filename = `${id}_${new Date().getTime()}`;
+            const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
+            const archive = Archiver("zip");
+
+            output.on("close", () => {
+                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.instance`));
+                unlinkSync(join(Paths.storagePath(), "meta"));
+
+                resolve(`${filename}.instance`);
+            });
+
+            archive.on("error", (error) => {
+                reject(error);
+            });
+
+            archive.pipe(output);
+
+            archive.file(join(Paths.storagePath(), "meta"), { name: "meta" });
+            archive.file(join(Paths.storagePath(), `${instance?.id}.conf`), { name: `${instance?.id}.conf` });
+
+            Instances.dig(archive, join(Paths.storagePath(), `${instance?.id}`));
+
+            archive.finalize();
+        });
+    }
+
     static backup(): Promise<string> {
         return new Promise((resolve, reject) => {
             writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
@@ -893,7 +940,7 @@ export default class Instances {
         for (let i = 0; i < entries.length; i += 1) {
             const path = join(directory, entries[i]);
 
-            if (basename(path) !== "node_modules") {
+            if (basename(path) !== "node_modules" && basename(path) !== "cache") {
                 if (lstatSync(path).isDirectory()) {
                     archive.directory(path, join(basename(directory), entries[i]));
                 } else {
