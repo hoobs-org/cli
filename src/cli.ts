@@ -598,12 +598,12 @@ export = function Command(): void {
                         }
                     }
 
-                    if (sanitize(command.instance) !== "api" && !existsSync(join(Paths.storagePath(), `${sanitize(command.instance)}.sock`))) {
+                    if (sanitize(command.instance) !== "api") {
                         spinner = Spinner({
                             stream: process.stdout,
                         }).start();
 
-                        Instances.removeService(command.instance, command.skip).then((results) => {
+                        Instances.removeService(command.instance).then((results) => {
                             if (results) {
                                 instances = Instances.list();
 
@@ -628,8 +628,6 @@ export = function Command(): void {
 
                             process.exit();
                         });
-                    } else if (sanitize(command.instance) !== "api") {
-                        Console.warn("this instance is currently running, shut down this instance before removing.");
                     } else {
                         Console.warn("this is not an instance, to remove the api run a system reset.");
                     }
