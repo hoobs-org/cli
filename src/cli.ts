@@ -23,7 +23,6 @@ import Inquirer from "inquirer";
 import Chalk from "chalk";
 import Spinner from "ora";
 import { join } from "path";
-import { execSync } from "child_process";
 import { existsSync, copyFileSync, readdirSync } from "fs-extra";
 import Paths from "./system/paths";
 import State from "./state";
@@ -37,9 +36,10 @@ import { Console, LogLevel } from "./logger";
 import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
+const runtime: string = (process.version || "").replace(/v/gi, "");
 
 export = function Command(): void {
-    Program.version(State.version, "-v, --version", "output the current version");
+    Program.version(`${State.version}${runtime !== "" ? ` (runtime ${runtime})` : ""}`, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
     Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { State.mode = mode; })
@@ -816,54 +816,12 @@ export = function Command(): void {
 
             State.instances = Instances.list();
 
-            const flags: string[] = [];
             const list: { [key: string]: any}[] = [];
 
             let spinner: Spinner.Ora;
             let entries: string[] = [];
 
             switch (action) {
-                case "upgrade":
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
-
-                    await Instances.backup();
-
-                    spinner.stop();
-
-                    if (State.manager === "yarn") {
-                        flags.push("global");
-                        flags.push("upgrade");
-                        flags.push("--ignore-engines");
-                    } else {
-                        flags.push("install");
-                        flags.push("-g");
-                        flags.push("--unsafe-perm");
-                    }
-
-                    execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/hoobsd@latest`, {
-                        stdio: "inherit",
-                    });
-
-                    execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/cli@latest`, {
-                        stdio: "inherit",
-                    });
-
-                    if ((Extentions.list().find((item) => item.feature === "gui") || {}).enabled) {
-                        execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/gui@latest`, {
-                            stdio: "inherit",
-                        });
-                    }
-
-                    if ((Extentions.list().find((item) => item.feature === "touch") || {}).enabled) {
-                        execSync(`${State.manager || "npm"} ${flags.join(" ")} @hoobs/touch@latest`, {
-                            stdio: "inherit",
-                        });
-                    }
-
-                    break;
-
                 case "backup":
                     switch (file) {
                         case "ls":
@@ -958,6 +916,10 @@ export = function Command(): void {
 
                     Console.info("configuration and plugins removed");
 
+                    break;
+
+                case "upgrade":
+                    Console.info("system upgrade not implimented");
                     break;
 
                 default:

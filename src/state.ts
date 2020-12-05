@@ -33,7 +33,6 @@ export interface Application {
     container: boolean;
 
     version: string;
-    manager: string;
     instances: InstanceRecord[];
 
     plugins: { [key: string]: any };
@@ -50,8 +49,7 @@ const state: Application = {
     timestamps: false,
     container: false,
 
-    version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
-    manager: existsSync("/usr/local/bin/yarn") || existsSync("/usr/bin/yarn") ? "yarn" : "npm",
+    version: loadJson<any>(existsSync(join(__dirname, "../var/package.json")) ? join(__dirname, "../var/package.json") : join(__dirname, "../package.json"), {}).version,
     instances: [],
 
     plugins: {},

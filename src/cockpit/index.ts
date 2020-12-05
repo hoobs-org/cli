@@ -18,7 +18,7 @@
 
 import _ from "lodash";
 import Socket from "ws";
-import PTY from "node-pty";
+import { spawn, IPty } from "node-pty";
 import { existsSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../system/paths";
@@ -32,7 +32,7 @@ export default class Cockpit {
 
     declare registration: string;
 
-    declare shell: PTY.IPty | undefined;
+    declare shell: IPty | undefined;
 
     declare enviornment: { [key: string]: string };
 
@@ -94,7 +94,7 @@ export default class Cockpit {
 
                 if (existsSync("/etc/ssl/certs/cacert.pem")) this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
 
-                this.shell = PTY.spawn(process.env.SHELL || "sh", [], {
+                this.shell = spawn(process.env.SHELL || "sh", [], {
                     name: "xterm-color",
                     cwd: Paths.storagePath(),
                     env: _.create(process.env, this.enviornment),

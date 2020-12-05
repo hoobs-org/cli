@@ -3,15 +3,6 @@
     "version": "4.0.4",
     "description": "Command line interface for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
-    "keywords": [
-        "hoobs",
-        "hoobsd",
-        "homebridge",
-        "smart-home",
-        "smarthome",
-        "home",
-        "iot"
-    ],
     "repository": {
         "type": "git",
         "url": "git://github.com/hoobs-org/cli.git"
@@ -20,19 +11,16 @@
         "url": "https://github.com/hoobs-org/cli/issues"
     },
     "main": "lib/cli.js",
-    "bin": {
-        "hoobs": "bin/hoobs"
-    },
+    "bin": "bin/hoobs",
     "author": {
         "name": "Michael J Kellsy"
     },
-    "engines": {
-        "node": ">=10.17.0"
+    "pkg": {
+        "assets": "var/**/*"
     },
-    "preferGlobal": true,
     "scripts": {
         "build": "bin/build --lint --pack",
-        "hoobs": "sudo bin/hoobs --mode development"
+        "hoobs": "sudo dist/hoobs --mode development"
     },
     "dependencies": {
         "archiver": "^5.0.2",
@@ -51,7 +39,8 @@
         "semver": "^7.3.2",
         "source-map-support": "^0.5.19",
         "unzipper": "^0.10.11",
-        "ws": "^7.3.1"
+        "ws": "^7.3.1",
+        "yarn": "^1.22.10"
     },
     "devDependencies": {
         "@tsconfig/node10": "^1.0.7",
@@ -75,6 +64,7 @@
         "eslint-plugin-jsx-a11y": "^6.3.1",
         "eslint-plugin-react": "^7.20.6",
         "eslint-plugin-react-hooks": "^4.1.2",
+        "pkg": "^4.4.9",
         "rimraf": "^3.0.2",
         "ts-node": "^9.0.0",
         "typescript": "^4.0.2"

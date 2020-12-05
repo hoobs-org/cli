@@ -16,7 +16,8 @@
         "rootDir": "./src",
         "strict": true,
         "esModuleInterop": true,
-        "preserveConstEnums": true
+        "preserveConstEnums": true,
+        "resolveJsonModule": true
     },
     "include": [
         "src/"

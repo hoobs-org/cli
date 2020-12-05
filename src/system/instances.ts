@@ -650,17 +650,10 @@ export default class Instances {
                             const instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
 
                             for (let i = 0; i < instances.length; i += 1) {
-                                if (State.manager === "yarn") {
-                                    execSync("yarn install --unsafe-perm --ignore-engines", {
-                                        cwd: Paths.storagePath(instances[i].id),
-                                        stdio: "inherit",
-                                    });
-                                } else {
-                                    execSync("npm install --unsafe-perm", {
-                                        cwd: Paths.storagePath(instances[i].id),
-                                        stdio: "inherit",
-                                    });
-                                }
+                                execSync(`${Paths.yarn()} install --unsafe-perm --ignore-engines`, {
+                                    cwd: Paths.storagePath(instances[i].id),
+                                    stdio: "inherit",
+                                });
                             }
 
                             if (instances.find((item) => item.type === "api") && !skip) Instances.launchService();
