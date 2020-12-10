@@ -26,6 +26,7 @@ import { join } from "path";
 import { existsSync, copyFileSync, readdirSync } from "fs-extra";
 import Paths from "./system/paths";
 import State from "./state";
+import System from "./system";
 import Instances from "./system/instances";
 import Editor from "./config/editor";
 import Extentions from "./extentions";
@@ -38,6 +39,8 @@ import { sanitize } from "./formatters";
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 const runtime: string = (process.version || "").replace(/v/gi, "");
 
+let system = System.info();
+
 export = function Command(): void {
     Program.version(`${State.version}${runtime !== "" ? ` (runtime ${runtime})` : ""}`, "-v, --version", "output the current version");
     Program.allowUnknownOption();
@@ -47,12 +50,95 @@ export = function Command(): void {
         .option("-v, --verbose", "turn on verbose logging", () => { State.verbose = true; })
         .option("-c, --container", "run in a container", () => { State.container = true; });
 
+    Program.command("initilize", { isDefault: true })
+        .description("initial setup")
+        .option("-p, --port <port>", "change the port the bridge runs on")
+        .option("-n, --pin <pin>", "set the pin for the bridge")
+        .option("-s, --skip", "skip init system intergration")
+        .action(async (command) => {
+            State.instances = Instances.list();
+
+            let spinner: Spinner.Ora;
+            let instances = [];
+
+            if (!system.node_version) {
+                system = System.runtime();
+            }
+
+            if (system.node_version) {
+                if (State.instances.findIndex((n) => n.id === "api") >= 0) {
+                    Console.warn("this system is already initilized.");
+                } else {
+                    if (process.env.USER !== "root") {
+                        Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                        return;
+                    }
+
+                    if (Number.isNaN(parseInt(command.port, 10))) {
+                        command.port = parseInt((await prompt([
+                            {
+                                type: "number",
+                                name: "port",
+                                default: "50826",
+                                message: "enter the port for the api",
+                                validate: (value: number | undefined) => {
+                                    if (!value || Number.isNaN(value)) return "invalid port number";
+                                    if (value < 1 || value > 65535) return "select a port between 1 and 65535";
+                                    if (State.instances.findIndex((n) => n.port === value) >= 0) return "port is already in use";
+
+                                    return true;
+                                },
+                            },
+                        ])).port, 10);
+                    }
+
+                    Instances.createService("API", parseInt(command.port, 10), command.pin || "031-45-154", command.skip).then((results) => {
+                        if (results) {
+                            spinner = Spinner({
+                                stream: process.stdout,
+                            }).start();
+
+                            instances = Instances.list();
+
+                            spinner.stop();
+
+                            if (instances.length > 0) {
+                                Console.table(instances.map((item) => ({
+                                    id: item.id,
+                                    type: item.type,
+                                    display: item.display,
+                                    running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                    port: item.port,
+                                    pin: item.pin,
+                                    username: item.username,
+                                })));
+                            }
+                        } else {
+                            Console.error("unable to initilize system.");
+                        }
+
+                        process.exit();
+                    });
+                }
+            } else {
+                Console.info("for more information about installing node, follow this link.");
+                Console.info("https://nodejs.dev/learn/how-to-install-nodejs");
+            }
+        });
+
     Program.command("plugin [action] [name]")
         .description("manage plugins for a given instance")
         .option("-i, --instance <name>", "set the instance name")
         .action(async (action, name, command) => {
             if (action !== "create" && process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                return;
+            }
+
+            if (!system.node_version) {
+                Console.warn("node is not installed, please initilize the system first.");
 
                 return;
             }
@@ -383,6 +469,12 @@ export = function Command(): void {
                 return;
             }
 
+            if (!system.node_version) {
+                Console.warn("node is not installed, please initilize the system first.");
+
+                return;
+            }
+
             State.instances = Instances.list();
 
             if (State.instances.findIndex((n) => n.id === "api") === -1) {
@@ -424,6 +516,12 @@ export = function Command(): void {
                 return;
             }
 
+            if (!system.node_version) {
+                Console.warn("node is not installed, please initilize the system first.");
+
+                return;
+            }
+
             State.id = sanitize(command.instance || "api");
             State.instances = Instances.list();
 
@@ -454,74 +552,6 @@ export = function Command(): void {
             Editor.nano();
         });
 
-    Program.command("initilize")
-        .description("initial setup")
-        .option("-p, --port <port>", "change the port the bridge runs on")
-        .option("-n, --pin <pin>", "set the pin for the bridge")
-        .option("-s, --skip", "skip init system intergration")
-        .action(async (command) => {
-            if (process.env.USER !== "root") {
-                Console.warn("you are running in user mode, did you forget to use 'sudo'?");
-
-                return;
-            }
-
-            State.instances = Instances.list();
-
-            let spinner: Spinner.Ora;
-            let instances = [];
-
-            if (State.instances.findIndex((n) => n.id === "api") >= 0) {
-                Console.warn("this system is already initilized.");
-            } else {
-                if (Number.isNaN(parseInt(command.port, 10))) {
-                    command.port = parseInt((await prompt([
-                        {
-                            type: "number",
-                            name: "port",
-                            default: "50826",
-                            message: "enter the port for the api",
-                            validate: (value: number | undefined) => {
-                                if (!value || Number.isNaN(value)) return "invalid port number";
-                                if (value < 1 || value > 65535) return "select a port between 1 and 65535";
-                                if (State.instances.findIndex((n) => n.port === value) >= 0) return "port is already in use";
-
-                                return true;
-                            },
-                        },
-                    ])).port, 10);
-                }
-
-                Instances.createService("API", parseInt(command.port, 10), command.pin || "031-45-154", command.skip).then((results) => {
-                    if (results) {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
-
-                        instances = Instances.list();
-
-                        spinner.stop();
-
-                        if (instances.length > 0) {
-                            Console.table(instances.map((item) => ({
-                                id: item.id,
-                                type: item.type,
-                                display: item.display,
-                                running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
-                                port: item.port,
-                                pin: item.pin,
-                                username: item.username,
-                            })));
-                        }
-                    } else {
-                        Console.error("unable to initilize system.");
-                    }
-
-                    process.exit();
-                });
-            }
-        });
-
     Program.command("instance [action]")
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
@@ -530,6 +560,12 @@ export = function Command(): void {
         .action(async (action, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
+
+                return;
+            }
+
+            if (!system.node_version) {
+                Console.warn("node is not installed, please initilize the system first.");
 
                 return;
             }
@@ -717,6 +753,12 @@ export = function Command(): void {
                 return;
             }
 
+            if (!system.node_version) {
+                Console.warn("node is not installed, please initilize the system first.");
+
+                return;
+            }
+
             State.instances = Instances.list();
 
             let spinner: Spinner.Ora;
@@ -822,6 +864,10 @@ export = function Command(): void {
             let entries: string[] = [];
 
             switch (action) {
+                case "info":
+                    Console.table([system]);
+                    break;
+
                 case "backup":
                     switch (file) {
                         case "ls":

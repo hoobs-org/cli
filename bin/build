@@ -19,19 +19,18 @@
  **************************************************************************************************/
 
 const Program = require("commander");
-const { join, dirname } = require("path");
+const { join } = require("path");
 const { execSync } = require("child_process");
 
 const {
     existsSync,
     mkdirSync,
-    realpathSync,
     readFileSync,
     removeSync,
-    writeFileSync,
+    writeFileSync
 } = require("fs-extra");
 
-const root = join(dirname(realpathSync(__filename)), "../");
+const root = join(__dirname, "../");
 const pjson = JSON.parse(readFileSync(join(root, "package.json")).toString());
 
 Program.version(pjson.version, "-v, --version", "output the current version")
@@ -69,8 +68,8 @@ Program.command("cli", { isDefault: true })
             writeFileSync(join(root, "yarn", "bin", "yarn.js"), content.replace(/require\(__dirname \+ '\//g, "require('"));
 
             execSync(`cp ${join(root, "package.json")} ${join(root, "var", "package.json")}`, { cwd: root, stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "pkg")} . --target host --options max_old_space_size=4096 --output ../dist/yarn`, { cwd: join(root, "yarn"), stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "pkg")} . --target host --options max_old_space_size=4096 --output dist/hoobs`, { cwd: root, stdio: "inherit" });
+            execSync(`${join(root, "node_modules", ".bin", "pkg")} . -t host --options max_old_space_size=4096 -o ../dist/yarn`, { cwd: join(root, "yarn"), stdio: "inherit" });
+            execSync(`${join(root, "node_modules", ".bin", "pkg")} . -t host --options max_old_space_size=4096 -o dist/hoobs`, { cwd: root, stdio: "inherit" });
             execSync(`cp ${join(root, "node_modules/node-pty/build/Release/pty.node")} ${join(root, "dist", "pty.node")}`, { cwd: root, stdio: "inherit" });
             execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "yarn")}`, { cwd: root, stdio: "inherit" });
 
