@@ -68,8 +68,8 @@ Program.command("cli", { isDefault: true })
             writeFileSync(join(root, "yarn", "bin", "yarn.js"), content.replace(/require\(__dirname \+ '\//g, "require('"));
 
             execSync(`cp ${join(root, "package.json")} ${join(root, "var", "package.json")}`, { cwd: root, stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "pkg")} . -t node12-linux-x64,node12-linux-armv7,node12-alpine-x64,node12-macos-x64 --options max_old_space_size=4096 -o ../dist/yarn`, { cwd: join(root, "yarn"), stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "pkg")} . -t node12-linux-x64,node12-linux-armv7,node12-alpine-x64,node12-macos-x64 --options max_old_space_size=4096 -o dist/hoobs`, { cwd: root, stdio: "inherit" });
+            execSync(`${join(root, "node_modules", ".bin", "pkg")} . -t node12.2.0-linux-x64,node12.2.0-linux-armv7,node12.2.0-alpine-x64,node12.2.0-macos-x64 --options max_old_space_size=4096 -o ../dist/yarn`, { cwd: join(root, "yarn"), stdio: "inherit" });
+            execSync(`${join(root, "node_modules", ".bin", "pkg")} . -t node12.2.0-linux-x64,node12.2.0-linux-armv7,node12.2.0-alpine-x64,node12.2.0-macos-x64 --options max_old_space_size=4096 -o dist/hoobs`, { cwd: root, stdio: "inherit" });
             execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "yarn")}`, { cwd: root, stdio: "inherit" });
 
             removeSync(join(root, "var", "package.json"));
