@@ -72,7 +72,7 @@ export default class Paths {
             return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
         }
 
-        return join(Paths.applicationPath(), "yarn");
+        return join(__dirname, "../../var/yarn");
     }
 
     static storagePath(instance?: string): string {

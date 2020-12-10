@@ -49,7 +49,7 @@ const state: Application = {
     timestamps: false,
     container: false,
 
-    version: loadJson<any>(existsSync(join(__dirname, "../var/package.json")) ? join(__dirname, "../var/package.json") : join(__dirname, "../package.json"), {}).version,
+    version: loadJson<any>(join(__dirname, "../var/package.json"), {}).version,
     instances: [],
 
     plugins: {},
