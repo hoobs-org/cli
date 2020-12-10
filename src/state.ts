@@ -17,7 +17,6 @@
  **************************************************************************************************/
 
 import { join } from "path";
-import { existsSync } from "fs-extra";
 import { InstanceRecord } from "./system/instances";
 import { loadJson } from "./formatters";
 
