@@ -30,7 +30,6 @@ import System from "./system";
 import Instances from "./system/instances";
 import Editor from "./config/editor";
 import Extentions from "./extentions";
-import Cockpit from "./cockpit";
 import Plugins from "./plugins";
 import Writer from "./plugins/writer";
 import { Console, LogLevel } from "./logger";
@@ -972,24 +971,6 @@ export = function Command(): void {
                     Console.info(Program.helpInformation());
                     break;
             }
-        });
-
-    Program.command("remote")
-        .description("start a remote support session")
-        .action(() => {
-            if (process.env.USER === "root") {
-                Console.warn("you are running as root, are you sure?");
-            }
-
-            State.instances = Instances.list();
-
-            const client = new Cockpit();
-
-            client.start(true).then((registration) => {
-                Console.info(`access code ${registration}`);
-            }).catch(() => {
-                Console.warn("unable to connect");
-            });
         });
 
     Program.parse(process.argv);
