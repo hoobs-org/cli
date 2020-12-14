@@ -17,6 +17,7 @@
  **************************************************************************************************/
 
 import { execSync } from "child_process";
+import { existsSync } from "fs-extra";
 import Instances from "./instances";
 import { Console } from "../logger";
 
@@ -104,13 +105,16 @@ export default class System {
     static get runtime(): { [key: string]: any } {
         return {
             info: (): { [key: string]: any } => {
-                const results: { [key: string]: any } = {};
+                let path = "/usr/local/bin/node";
 
-                results.path = System.command("command -v node") !== "" ? "node" : null;
-                results.prefix = results.path ? results.path.replace("bin/node", "") : null;
-                results.version = results.path !== "" ? System.command(`${results.path} -v`).replace("v", "") : null;
+                if (!existsSync(path)) path = "/usr/bin/node";
+                if (!existsSync(path)) path = "";
 
-                return results;
+                return {
+                    path: path !== "" ? path : null,
+                    prefix: path ? path.replace("bin/node", "") : null,
+                    version: path !== "" ? System.command(`${path} -v`).replace("v", "") : null,
+                };
             },
 
             install: (): void => {

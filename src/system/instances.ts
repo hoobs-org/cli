@@ -128,7 +128,7 @@ export default class Instances {
                         instance: "api",
                         data: {
                             title: "Instance Removed",
-                            description: `Instance "${name} removed.`,
+                            description: `Instance "${name}" removed.`,
                             type: NotificationType.WARN,
                             icon: "layers",
                         },
@@ -149,7 +149,7 @@ export default class Instances {
                         instance: "api",
                         data: {
                             title: "Instance Not Removed",
-                            description: `Unable to remove instance "${name}.`,
+                            description: `Unable to remove instance "${name}".`,
                             type: NotificationType.ERROR,
                         },
                     }).then(() => {
@@ -310,7 +310,7 @@ export default class Instances {
                     instance: "api",
                     data: {
                         title: "Instance Added",
-                        description: `Instance "${name} added.`,
+                        description: `Instance "${name}" added.`,
                         type: NotificationType.SUCCESS,
                         icon: "layers",
                     },
@@ -387,7 +387,7 @@ export default class Instances {
                             instance: "api",
                             data: {
                                 title: "Instance Added",
-                                description: `Instance "${result.name} added.`,
+                                description: `Instance "${result.name}" added.`,
                                 type: NotificationType.SUCCESS,
                                 icon: "layers",
                             },
