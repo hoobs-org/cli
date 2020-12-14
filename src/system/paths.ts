@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import File from "fs-extra";
-import { join, basename, dirname } from "path";
+import { join } from "path";
 import State from "../state";
 
 export default class Paths {
@@ -60,19 +60,11 @@ export default class Paths {
     }
 
     static applicationPath(): string {
-        if (basename(process.execPath) === "node") {
-            return join(__dirname, "../../");
-        }
-
-        return dirname(process.execPath);
+        return join(__dirname, "../../");
     }
 
     static yarn(): string {
-        if (basename(process.execPath) === "node") {
-            return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
-        }
-
-        return join(Paths.applicationPath(), "hoobs-pkg");
+        return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
     }
 
     static storagePath(instance?: string): string {

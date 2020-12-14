@@ -17,8 +17,6 @@
  **************************************************************************************************/
 
 import { execSync } from "child_process";
-import { existsSync } from "fs-extra";
-import { join } from "path";
 import Instances from "./instances";
 import { Console } from "../logger";
 
@@ -42,15 +40,10 @@ export default class System {
         results.arch = System.command("uname -m");
         results.init_system = Instances.initSystem();
 
-        if (existsSync("/usr/local/bin/node")) {
-            results.node_prefix = "/usr/local/";
-        } else if (existsSync("/usr/bin/node")) {
-            results.node_prefix = "/usr/";
-        } else {
-            results.node_prefix = null;
-        }
+        const runtime = System.runtime.info();
 
-        results.node_version = results.node_prefix !== "" ? System.command(`${join(results.node_prefix, "bin", "node")} -v`).replace("v", "") : null;
+        results.node_prefix = runtime.prefix;
+        results.node_version = runtime.version;
         results.hoobsd_running = System.running();
 
         switch (results.distribution) {
@@ -108,54 +101,66 @@ export default class System {
         return results;
     }
 
-    static runtime(): { [key: string]: any } {
-        const system = System.info();
+    static get runtime(): { [key: string]: any } {
+        return {
+            info: (): { [key: string]: any } => {
+                const results: { [key: string]: any } = {};
 
-        if (system.package_manager) {
-            switch (system.distribution) {
-                case "alpine":
-                    execSync("sed -i -e 's/v[[:digit:]]\\..*\\//edge\\//g' /etc/apk/repositories", { stdio: "inherit" });
-                    execSync(`${system.distribution} upgrade --update-cache --available`, { stdio: "inherit" });
-                    execSync(`${system.distribution} update`, { stdio: "inherit" });
-                    execSync(`${system.distribution} add nodejs`, { stdio: "inherit" });
-                    break;
+                results.path = System.command("command -v node") !== "" ? "node" : null;
+                results.prefix = results.path ? results.path.replace("bin/node", "") : null;
+                results.version = results.path !== "" ? System.command(`${results.path} -v`).replace("v", "") : null;
 
-                case "ubuntu":
-                case "debian":
-                case "raspbian":
-                    switch (system.arch) {
-                        case "x86_64":
-                        case "amd64":
-                        case "armv7l":
-                        case "armhf":
-                        case "arm64":
-                            execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash -", { stdio: "inherit" });
+                return results;
+            },
+
+            install: (): void => {
+                const system = System.info();
+
+                if (system.package_manager) {
+                    switch (system.distribution) {
+                        case "alpine":
+                            execSync("sed -i -e 's/v[[:digit:]]\\..*\\//edge\\//g' /etc/apk/repositories", { stdio: "inherit" });
+                            execSync(`${system.distribution} upgrade --update-cache --available`, { stdio: "inherit" });
                             execSync(`${system.distribution} update`, { stdio: "inherit" });
-                            execSync(`${system.distribution} install -y build-essential nodejs`, { stdio: "inherit" });
+                            execSync(`${system.distribution} add nodejs`, { stdio: "inherit" });
+                            break;
+
+                        case "ubuntu":
+                        case "debian":
+                        case "raspbian":
+                            switch (system.arch) {
+                                case "x86_64":
+                                case "amd64":
+                                case "armv7l":
+                                case "armhf":
+                                case "arm64":
+                                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash -", { stdio: "inherit" });
+                                    execSync(`${system.distribution} update`, { stdio: "inherit" });
+                                    execSync(`${system.distribution} install -y build-essential nodejs`, { stdio: "inherit" });
+                                    break;
+
+                                default:
+                                    Console.error(`unsupported architecture "${system.arch}", node must be installed manually.`);
+                                    break;
+                            }
+
+                            break;
+
+                        case "fedora":
+                        case "rhel":
+                        case "centos":
+                            execSync("curl -sL https://rpm.nodesource.com/setup_lts.x | bash -", { stdio: "inherit" });
+                            execSync(`${system.distribution} install -y gcc-c++ make nodejs`, { stdio: "inherit" });
                             break;
 
                         default:
-                            Console.error(`unsupported architecture "${system.arch}", node must be installed manually.`);
+                            Console.error(`unsupported distribution "${system.distribution}", node must be installed manually.`);
                             break;
                     }
-
-                    break;
-
-                case "fedora":
-                case "rhel":
-                case "centos":
-                    execSync("curl -sL https://rpm.nodesource.com/setup_lts.x | bash -", { stdio: "inherit" });
-                    execSync(`${system.distribution} install -y gcc-c++ make nodejs`, { stdio: "inherit" });
-                    break;
-
-                default:
-                    Console.error(`unsupported distribution "${system.distribution}", node must be installed manually.`);
-                    break;
-            }
-        } else {
-            Console.error("unknown package manager, node must be installed manually.");
-        }
-
-        return System.info();
+                } else {
+                    Console.error("unknown package manager, node must be installed manually.");
+                }
+            },
+        };
     }
 }

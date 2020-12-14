@@ -48,7 +48,7 @@ const state: Application = {
     timestamps: false,
     container: false,
 
-    version: loadJson<any>(join(__dirname, "../var/package.json"), {}).version,
+    version: loadJson<any>(join(__dirname, "../package.json"), {}).version,
     instances: [],
 
     plugins: {},
