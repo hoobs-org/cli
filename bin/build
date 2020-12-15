@@ -25,9 +25,12 @@ const { execSync } = require("child_process");
 const {
     existsSync,
     mkdirSync,
+    unlinkSync,
     readFileSync,
-    removeSync,
-    writeFileSync
+    writeFileSync,
+    copyFileSync,
+    moveSync,
+    copySync,
 } = require("fs-extra");
 
 const root = join(__dirname, "../");
@@ -42,15 +45,38 @@ Program.command("cli", { isDefault: true })
     .option("-p, --pack", "create pack file for offline testing")
     .action((command) => {
         if (command.lint) execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, { cwd: root, stdio: "inherit" });
-        if (!existsSync(join(root, "lib"))) mkdirSync(join(root, "lib"));
+        if (existsSync(join(root, "lib"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, { cwd: root, stdio: "inherit" });
 
-        execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, { cwd: root, stdio: "inherit" });
+        mkdirSync(join(root, "lib"))
+        mkdirSync(join(root, "lib/hoobs"))
+
         execSync(`${join(root, "node_modules", ".bin", "tsc")}`, { cwd: root, stdio: "inherit" });
+        copySync(join(root, "var"), join(root, "lib/hoobs/static"));
 
         if (command.pack) {
-            execSync("yarn pack", { cwd: root, stdio: "inherit" });
-            execSync(`mv ${join(root, `hoobs-cli-v${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, { cwd: root, stdio: "inherit" });
-            execSync(`chmod 755 ${join(root, "lib", "package.tgz")}`, { cwd: root, stdio: "inherit" });
+            if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });;
+
+            mkdirSync(join(root, "dist"));
+            mkdirSync(join(root, "dist/bin"));
+
+            copyFileSync(join(root, "bin", "hoobs"), join(root, "dist/bin", "hoobs"));
+            copySync(join(root, "lib"), join(root, "dist/lib"));
+
+            delete pjson.scripts;
+            delete pjson.devDependencies;
+
+            pjson.main = "cli.js";
+
+            writeFileSync(join(root, "dist/lib/hoobs", "package.json"), JSON.stringify(pjson, null, 4));
+
+            execSync(`chmod 755 ${join(root, "dist/bin", "hoobs")}`, { cwd: root, stdio: "inherit" });
+            execSync(`tar -zcf ../hoobs-cli-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
+
+            if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
+            if (!existsSync(join(root, "../builds")))  mkdirSync(join(root, "../builds"));
+            if (existsSync(join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`))
+
+            moveSync(join(root, `hoobs-cli-${pjson.version}.tar.gz`), join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`));
         }
     });
 

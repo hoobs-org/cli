@@ -20,4 +20,4 @@
 
 process.title = "hoobs";
 
-require("../lib/cli")();
+require("../lib/hoobs/cli")();

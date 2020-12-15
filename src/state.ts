@@ -17,6 +17,7 @@
  **************************************************************************************************/
 
 import { join } from "path";
+import { existsSync } from "fs-extra";
 import { InstanceRecord } from "./system/instances";
 import { loadJson } from "./formatters";
 
@@ -48,7 +49,7 @@ const state: Application = {
     timestamps: false,
     container: false,
 
-    version: loadJson<any>(join(__dirname, "../package.json"), {}).version,
+    version: loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
     instances: [],
 
     plugins: {},

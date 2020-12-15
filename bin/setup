@@ -1,0 +1,441 @@
+#!/bin/bash
+
+##################################################################################################
+# hoobs-cli                                                                                      #
+# Copyright (C) 2020 HOOBS                                                                       #
+#                                                                                                #
+# This program is free software: you can redistribute it and/or modify                           #
+# it under the terms of the GNU General Public License as published by                           #
+# the Free Software Foundation, either version 3 of the License, or                              #
+# (at your option) any later version.                                                            #
+#                                                                                                #
+# This program is distributed in the hope that it will be useful,                                #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of                                 #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                  #
+# GNU General Public License for more details.                                                   #
+#                                                                                                #
+# You should have received a copy of the GNU General Public License                              #
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.                          #
+##################################################################################################
+
+CURRENT_DIRECTORY=$PWD
+DEBUG="false"
+FORCE_REBUILD="false"
+
+usage()
+{
+    echo ""
+    echo "help: setup [-d | --debug] [--rebuild]"
+    echo "    Display information about builtin commands."
+    echo ""
+    echo "    Installs HOOBS with prerequisites, including Node, NPM and Avachi."
+    echo ""
+    echo "    Note:"
+    echo "        This script requires elevated permissions, please run this with"
+    echo "        SUDO or ROOT privileges."
+    echo ""
+    echo "    Options:"
+    echo "        -d, --debug    show debug information"
+    echo "        --rebuild      force component rebuild"
+    echo "        --help         displays this help menu"
+    echo ""
+    echo "    Returns:"
+    echo "        Returns success unless the install fails."
+    echo ""
+}
+
+print_info() {
+    echo
+    echo "User: $USER"
+    echo "Directory: $PWD"
+    echo
+    echo "OS Arch: $OS_ARCH"
+    echo "OS Base: $OS_BASE"
+    echo "OS Name: $OS_NAME"
+    echo "OS Version: $OS_VERSION"
+    echo
+    echo "Node Installed: $NODE_INSTALLED"
+    echo "Node Version: $NODE_VERSION"
+    echo "Node Prefix: $NODE_PREFIX"
+    echo "Node Release: $NODE_RELEASE"
+    echo "Node Upgraded: $NODE_UPGRADED"
+    echo
+    echo "HOOBSD Installed: $HOOBSD_INSTALLED"
+    echo "HOOBSD Version: $HOOBSD_VERSION"
+    echo "HOOBSD Prefix: $HOOBSD_PREFIX"
+    echo "HOOBSD Mode: $HOOBSD_MODE"
+    echo
+    echo "HOOBS CLI Installed: $HOOBS_CLI_INSTALLED"
+    echo "HOOBS CLI Version: $HOOBS_CLI_VERSION"
+    echo "HOOBS CLI Prefix: $HOOBS_CLI_PREFIX"
+    echo "HOOBS CLI Mode: $HOOBS_CLI_MODE"
+    echo
+}
+
+version_compare() {
+    if [[ $1 == $2 ]]; then
+        return 0
+    fi
+
+    local IFS='.'
+    local i left=($1) right=($2)
+
+    for ((i=${#left[@]}; i<${#right[@]}; i++))
+    do
+        left[i]=0
+    done
+
+    for ((i=0; i<${#left[@]}; i++))
+    do
+        if [[ -z ${right[i]} ]]; then
+            right[i]=0
+        fi
+
+        if ((10#${left[i]} > 10#${right[i]})); then
+            return 1
+        fi
+
+        if ((10#${left[i]} < 10#${right[i]})); then
+            return 2
+        fi
+    done
+
+    return 0
+}
+
+get_os() {
+    OS_BASE=$(uname)
+    OS_BASE=${OS_BASE,,}
+    OS_ARCH=$(uname -m)
+    OS_NAME=unknown
+    OS_VERSION=unknown
+
+    if [ "_${OS_ARCH}" == "_i686" ]; then
+        OS_ARCH=i386
+    elif [ "_${OS_ARCH}" == "_x86_64" ]; then
+        OS_ARCH=x86_64
+    elif [ "_${OS_ARCH}" == "_aarch64" ]; then
+        OS_ARCH=aarch64
+    fi
+
+    case $OS_BASE in
+        "darwin")
+            OS_NAME=$(sw_vers -productName)
+            OS_NAME=${OS_NAME,,}
+            OS_VERSION=$(sw_vers -productVersion)
+            ;;
+
+        "linux")
+            content=$(cat /etc/*-release | grep =)
+
+            eval $content
+
+            if [ "_$ID_LIKE" != "_" ]; then
+                OS_NAME=$ID_LIKE
+            else
+                OS_NAME=$ID
+            fi
+
+            OS_NAME=${OS_NAME,,}
+            OS_VERSION=$VERSION_ID
+            ;;
+    esac
+
+    if command -v dnf > /dev/null; then
+        OS_PACKAGE_MNGR="dnf"
+    elif command -v yum > /dev/null; then
+        OS_PACKAGE_MNGR="yum"
+    elif command -v apt-get > /dev/null; then
+        OS_PACKAGE_MNGR="apt-get"
+    elif command -v apk > /dev/null; then
+        OS_PACKAGE_MNGR="apk"
+    fi
+}
+
+get_node()
+{
+    NODE_INSTALLED="false"
+    NODE_VERSION=""
+    NODE_PREFIX="/usr/local"
+
+    if command -v node > /dev/null; then
+        NODE_INSTALLED="true"
+        NODE_VERSION=$(node -v)
+        NODE_VERSION=${NODE_VERSION#"v"}
+
+        WORKING="$PATH"
+
+        local IFS=':'
+
+        read -ra ADDR <<< "$WORKING"
+
+        for DIR in "${ADDR[@]}";
+        do
+            if [[ -f "$DIR/node" ]]; then
+                NODE_PREFIX="$(cd $DIR/../;pwd)/"
+
+                break
+            fi
+        done
+
+        case $OS_NAME in
+            "alpine")
+                $OS_PACKAGE_MNGR sudo update > /dev/null
+                NODE_RELEASE=$($OS_PACKAGE_MNGR version nodejs | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d' | awk -F'[,]' '{print $2}' | awk -F'[=]' '{print $2}' | awk -F'[ ]' '{print $2}' | awk -F'[-]' '{print $1}')
+                NODE_UPGRADED="false"
+
+                version_compare $NODE_VERSION $NODE_RELEASE
+
+                case $? in
+                    0) NODE_UPGRADED="true";;
+                    1) NODE_UPGRADED="true";;
+                    2) NODE_UPGRADED="false";;
+                esac
+
+                ;;
+
+            "debian" | "raspbian" | "ubuntu")
+                $OS_PACKAGE_MNGR update > /dev/null
+                NODE_RELEASE=$(apt-cache show nodejs | grep Version | awk -F'[-~ ]' '{print $2}' | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d' | awk -F'[,]' '{print $1}')
+                NODE_UPGRADED="false"
+
+                version_compare $NODE_VERSION $NODE_RELEASE
+
+                case $? in
+                    0) NODE_UPGRADED="true";;
+                    1) NODE_UPGRADED="true";;
+                    2) NODE_UPGRADED="false";;
+                esac
+
+                ;;
+
+            "fedora" | "rhel" | "centos")
+                NODE_RELEASE=$NODE_VERSION
+                NODE_UPGRADED="false"
+
+                version_compare $NODE_VERSION $NODE_RELEASE
+
+                case $? in
+                    0) NODE_UPGRADED="true";;
+                    1) NODE_UPGRADED="true";;
+                    2) NODE_UPGRADED="false";;
+                esac
+
+                ;;
+        esac
+    fi
+}
+
+get_hoobs_cli()
+{
+    HOOBS_CLI_INSTALLED="false"
+    HOOBS_CLI_VERSION=""
+    HOOBS_CLI_PREFIX="/usr/local"
+    HOOBS_CLI_MODE="none"
+
+    if command -v hoobs > /dev/null; then
+        HOOBS_CLI_INSTALLED="true"
+        HOOBS_CLI_VERSION=$(hoobs -v)
+
+        WORKING="$PATH"
+
+        local IFS=':'
+
+        read -ra ADDR <<< "$WORKING"
+
+        for DIR in "${ADDR[@]}";
+        do
+            if [[ -f "$DIR/hoobs" ]]; then
+                HOOBS_CLI_PREFIX="$(cd $DIR/../;pwd)/"
+
+                break
+            fi
+        done
+
+        if [[ -f "$HOOBS_CLI_PREFIX/lib/hoobs/package.json" ]]; then
+            HOOBS_CLI_MODE="production"
+        elif [[ -f "$HOOBS_CLI_PREFIX/package.json" ]]; then
+            HOOBS_CLI_MODE="development"
+        fi
+    fi
+}
+
+get_hoobsd()
+{
+    HOOBSD_INSTALLED="false"
+    HOOBSD_VERSION=""
+    HOOBSD_PREFIX="/usr/local"
+    HOOBSD_MODE="none"
+
+    if command -v hoobsd > /dev/null; then
+        HOOBSD_INSTALLED="true"
+        HOOBSD_VERSION=$(hoobsd -v)
+
+        WORKING="$PATH"
+
+        local IFS=':'
+
+        read -ra ADDR <<< "$WORKING"
+
+        for DIR in "${ADDR[@]}";
+        do
+            if [[ -f "$DIR/hoobsd" ]]; then
+                HOOBSD_PREFIX="$(cd $DIR/../;pwd)/"
+
+                break
+            fi
+        done
+
+        if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
+            HOOBSD_MODE="production"
+        elif [[ -f "$HOOBSD_PREFIX/package.json" ]]; then
+            HOOBSD_MODE="development"
+        fi
+    fi
+}
+
+configure_repos() {
+    case $OS_NAME in
+        "alpine")
+            sed -i -e 's/v[[:digit:]]\\..*\\//edge\\//g' /etc/apk/repositories
+            $OS_PACKAGE_MNGR upgrade --update-cache --available
+            ;;
+
+        "debian" | "raspbian" | "ubuntu")
+            curl -sL https://deb.nodesource.com/setup_lts.x | bash -
+            ;;
+
+        "fedora" | "rhel" | "centos")
+            curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
+            ;;
+    esac
+}
+
+install_node() {
+    case $OS_NAME in
+        "alpine")
+            $OS_PACKAGE_MNGR update
+            $OS_PACKAGE_MNGR add curl tar git python3 make gcc g++ nodejs yarn
+            ;;
+
+        "debian" | "raspbian" | "ubuntu")
+            $OS_PACKAGE_MNGR update
+            $OS_PACKAGE_MNGR install -y apt-get install curl tar git python3 make gcc g++ nodejs yarn
+            ;;
+
+        "fedora" | "rhel" | "centos")
+            $OS_PACKAGE_MNGR install -y curl tar git policycoreutils python3 make gcc gcc-c++
+            ;;
+    esac
+}
+
+while [ "$1" != "" ]; do
+    case $1 in
+        -d | --debug )  DEBUG="true"
+                        ;;
+
+        --rebuild )     FORCE_REBUILD="true"
+                        ;;
+
+        * )             usage
+                        exit
+    esac
+
+    shift
+done
+
+if test -t 1; then # if terminal
+    SHELL_COLORS=$(which tput > /dev/null && tput colors)
+
+    if test -n "$SHELL_COLORS" && test $SHELL_COLORS -ge 8; then
+        BOLD="$(tput bold)"
+        UNDERLINE="$(tput smul)"
+        STANDOUT="$(tput smso)"
+        NORMAL="$(tput sgr0)"
+        BLACK="$(tput setaf 0)"
+        RED="$(tput setaf 1)"
+        GREEN="$(tput setaf 2)"
+        YELLOW="$(tput setaf 3)"
+        BLUE="$(tput setaf 4)"
+        MAGENTA="$(tput setaf 5)"
+        CYAN="$(tput setaf 6)"
+        WHITE="$(tput setaf 7)"
+    fi
+fi
+
+if [ "$USER" != "root" ]; then
+    echo
+    echo "${BOLD}${YELLOW}root is required, did you forget to use 'sudo'?"
+    echo
+
+    exit 1
+fi
+
+get_os
+get_node
+get_hoobsd
+get_hoobs_cli
+
+if [[ "$NODE_INSTALLED" = "false" || "$NODE_UPGRADED" == "false" ]]; then
+    echo "installing node"
+
+    configure_repos
+    install_node
+    get_node
+
+    if [[ "$NODE_UPGRADED" == "false" ]]; then
+        echo
+        echo "${BOLD}${RED}node failed to upgrade"
+        echo
+
+        exit 1
+    else
+        GYP_REBUILD="true"
+    fi
+else
+    echo "node already up-to-date"
+fi
+
+if [[ "$HOOBS_CLI_INSTALLED" == "false" ]]; then
+    echo "installing hoobs cli components"
+elif [[ "$GYP_REBUILD" == "true" || "$FORCE_REBUILD" == "true" ]]; then
+    echo "rebuilding hoobs cli components"
+
+    case $HOOBS_CLI_MODE in
+        "production")
+            cd $HOOBS_CLI_PREFIX/lib/hoobs
+            ;;
+
+        "development")
+            cd $HOOBS_CLI_PREFIX
+            ;;
+    esac
+
+    ./node_modules/yarn/bin/yarn install --force --production
+
+    cd $CURRENT_DIRECTORY
+fi
+
+if [[ "$HOOBSD_INSTALLED" == "false" ]]; then
+    echo "installing hoobsd components"
+elif [[ "$GYP_REBUILD" == "true" || "$FORCE_REBUILD" == "true" ]]; then
+    echo "rebuilding hoobsd components"
+
+    case $HOOBSD_MODE in
+        "production")
+            cd $HOOBSD_PREFIX/lib/hoobsd
+            ;;
+
+        "development")
+            cd $HOOBSD_PREFIX
+            ;;
+    esac
+
+    ./node_modules/yarn/bin/yarn install --force --production
+
+    cd $CURRENT_DIRECTORY
+fi
+
+if [[ "$DEBUG" == "true" ]]; then
+    print_info
+fi

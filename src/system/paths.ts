@@ -60,7 +60,7 @@ export default class Paths {
     }
 
     static applicationPath(): string {
-        return join(__dirname, "../../");
+        return File.existsSync(join(__dirname, "../package.json")) ? join(__dirname, "../") : join(__dirname, "../../../");
     }
 
     static yarn(): string {

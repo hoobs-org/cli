@@ -11,12 +11,8 @@
         "url": "https://github.com/hoobs-org/cli/issues"
     },
     "main": "lib/cli.js",
-    "bin": "bin/hoobs",
     "author": {
         "name": "Michael J Kellsy"
-    },
-    "pkg": {
-        "assets": "var/**/*"
     },
     "scripts": {
         "build": "bin/build --lint --pack",

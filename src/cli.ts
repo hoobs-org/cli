@@ -36,16 +36,15 @@ import { Console, LogLevel } from "./logger";
 import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
-const runtime: string = (process.version || "").replace(/v/gi, "");
 
 export = function Command(): void {
-    Program.version(`${State.version}${runtime !== "" ? ` (runtime ${runtime})` : ""}`, "-v, --version", "output the current version");
+    Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
     Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { State.mode = mode; })
         .option("-d, --debug", "turn on debug level logging", () => { State.debug = true; })
-        .option("-v, --verbose", "turn on verbose logging", () => { State.verbose = true; })
-        .option("-c, --container", "run in a container", () => { State.container = true; });
+        .option("--container", "run in a container", () => { State.container = true; })
+        .option("--verbose", "turn on verbose logging", () => { State.verbose = true; });
 
     Program.command("initilize", { isDefault: true })
         .description("initial setup")

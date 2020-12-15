@@ -180,14 +180,14 @@ export default class Writer {
         File.ensureDirSync(data.path);
         File.ensureDirSync(join(data.path, "static"));
 
-        File.writeFileSync(join(data.path, "static", "index.html"), File.readFileSync(join(__dirname, "../../var/index.html")).toString());
+        File.writeFileSync(join(data.path, "static", "index.html"), File.readFileSync(join(__dirname, "../static/index.html")).toString());
 
         if (data.typescript) {
             File.ensureDirSync(join(data.path, "src"));
-            File.writeFileSync(join(data.path, "src", "routes.ts"), File.readFileSync(join(__dirname, "../../var/typescript/routes.ts")).toString());
+            File.writeFileSync(join(data.path, "src", "routes.ts"), File.readFileSync(join(__dirname, "../static/typescript/routes.ts")).toString());
         } else {
             File.ensureDirSync(join(data.path, "lib"));
-            File.writeFileSync(join(data.path, "lib", "routes.js"), File.readFileSync(join(__dirname, "../../var/javascript/routes.js")).toString());
+            File.writeFileSync(join(data.path, "lib", "routes.js"), File.readFileSync(join(__dirname, "../static/javascript/routes.js")).toString());
         }
     }
 
@@ -195,9 +195,9 @@ export default class Writer {
         File.ensureDirSync(data.path);
         File.ensureDirSync(join(data.path, "src"));
 
-        File.writeFileSync(join(data.path, "src", "index.ts"), File.readFileSync(join(__dirname, "../../var/typescript/index.ts")).toString());
-        File.writeFileSync(join(data.path, "src", "platform.ts"), File.readFileSync(join(__dirname, "../../var/typescript/platform.ts")).toString());
-        File.writeFileSync(join(data.path, "src", "accessory.ts"), File.readFileSync(join(__dirname, "../../var/typescript/accessory.ts")).toString());
+        File.writeFileSync(join(data.path, "src", "index.ts"), File.readFileSync(join(__dirname, "../static/typescript/index.ts")).toString());
+        File.writeFileSync(join(data.path, "src", "platform.ts"), File.readFileSync(join(__dirname, "../static/typescript/platform.ts")).toString());
+        File.writeFileSync(join(data.path, "src", "accessory.ts"), File.readFileSync(join(__dirname, "../static/typescript/accessory.ts")).toString());
 
         let settings = "";
 
@@ -211,9 +211,9 @@ export default class Writer {
         File.ensureDirSync(data.path);
         File.ensureDirSync(join(data.path, "lib"));
 
-        File.writeFileSync(join(data.path, "lib", "index.js"), File.readFileSync(join(__dirname, "../../var/javascript/index.js")).toString());
-        File.writeFileSync(join(data.path, "lib", "platform.js"), File.readFileSync(join(__dirname, "../../var/javascript/platform.js")).toString());
-        File.writeFileSync(join(data.path, "lib", "accessory.js"), File.readFileSync(join(__dirname, "../../var/javascript/accessory.js")).toString());
+        File.writeFileSync(join(data.path, "lib", "index.js"), File.readFileSync(join(__dirname, "../static/javascript/index.js")).toString());
+        File.writeFileSync(join(data.path, "lib", "platform.js"), File.readFileSync(join(__dirname, "../static/javascript/platform.js")).toString());
+        File.writeFileSync(join(data.path, "lib", "accessory.js"), File.readFileSync(join(__dirname, "../static/javascript/accessory.js")).toString());
 
         let settings = "";
 
@@ -560,24 +560,24 @@ export default class Writer {
         File.ensureDirSync(data.path);
 
         if (data.typescript) {
-            File.writeFileSync(join(data.path, ".eslintrc"), File.readFileSync(join(__dirname, "../../var/typescript/eslintrc")).toString());
+            File.writeFileSync(join(data.path, ".eslintrc"), File.readFileSync(join(__dirname, "../static/typescript/eslintrc")).toString());
         } else {
-            File.writeFileSync(join(data.path, ".eslintrc"), File.readFileSync(join(__dirname, "../../var/javascript/eslintrc")).toString());
+            File.writeFileSync(join(data.path, ".eslintrc"), File.readFileSync(join(__dirname, "../static/javascript/eslintrc")).toString());
         }
     }
 
     static tsconfig(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
-        File.writeFileSync(join(data.path, "tsconfig.json"), File.readFileSync(join(__dirname, "../../var/typescript/tsconfig")).toString());
+        File.writeFileSync(join(data.path, "tsconfig.json"), File.readFileSync(join(__dirname, "../static/typescript/tsconfig")).toString());
     }
 
     static npmignore(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
-        File.writeFileSync(join(data.path, ".npmignore"), File.readFileSync(join(__dirname, "../../var/npmignore")).toString());
+        File.writeFileSync(join(data.path, ".npmignore"), File.readFileSync(join(__dirname, "../static/npmignore")).toString());
     }
 
     static gitignore(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
-        File.writeFileSync(join(data.path, ".gitignore"), File.readFileSync(join(__dirname, "../../var/gitignore")).toString());
+        File.writeFileSync(join(data.path, ".gitignore"), File.readFileSync(join(__dirname, "../static/gitignore")).toString());
     }
 }
