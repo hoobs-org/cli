@@ -19,6 +19,7 @@
 ##################################################################################################
 
 CURRENT_DIRECTORY=$PWD
+
 DEBUG="false"
 FORCE_REBUILD="false"
 
@@ -42,34 +43,6 @@ usage()
     echo "    Returns:"
     echo "        Returns success unless the install fails."
     echo ""
-}
-
-print_info() {
-    echo
-    echo "User: $USER"
-    echo "Directory: $PWD"
-    echo
-    echo "OS Arch: $OS_ARCH"
-    echo "OS Base: $OS_BASE"
-    echo "OS Name: $OS_NAME"
-    echo "OS Version: $OS_VERSION"
-    echo
-    echo "Node Installed: $NODE_INSTALLED"
-    echo "Node Version: $NODE_VERSION"
-    echo "Node Prefix: $NODE_PREFIX"
-    echo "Node Release: $NODE_RELEASE"
-    echo "Node Upgraded: $NODE_UPGRADED"
-    echo
-    echo "HOOBSD Installed: $HOOBSD_INSTALLED"
-    echo "HOOBSD Version: $HOOBSD_VERSION"
-    echo "HOOBSD Prefix: $HOOBSD_PREFIX"
-    echo "HOOBSD Mode: $HOOBSD_MODE"
-    echo
-    echo "HOOBS CLI Installed: $HOOBS_CLI_INSTALLED"
-    echo "HOOBS CLI Version: $HOOBS_CLI_VERSION"
-    echo "HOOBS CLI Prefix: $HOOBS_CLI_PREFIX"
-    echo "HOOBS CLI Mode: $HOOBS_CLI_MODE"
-    echo
 }
 
 version_compare() {
@@ -156,7 +129,7 @@ get_node()
 {
     NODE_INSTALLED="false"
     NODE_VERSION=""
-    NODE_PREFIX="/usr/local"
+    NODE_PREFIX="/usr/"
 
     if command -v node > /dev/null; then
         NODE_INSTALLED="true"
@@ -181,6 +154,7 @@ get_node()
         case $OS_NAME in
             "alpine")
                 $OS_PACKAGE_MNGR sudo update > /dev/null
+
                 NODE_RELEASE=$($OS_PACKAGE_MNGR version nodejs | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d' | awk -F'[,]' '{print $2}' | awk -F'[=]' '{print $2}' | awk -F'[ ]' '{print $2}' | awk -F'[-]' '{print $1}')
                 NODE_UPGRADED="false"
 
@@ -196,6 +170,7 @@ get_node()
 
             "debian" | "raspbian" | "ubuntu")
                 $OS_PACKAGE_MNGR update > /dev/null
+
                 NODE_RELEASE=$(apt-cache show nodejs | grep Version | awk -F'[-~ ]' '{print $2}' | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d' | awk -F'[,]' '{print $1}')
                 NODE_UPGRADED="false"
 
@@ -210,7 +185,7 @@ get_node()
                 ;;
 
             "fedora" | "rhel" | "centos")
-                NODE_RELEASE=$NODE_VERSION
+                NODE_RELEASE=$NODE_VERSION # GET VERSION FROM DNF
                 NODE_UPGRADED="false"
 
                 version_compare $NODE_VERSION $NODE_RELEASE
@@ -230,8 +205,9 @@ get_hoobs_cli()
 {
     HOOBS_CLI_INSTALLED="false"
     HOOBS_CLI_VERSION=""
-    HOOBS_CLI_PREFIX="/usr/local"
+    HOOBS_CLI_PREFIX="/usr/"
     HOOBS_CLI_MODE="none"
+    HOOBS_CLI_RELEASE_URL=""
 
     if command -v hoobs > /dev/null; then
         HOOBS_CLI_INSTALLED="true"
@@ -252,9 +228,50 @@ get_hoobs_cli()
             fi
         done
 
+        local release=$(curl -s https://api.github.com/repos/hoobs-org/cli/releases/latest)
+        local extract="import os, json
+
+try:
+    print(json.loads(os.environ['release'])['tag_name'])
+except:
+    print('')"
+
+        export release
+
+        HOOBS_CLI_RELEASE=$(python3 -c "${extract}")
+        HOOBS_CLI_RELEASE=${HOOBS_CLI_RELEASE#"v"}
+        HOOBS_CLI_RELEASE_ASSET="hoobs-cli-$HOOBSD_RELEASE.tar.gz"
+
+        local script="import os, json
+
+result = ''
+data = json.loads(os.environ['release'])
+
+try:
+    for entry in data['assets']:
+        if entry['name'] == '$HOOBS_CLI_RELEASE_ASSET':
+            result = entry['browser_download_url']
+except:
+    result = ''
+
+print(result);"
+
+        HOOBS_CLI_RELEASE_URL=$(python3 -c "${script}")
+
         if [[ -f "$HOOBS_CLI_PREFIX/lib/hoobs/package.json" ]]; then
+            HOOBS_CLI_UPGRADED="false"
+
+            version_compare $HOOBS_CLI_VERSION $HOOBS_CLI_RELEASE
+
+            case $? in
+                0) HOOBS_CLI_UPGRADED="true";;
+                1) HOOBS_CLI_UPGRADED="true";;
+                2) HOOBS_CLI_UPGRADED="false";;
+            esac
+
             HOOBS_CLI_MODE="production"
         elif [[ -f "$HOOBS_CLI_PREFIX/package.json" ]]; then
+            HOOBS_CLI_UPGRADED="true"
             HOOBS_CLI_MODE="development"
         fi
     fi
@@ -264,8 +281,9 @@ get_hoobsd()
 {
     HOOBSD_INSTALLED="false"
     HOOBSD_VERSION=""
-    HOOBSD_PREFIX="/usr/local"
+    HOOBSD_PREFIX="/usr/"
     HOOBSD_MODE="none"
+    HOOBSD_RELEASE_URL=""
 
     if command -v hoobsd > /dev/null; then
         HOOBSD_INSTALLED="true"
@@ -286,9 +304,50 @@ get_hoobsd()
             fi
         done
 
+        local release=$(curl -s https://api.github.com/repos/hoobs-org/hoobsd/releases/latest)
+        local extract="import os, json
+
+try:
+    print(json.loads(os.environ['release'])['tag_name'])
+except:
+    print('')"
+
+        export release
+
+        HOOBSD_RELEASE=$(python3 -c "${extract}")
+        HOOBSD_RELEASE=${HOOBSD_RELEASE#"v"}
+        HOOBSD_RELEASE_ASSET="hoobsd-$HOOBSD_RELEASE.tar.gz"
+
+        local script="import os, json
+
+result = ''
+data = json.loads(os.environ['release'])
+
+try:
+    for entry in data['assets']:
+        if entry['name'] == '$HOOBSD_RELEASE_ASSET':
+            result = entry['browser_download_url']
+except:
+    result = ''
+
+print(result)"
+
+        HOOBSD_RELEASE_URL=$(python3 -c "${script}")
+
         if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
+            HOOBSD_UPGRADED="false"
+
+            version_compare $HOOBSD_VERSION $HOOBSD_RELEASE
+
+            case $? in
+                0) HOOBSD_UPGRADED="true";;
+                1) HOOBSD_UPGRADED="true";;
+                2) HOOBSD_UPGRADED="false";;
+            esac
+
             HOOBSD_MODE="production"
         elif [[ -f "$HOOBSD_PREFIX/package.json" ]]; then
+            HOOBSD_UPGRADED="true"
             HOOBSD_MODE="development"
         fi
     fi
@@ -324,9 +383,25 @@ install_node() {
             ;;
 
         "fedora" | "rhel" | "centos")
-            $OS_PACKAGE_MNGR install -y curl tar git policycoreutils python3 make gcc gcc-c++
+            $OS_PACKAGE_MNGR install -y curl tar git policycoreutils python3 make gcc gcc-c++ nodejs yarn
             ;;
     esac
+}
+
+gyp_rebuild() {
+    case $3 in
+        "production")
+            cd $1/lib/$2
+            ;;
+
+        "development")
+            cd $1
+            ;;
+    esac
+
+    yarn install --force --production
+
+    cd $CURRENT_DIRECTORY
 }
 
 while [ "$1" != "" ]; do
@@ -363,6 +438,12 @@ if test -t 1; then # if terminal
     fi
 fi
 
+if [[ "$DEBUG" == "true" ]]; then
+    echo ""
+    echo "User: $USER"
+    echo "Directory: $PWD"
+fi
+
 if [ "$USER" != "root" ]; then
     echo
     echo "${BOLD}${YELLOW}root is required, did you forget to use 'sudo'?"
@@ -372,70 +453,127 @@ if [ "$USER" != "root" ]; then
 fi
 
 get_os
+
+if [[ "$DEBUG" == "true" ]]; then
+    echo ""
+    echo "os arch: $OS_ARCH"
+    echo "os base: $OS_BASE"
+    echo "os name: $OS_NAME"
+    echo "os version: $OS_VERSION"
+    echo ""
+fi
+
+echo "fetching version information"
+
 get_node
 get_hoobsd
 get_hoobs_cli
 
+if [[ "$DEBUG" == "true" ]]; then
+    echo ""
+    echo "node installed: $NODE_INSTALLED"
+    echo "node version: $NODE_VERSION"
+    echo "node prefix: $NODE_PREFIX"
+    echo "node release: $NODE_RELEASE"
+    echo "node upgraded: $NODE_UPGRADED"
+fi
+
 if [[ "$NODE_INSTALLED" = "false" || "$NODE_UPGRADED" == "false" ]]; then
-    echo "installing node"
+    if [[ "$NODE_INSTALLED" = "true" ]]; then
+        echo "upgrading node to $NODE_RELEASE"
+    else
+        echo "installing node $NODE_RELEASE"
+    fi
 
     configure_repos
     install_node
     get_node
 
     if [[ "$NODE_UPGRADED" == "false" ]]; then
-        echo
-        echo "${BOLD}${RED}node failed to upgrade"
-        echo
+        echo "${BOLD}${RED}node install failed"
 
         exit 1
     else
         GYP_REBUILD="true"
     fi
 else
-    echo "node already up-to-date"
-fi
-
-if [[ "$HOOBS_CLI_INSTALLED" == "false" ]]; then
-    echo "installing hoobs cli components"
-elif [[ "$GYP_REBUILD" == "true" || "$FORCE_REBUILD" == "true" ]]; then
-    echo "rebuilding hoobs cli components"
-
-    case $HOOBS_CLI_MODE in
-        "production")
-            cd $HOOBS_CLI_PREFIX/lib/hoobs
-            ;;
-
-        "development")
-            cd $HOOBS_CLI_PREFIX
-            ;;
-    esac
-
-    ./node_modules/yarn/bin/yarn install --force --production
-
-    cd $CURRENT_DIRECTORY
-fi
-
-if [[ "$HOOBSD_INSTALLED" == "false" ]]; then
-    echo "installing hoobsd components"
-elif [[ "$GYP_REBUILD" == "true" || "$FORCE_REBUILD" == "true" ]]; then
-    echo "rebuilding hoobsd components"
-
-    case $HOOBSD_MODE in
-        "production")
-            cd $HOOBSD_PREFIX/lib/hoobsd
-            ;;
-
-        "development")
-            cd $HOOBSD_PREFIX
-            ;;
-    esac
-
-    ./node_modules/yarn/bin/yarn install --force --production
-
-    cd $CURRENT_DIRECTORY
+    echo "node up-to-date"
 fi
 
 if [[ "$DEBUG" == "true" ]]; then
-    print_info
+    echo ""
+    echo "hoobs cli installed: $HOOBS_CLI_INSTALLED"
+    echo "hoobs cli version: $HOOBS_CLI_VERSION"
+    echo "hoobs cli prefix: $HOOBS_CLI_PREFIX"
+    echo "hoobs cli release: $HOOBS_CLI_RELEASE"
+    echo "hoobs cli download url: $HOOBS_CLI_RELEASE_URL"
+    echo "hoobs cli upgraded: $HOOBS_CLI_UPGRADED"
+    echo "hoobs cli mode: $HOOBS_CLI_MODE"
+fi
+
+if [[ "$HOOBS_CLI_INSTALLED" == "false" || "$HOOBS_CLI_UPGRADED" == "false" ]]; then
+    if [[ "$HOOBS_CLI_INSTALLED" = "true" ]]; then
+        echo "upgrading hoobs cli to $HOOBS_CLI_RELEASE"
+    else
+        echo "installing hoobs cli $HOOBS_CLI_RELEASE"
+    fi
+
+    if [[ "_$HOOBS_CLI_RELEASE_URL" != "_" ]]; then
+        curl -sL $HOOBS_CLI_RELEASE_URL | tar xz -C $HOOBS_CLI_PREFIX --strip-components=1 --no-same-owner
+    fi
+
+    if [[ -f "$HOOBS_CLI_PREFIX/lib/hoobs/package.json" ]]; then
+        gyp_rebuild $HOOBS_CLI_PREFIX hoobs production
+    else
+        echo "${BOLD}${RED}hoobs cli install failed"
+
+        exit 1
+    fi
+elif [[ "$GYP_REBUILD" == "true" || "$FORCE_REBUILD" == "true" ]]; then
+    echo "rebuilding hoobs cli for node $NODE_VERSION"
+
+    gyp_rebuild $HOOBS_CLI_PREFIX hoobs $HOOBS_CLI_MODE
+else
+    echo "hoobs cli up-to-date"
+fi
+
+if [[ "$DEBUG" == "true" ]]; then
+    echo ""
+    echo "hoobsd installed: $HOOBSD_INSTALLED"
+    echo "hoobsd version: $HOOBSD_VERSION"
+    echo "hoobsd prefix: $HOOBSD_PREFIX"
+    echo "hoobsd release: $HOOBSD_RELEASE"
+    echo "hoobsd download url: $HOOBSD_RELEASE_URL"
+    echo "hoobsd upgraded: $HOOBSD_UPGRADED"
+    echo "hoobsd mode: $HOOBSD_MODE"
+fi
+
+if [[ "$HOOBSD_INSTALLED" == "false" || "$HOOBSD_UPGRADED" == "false" ]]; then
+    if [[ "$HOOBS_CLI_INSTALLED" = "true" ]]; then
+        echo "upgrading hoobsd to $HOOBSD_RELEASE"
+    else
+        echo "installing hoobsd $HOOBSD_RELEASE"
+    fi
+
+    if [[ "_$HOOBSD_RELEASE_URL" != "_" ]]; then
+        curl -sL $HOOBSD_RELEASE_URL | tar xz -C $HOOBSD_PREFIX --strip-components=1 --no-same-owner
+    fi
+
+    if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
+        gyp_rebuild $HOOBSD_PREFIX hoobsd production
+    else
+        echo "${BOLD}${RED}hoobsd install failed"
+
+        exit 1
+    fi
+elif [[ "$GYP_REBUILD" == "true" || "$FORCE_REBUILD" == "true" ]]; then
+    echo "rebuilding hoobsd for node $NODE_VERSION"
+
+    gyp_rebuild $HOOBSD_PREFIX hoobsd $HOOBSD_MODE
+else
+    echo "hoobsd up-to-date"
+fi
+
+if [[ "$DEBUG" == "true" ]]; then
+    echo ""
 fi
