@@ -299,11 +299,21 @@ configure_repos() {
             ;;
 
         "debian" | "raspbian" | "ubuntu")
-            curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash - > /dev/null
+            if [[ "$TAG" == "beta" ]]; then
+                curl -sL https://deb.nodesource.com/setup_current.x | sudo -E bash - > /dev/null
+            else
+                curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash - > /dev/null
+            fi
+
             ;;
 
         "fedora" | "rhel" | "centos")
-            curl -sL https://rpm.nodesource.com/setup_lts.x | sudo bash - > /dev/null
+            if [[ "$TAG" == "beta" ]]; then
+                curl -sL https://rpm.nodesource.com/setup_current.x | sudo bash - > /dev/null
+            else
+                curl -sL https://rpm.nodesource.com/setup_lts.x | sudo bash - > /dev/null
+            fi
+
             ;;
     esac
 }
@@ -597,6 +607,12 @@ fi
 
 if [[ "$TEST" == "false" && "$HOOBSD_INIT" == "true" ]]; then
     sudo hbs initilize
+fi
+
+if [[ "$TEST" == "true" && "$TAG" == "beta" ]]; then
+    TAG="latest"
+
+    configure_repos
 fi
 
 if [[ "$TEST" == "false" && "$CONTAINER" == "true" && "$NEEDS_REBOOT" == "true" ]]; then

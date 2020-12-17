@@ -97,7 +97,7 @@ export default class System {
         return results;
     }
 
-    static sync(): void {
+    static sync(beta: boolean): void {
         const system = System.info();
 
         if (system.package_manager) {
@@ -110,13 +110,13 @@ export default class System {
                 case "ubuntu":
                 case "debian":
                 case "raspbian":
-                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash");
+                    execSync(`curl -sL https://deb.nodesource.com/setup_${beta ? "current" : "lts"}.x | bash`);
                     break;
 
                 case "fedora":
                 case "rhel":
                 case "centos":
-                    execSync("curl -sL https://rpm.nodesource.com/setup_lts.x | bash");
+                    execSync(`curl -sL https://rpm.nodesource.com/setup_${beta ? "current" : "lts"}.x | bash`);
                     break;
             }
         }

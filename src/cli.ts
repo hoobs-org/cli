@@ -952,7 +952,7 @@ export = function Command(): void {
                         Console.info("syncing repositories");
 
                         spinner = Spinner({ stream: process.stdout }).start();
-                        System.sync();
+                        System.sync(command.beta);
                         spinner.stop();
 
                         Console.info("upgrading node");
