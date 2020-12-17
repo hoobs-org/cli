@@ -30,6 +30,7 @@ HBS_REPO="https://api.github.com/repos/hoobs-org/cli/"
 HOOBSD_REPO="https://api.github.com/repos/hoobs-org/hoobsd/"
 HOOBSD_INIT="false"
 NEEDS_REBOOT="false"
+PYTHON=""
 
 usage()
 {
@@ -143,7 +144,7 @@ get_node()
         NODE_INSTALLED="true"
         NODE_VERSION=$(node -v)
         NODE_VERSION=${NODE_VERSION#"v"}
-        NODE_RELEASE=$(curl -sL https://nodejs.org/en/download/ | grep 'Latest LTS Version' | awk -F'[<>]' '{print $5}')
+        NODE_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/node/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
         NODE_UPGRADED="false"
 
         WORKING="$PATH"
@@ -196,37 +197,10 @@ get_hbs()
     HBS_PREFIX="/usr/"
     HBS_MODE="none"
 
-    local release=$(curl -sL "${HBS_REPO}releases/latest")
-
-    export release
-
-    local extract="import os, json
-
-try:
-    print(json.loads(os.environ['release'])['tag_name'])
-except:
-    print('')"
-
-    HBS_RELEASE=$(python3 -c "${extract}")
+    HBS_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hbs/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
     HBS_RELEASE=${HBS_RELEASE#"v"}
     HBS_RELEASE_ASSET="hbs-${HBS_RELEASE}.tar.gz"
-
-    local script="import os, json
-
-result = ''
-
-try:
-    data = json.loads(os.environ['release'])
-
-    for entry in data['assets']:
-        if entry['name'] == '$HBS_RELEASE_ASSET':
-            result = entry['browser_download_url']
-except:
-    result = ''
-
-print(result);"
-
-    HBS_RELEASE_URL=$(python3 -c "${script}")
+    HBS_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hbs/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
 
     if command -v hbs > /dev/null; then
         HBS_INSTALLED="true"
@@ -273,37 +247,10 @@ get_hoobsd()
     HOOBSD_PREFIX="/usr/"
     HOOBSD_MODE="none"
 
-    local release=$(curl -sL "${HOOBSD_REPO}releases/latest")
-
-    export release
-
-    local extract="import os, json
-
-try:
-    print(json.loads(os.environ['release'])['tag_name'])
-except:
-    print('')"
-
-    HOOBSD_RELEASE=$(python3 -c "${extract}")
+    HOOBSD_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
     HOOBSD_RELEASE=${HOOBSD_RELEASE#"v"}
     HOOBSD_RELEASE_ASSET="hoobsd-${HOOBSD_RELEASE}.tar.gz"
-
-    local script="import os, json
-
-result = ''
-
-try:
-    data = json.loads(os.environ['release'])
-
-    for entry in data['assets']:
-        if entry['name'] == '$HOOBSD_RELEASE_ASSET':
-            result = entry['browser_download_url']
-except:
-    result = ''
-
-print(result)"
-
-    HOOBSD_RELEASE_URL=$(python3 -c "${script}")
+    HOOBSD_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
 
     if command -v hoobsd > /dev/null; then
         HOOBSD_INSTALLED="true"
@@ -428,9 +375,22 @@ if [[ "_$DOCKER_TEST" != "_" ]]; then
     CONTAINER="true"
 fi
 
+if command -v python > /dev/null; then
+    PYTHON="python"
+elif command -v python3 > /dev/null; then
+    PYTHON="python3"
+fi
+
 if [[ "$DEBUG" == "true" ]]; then
     echo "user: $USER"
     echo "path: $PWD"
+    echo "python: $PYTHON"
+fi
+
+if [[ "_$PYTHON" == "_" ]]; then
+    echo "[ ERROR ] this script requires python, please install python"
+
+    exit 1
 fi
 
 get_os

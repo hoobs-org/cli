@@ -26,9 +26,6 @@ import Instances from "./instances";
 import { Console } from "../logger";
 import { parseJson } from "../formatters";
 
-const HBS_REPO = "https://api.github.com/repos/hoobs-org/cli/";
-const HOOBSD_REPO = "https://api.github.com/repos/hoobs-org/hoobsd/";
-
 export default class System {
     static info(): { [key: string]: any } {
         const results: { [key: string]: any } = {};
@@ -188,9 +185,9 @@ export default class System {
             },
 
             release: (): { [key: string]: string } => {
-                const data = parseJson<{ [key: string]: any }>(System.command(`curl -sL ${HBS_REPO}releases/latest`, true), {});
-                const release = data.tag_name || "";
-                const download = ((data.assets || []).find((item: any) => item.name === `hbs-${release}.tar.gz`) || {}).browser_download_url;
+                const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hbs/latest", true), {});
+                const release = (data.results || {}).version || "";
+                const download = (data.results || {}).download || "";
 
                 return {
                     release,
@@ -270,9 +267,9 @@ export default class System {
             },
 
             release: (): { [key: string]: string } => {
-                const data = parseJson<{ [key: string]: any }>(System.command(`curl -sL ${HOOBSD_REPO}releases/latest`, true), {});
-                const release = data.tag_name || "";
-                const download = ((data.assets || []).find((item: any) => item.name === `hoobsd-${release}.tar.gz`) || {}).browser_download_url;
+                const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hoobsd/latest", true), {});
+                const release = (data.results || {}).version || "";
+                const download = (data.results || {}).download || "";
 
                 return {
                     release,
@@ -369,7 +366,7 @@ export default class System {
                     }
                 }
 
-                return System.command("curl -sL https://nodejs.org/en/download/ | grep 'Latest LTS Version' | awk -F'[<>]' '{print $5}'");
+                return (parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/node/latest", true), {}).results || {}).version || "";
             },
 
             upgrade: (): void => {
