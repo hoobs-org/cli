@@ -30,6 +30,8 @@ const CACHE: { [key: string]: any } = {};
 
 export default class System {
     static info(): { [key: string]: any } {
+        if (CACHE.system) return CACHE.system;
+
         const results: { [key: string]: any } = {};
         const release = System.command("uname").toLowerCase();
 
@@ -75,6 +77,8 @@ export default class System {
             default:
                 results.package_manager = "";
         }
+
+        CACHE.system = results;
 
         return results;
     }
@@ -138,7 +142,7 @@ export default class System {
 
     static get cli(): { [key: string]: any } {
         return {
-            info: (): { [key: string]: any } => {
+            info: (beta: boolean): { [key: string]: any } => {
                 let path = "/usr/bin/hbs";
                 let prefix = "/usr/";
 
@@ -162,7 +166,7 @@ export default class System {
                 if (path !== "") installed = System.command(`${path} -v`);
                 if (!Semver.valid(installed)) installed = "";
 
-                const data = System.cli.release();
+                const data = System.cli.release(beta);
 
                 release = data.release || "";
                 download = data.download || "";
@@ -186,8 +190,8 @@ export default class System {
                 };
             },
 
-            release: (): { [key: string]: string } => {
-                if (!CACHE.cli) CACHE.cli = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hbs/latest", true), {}).results || {};
+            release: (beta: boolean): { [key: string]: string } => {
+                if (!CACHE.cli) CACHE.cli = parseJson<{ [key: string]: any }>(System.command(`curl -sL https://support.hoobs.org/api/releases/hbs/${beta ? "beta" : "latest"}`, true), {}).results || {};
 
                 return {
                     release: CACHE.cli.version || "",
@@ -195,8 +199,8 @@ export default class System {
                 };
             },
 
-            upgrade: (): void => {
-                const data = System.cli.info();
+            upgrade: (beta: boolean): void => {
+                const data = System.cli.info(beta);
 
                 execSync(`curl -sL ${data.cli_download} --output ./hbs.tar.gz`);
                 execSync(`tar -xzf ./hbs.tar.gz -C ${data.cli_prefix} --strip-components=1 --no-same-owner`);
@@ -211,7 +215,7 @@ export default class System {
 
     static get hoobsd(): { [key: string]: any } {
         return {
-            info: (): { [key: string]: any } => {
+            info: (beta: boolean): { [key: string]: any } => {
                 let path = "/usr/bin/hoobsd";
                 let prefix = "/usr/";
 
@@ -235,7 +239,7 @@ export default class System {
                 if (path !== "") installed = System.command(`${path} -v`);
                 if (!Semver.valid(installed)) installed = "";
 
-                const data = System.hoobsd.release();
+                const data = System.hoobsd.release(beta);
 
                 release = data.release || "";
                 download = data.download || "";
@@ -266,8 +270,8 @@ export default class System {
                 return false;
             },
 
-            release: (): { [key: string]: string } => {
-                if (!CACHE.hoobsd) CACHE.hoobsd = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hoobsd/latest", true), {}).results || {};
+            release: (beta: boolean): { [key: string]: string } => {
+                if (!CACHE.hoobsd) CACHE.hoobsd = parseJson<{ [key: string]: any }>(System.command(`curl -sL https://support.hoobs.org/api/releases/hoobsd/${beta ? "beta" : "latest"}`, true), {}).results || {};
 
                 return {
                     release: CACHE.hoobsd.version || "",
@@ -275,8 +279,8 @@ export default class System {
                 };
             },
 
-            upgrade: (): void => {
-                const data = System.hoobsd.info();
+            upgrade: (beta: boolean): void => {
+                const data = System.hoobsd.info(beta);
 
                 execSync(`curl -sL ${data.hoobsd_download} --output ./hoobsd.tar.gz`);
                 execSync(`tar -xzf ./hoobsd.tar.gz -C ${data.hoobsd_prefix} --strip-components=1 --no-same-owner`);
@@ -291,7 +295,7 @@ export default class System {
 
     static get runtime(): { [key: string]: any } {
         return {
-            info: (): { [key: string]: any } => {
+            info: (beta: boolean): { [key: string]: any } => {
                 let path = "/usr/bin/node";
 
                 const paths = (process.env.PATH || "").split(":");
@@ -312,7 +316,7 @@ export default class System {
                 if (path !== "") installed = System.command(`${path} -v`).replace("v", "");
                 if (!Semver.valid(installed)) installed = "";
 
-                release = System.runtime.release();
+                release = System.runtime.release(beta);
 
                 if ((Semver.valid(installed) && Semver.valid(release) && Semver.gt(installed, release)) || !Semver.valid(release)) {
                     release = installed;
@@ -326,7 +330,7 @@ export default class System {
                 };
             },
 
-            release: (): string => {
+            release: (beta: boolean): string => {
                 const system = System.info();
 
                 let data: any = "";
@@ -364,14 +368,14 @@ export default class System {
                     }
                 }
 
-                if (!CACHE.node) CACHE.node = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/node/latest", true), {}).results || {};
+                if (!CACHE.node) CACHE.node = parseJson<{ [key: string]: any }>(System.command(`curl -sL https://support.hoobs.org/api/releases/node/${beta ? "beta" : "latest"}`, true), {}).results || {};
 
                 return CACHE.node.version || "";
             },
 
-            upgrade: (): void => {
+            upgrade: (beta: boolean): void => {
                 const system = System.info();
-                const release = System.runtime.release();
+                const release = System.runtime.release(beta);
 
                 if (system.package_manager) {
                     switch (system.distribution) {

@@ -22,6 +22,7 @@ CURRENT_DIRECTORY=$PWD
 
 DEBUG="false"
 TEST="false"
+TAG="latest"
 CONTAINER="false"
 FORCE_REBUILD="false"
 FORCE_REINSTALL="false"
@@ -144,7 +145,7 @@ get_node()
         NODE_INSTALLED="true"
         NODE_VERSION=$(node -v)
         NODE_VERSION=${NODE_VERSION#"v"}
-        NODE_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/node/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
+        NODE_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/node/$TAG | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
         NODE_UPGRADED="false"
 
         WORKING="$PATH"
@@ -197,10 +198,10 @@ get_hbs()
     HBS_PREFIX="/usr/"
     HBS_MODE="none"
 
-    HBS_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hbs/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
+    HBS_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hbs/$TAG | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
     HBS_RELEASE=${HBS_RELEASE#"v"}
     HBS_RELEASE_ASSET="hbs-${HBS_RELEASE}.tar.gz"
-    HBS_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hbs/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
+    HBS_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hbs/$TAG | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
 
     if command -v hbs > /dev/null; then
         HBS_INSTALLED="true"
@@ -247,10 +248,10 @@ get_hoobsd()
     HOOBSD_PREFIX="/usr/"
     HOOBSD_MODE="none"
 
-    HOOBSD_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
+    HOOBSD_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/$TAG | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
     HOOBSD_RELEASE=${HOOBSD_RELEASE#"v"}
     HOOBSD_RELEASE_ASSET="hoobsd-${HOOBSD_RELEASE}.tar.gz"
-    HOOBSD_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/latest | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
+    HOOBSD_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/$TAG | $PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
 
     if command -v hoobsd > /dev/null; then
         HOOBSD_INSTALLED="true"
@@ -348,6 +349,9 @@ gyp_rebuild() {
 while [ "$1" != "" ]; do
     case $1 in
         -d | --debug )  DEBUG="true"
+                        ;;
+
+        --beta )        TAG="beta"
                         ;;
 
         --test )        TEST="true"

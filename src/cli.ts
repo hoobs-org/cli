@@ -807,7 +807,8 @@ export = function Command(): void {
 
     Program.command("system <action> [file]")
         .description("reboot, reset and upgrade this device")
-        .action(async (action, file) => {
+        .option("--beta", "enable beta versions")
+        .action(async (action, file, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("root is required, did you forget to use 'sudo'?");
 
@@ -829,9 +830,9 @@ export = function Command(): void {
 
                     data = {
                         system: [System.info()],
-                        runtime: [System.runtime.info()],
-                        cli: [System.cli.info()],
-                        hoobsd: [System.hoobsd.info()],
+                        runtime: [System.runtime.info(command.beta)],
+                        cli: [System.cli.info(command.beta)],
+                        hoobsd: [System.hoobsd.info(command.beta)],
                     };
 
                     delete data.cli[0].cli_mode;
@@ -957,7 +958,7 @@ export = function Command(): void {
                         Console.info("upgrading node");
 
                         spinner = Spinner({ stream: process.stdout }).start();
-                        System.runtime.upgrade();
+                        System.runtime.upgrade(command.beta);
                         spinner.stop();
                     } else {
                         Console.info(Chalk.cyan("node is already up-to-date"));
@@ -973,7 +974,7 @@ export = function Command(): void {
                         Console.info("upgrading cli");
 
                         spinner = Spinner({ stream: process.stdout }).start();
-                        System.cli.upgrade();
+                        System.cli.upgrade(command.beta);
                         spinner.stop();
                     } else {
                         Console.info(Chalk.cyan("cli is already up-to-date"));
@@ -989,7 +990,7 @@ export = function Command(): void {
                         Console.info("upgrading hoobsd");
 
                         spinner = Spinner({ stream: process.stdout }).start();
-                        System.hoobsd.upgrade();
+                        System.hoobsd.upgrade(command.beta);
                         spinner.stop();
 
                         reboot = true;
