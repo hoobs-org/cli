@@ -119,8 +119,22 @@ export default class System {
         }
     }
 
-    static reboot(): void {
-        execSync("shutdown -r now");
+    static restart(): void {
+        let path = "/usr/bin/hoobsd";
+
+        const paths = (process.env.PATH || "").split(":");
+
+        for (let i = 0; i < paths.length; i += 1) {
+            if (paths[i].indexOf("/tmp/") === -1 && existsSync(join(paths[i], "hoobsd"))) {
+                path = join(paths[i], "hoobsd");
+
+                break;
+            }
+        }
+
+        if (existsSync(path)) path = "";
+
+        execSync(`${path} service restart`);
     }
 
     static get cli(): { [key: string]: any } {
@@ -132,7 +146,7 @@ export default class System {
                 const paths = (process.env.PATH || "").split(":");
 
                 for (let i = 0; i < paths.length; i += 1) {
-                    if (existsSync(join(paths[i], "hbs"))) {
+                    if (paths[i].indexOf("/tmp/") === -1 && existsSync(join(paths[i], "hbs"))) {
                         path = join(paths[i], "hbs");
 
                         break;
@@ -207,7 +221,7 @@ export default class System {
                 const paths = (process.env.PATH || "").split(":");
 
                 for (let i = 0; i < paths.length; i += 1) {
-                    if (existsSync(join(paths[i], "hoobsd"))) {
+                    if (paths[i].indexOf("/tmp/") === -1 && existsSync(join(paths[i], "hoobsd"))) {
                         path = join(paths[i], "hoobsd");
 
                         break;
@@ -288,7 +302,7 @@ export default class System {
                 const paths = (process.env.PATH || "").split(":");
 
                 for (let i = 0; i < paths.length; i += 1) {
-                    if (existsSync(join(paths[i], "node"))) {
+                    if (paths[i].indexOf("/tmp/") === -1 && existsSync(join(paths[i], "node"))) {
                         path = join(paths[i], "node");
 
                         break;

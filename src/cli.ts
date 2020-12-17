@@ -997,17 +997,19 @@ export = function Command(): void {
                         Console.info(Chalk.cyan("hoobsd is already up-to-date"));
                     }
 
-                    if (reboot && State.container) {
-                        Console.info(Chalk.yellow("you need to restart this container"));
-                    } else if (reboot) {
-                        const { proceed } = (await prompt([{
-                            type: "confirm",
-                            name: "proceed",
-                            message: Chalk.yellow("you need to reboot, do you want to reboot now"),
-                            default: false,
-                        }]));
+                    if (State.mode === "production") {
+                        if (reboot && State.container) {
+                            Console.info(Chalk.yellow("you need to restart this container"));
+                        } else if (reboot) {
+                            const { proceed } = (await prompt([{
+                                type: "confirm",
+                                name: "proceed",
+                                message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
+                                default: false,
+                            }]));
 
-                        if (!proceed) System.reboot();
+                            if (!proceed) System.restart();
+                        }
                     }
 
                     break;

@@ -154,7 +154,7 @@ get_node()
 
         for DIR in "${ADDR[@]}";
         do
-            if [[ -f "$DIR/node" ]]; then
+            if [[ "$DIR" != "/tmp/"* && -f "$DIR/node" ]]; then
                 NODE_PREFIX="$(cd $DIR/../;pwd)/"
 
                 break
@@ -240,7 +240,7 @@ print(result);"
 
         for DIR in "${ADDR[@]}";
         do
-            if [[ -f "$DIR/hbs" ]]; then
+            if [[ "$DIR" != "/tmp/"* && -f "$DIR/hbs" ]]; then
                 HBS_PREFIX="$(cd $DIR/../;pwd)/"
 
                 break
@@ -317,7 +317,7 @@ print(result)"
 
         for DIR in "${ADDR[@]}";
         do
-            if [[ -f "$DIR/hoobsd" ]]; then
+            if [[ "$DIR" != "/tmp/"* && -f "$DIR/hoobsd" ]]; then
                 HOOBSD_PREFIX="$(cd $DIR/../;pwd)/"
 
                 break
