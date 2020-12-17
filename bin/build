@@ -75,8 +75,12 @@ Program.command("cli", { isDefault: true })
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
             if (!existsSync(join(root, "../builds")))  mkdirSync(join(root, "../builds"));
             if (existsSync(join(root, "../builds", `hbs-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hbs-${pjson.version}.tar.gz`))
+            if (existsSync(join(root, "../builds", `hbs-setup-${pjson.version}.sh`))) unlinkSync(join(root, "../builds", `hbs-setup-${pjson.version}.sh`))
 
             moveSync(join(root, `hbs-${pjson.version}.tar.gz`), join(root, "../builds", `hbs-${pjson.version}.tar.gz`));
+            copyFileSync(join(root, "bin", "setup"), join(root, "../builds", `hbs-setup-${pjson.version}.sh`));
+
+            execSync(`chmod 755 ${join(root, "../builds", `hbs-setup-${pjson.version}.sh`)}`, { cwd: root, stdio: "inherit" });
         }
     });
 
