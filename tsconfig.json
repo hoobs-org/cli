@@ -12,7 +12,7 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "outDir": "./lib/hoobs",
+        "outDir": "./lib/hbs",
         "rootDir": "./src",
         "strict": true,
         "esModuleInterop": true,

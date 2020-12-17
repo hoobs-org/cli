@@ -498,7 +498,7 @@ export default class Instances {
                     autostart: instance?.autostart,
                 },
                 product: "hoobs",
-                generator: "hoobs-cli",
+                generator: "hbs",
                 version: State.version,
             }));
 
@@ -536,7 +536,7 @@ export default class Instances {
                 date: (new Date()).getTime(),
                 type: "full",
                 product: "hoobs",
-                generator: "hoobs-cli",
+                generator: "hbs",
                 version: State.version,
             }));
 

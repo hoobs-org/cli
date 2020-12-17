@@ -18,6 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-process.title = "hoobs";
+process.title = "hbs";
 
-require("../lib/hoobs/cli")();
+require("../lib/hbs/cli")();

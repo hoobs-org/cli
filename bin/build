@@ -48,10 +48,10 @@ Program.command("cli", { isDefault: true })
         if (existsSync(join(root, "lib"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, { cwd: root, stdio: "inherit" });
 
         mkdirSync(join(root, "lib"))
-        mkdirSync(join(root, "lib/hoobs"))
+        mkdirSync(join(root, "lib/hbs"))
 
         execSync(`${join(root, "node_modules", ".bin", "tsc")}`, { cwd: root, stdio: "inherit" });
-        copySync(join(root, "var"), join(root, "lib/hoobs/static"));
+        copySync(join(root, "var"), join(root, "lib/hbs/static"));
 
         if (command.pack) {
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });;
@@ -59,7 +59,7 @@ Program.command("cli", { isDefault: true })
             mkdirSync(join(root, "dist"));
             mkdirSync(join(root, "dist/bin"));
 
-            copyFileSync(join(root, "bin", "hoobs"), join(root, "dist/bin", "hoobs"));
+            copyFileSync(join(root, "bin", "hbs"), join(root, "dist/bin", "hbs"));
             copySync(join(root, "lib"), join(root, "dist/lib"));
 
             delete pjson.scripts;
@@ -67,16 +67,16 @@ Program.command("cli", { isDefault: true })
 
             pjson.main = "cli.js";
 
-            writeFileSync(join(root, "dist/lib/hoobs", "package.json"), JSON.stringify(pjson, null, 4));
+            writeFileSync(join(root, "dist/lib/hbs", "package.json"), JSON.stringify(pjson, null, 4));
 
-            execSync(`chmod 755 ${join(root, "dist/bin", "hoobs")}`, { cwd: root, stdio: "inherit" });
-            execSync(`tar -zcf ../hoobs-cli-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
+            execSync(`chmod 755 ${join(root, "dist/bin", "hbs")}`, { cwd: root, stdio: "inherit" });
+            execSync(`tar -zcf ../hbs-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
             if (!existsSync(join(root, "../builds")))  mkdirSync(join(root, "../builds"));
-            if (existsSync(join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`))
+            if (existsSync(join(root, "../builds", `hbs-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hbs-${pjson.version}.tar.gz`))
 
-            moveSync(join(root, `hoobs-cli-${pjson.version}.tar.gz`), join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`));
+            moveSync(join(root, `hbs-${pjson.version}.tar.gz`), join(root, "../builds", `hbs-${pjson.version}.tar.gz`));
         }
     });
 

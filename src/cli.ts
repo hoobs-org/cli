@@ -37,6 +37,10 @@ import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
+if (System.command("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+    State.container = true;
+}
+
 export = function Command(): void {
     Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
@@ -46,7 +50,7 @@ export = function Command(): void {
         .option("--container", "run in a container", () => { State.container = true; })
         .option("--verbose", "turn on verbose logging", () => { State.verbose = true; });
 
-    Program.command("initilize", { isDefault: true })
+    Program.command("initilize")
         .description("initial setup")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-n, --pin <pin>", "set the pin for the bridge")
@@ -86,15 +90,13 @@ export = function Command(): void {
 
                 Instances.createService("API", parseInt(command.port, 10), command.pin || "031-45-154", command.skip).then((results) => {
                     if (results) {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
-
+                        spinner = Spinner({ stream: process.stdout }).start();
                         instances = Instances.list();
-
                         spinner.stop();
 
                         if (instances.length > 0) {
+                            console.info("");
+
                             Console.table(instances.map((item) => ({
                                 id: item.id,
                                 type: item.type,
@@ -104,6 +106,8 @@ export = function Command(): void {
                                 pin: item.pin,
                                 username: item.username,
                             })));
+
+                            console.info("");
                         }
                     } else {
                         Console.error("unable to initilize system.");
@@ -179,20 +183,20 @@ export = function Command(): void {
                     }
 
                     Plugins.install(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
-
+                        spinner = Spinner({ stream: process.stdout }).start();
                         plugins = Plugins.installed();
-
                         spinner.stop();
 
                         if (plugins.length > 0) {
+                            console.info("");
+
                             Console.table(plugins.map((item: { [key: string]: any }) => ({
                                 name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                 version: item.version,
                                 path: item.directory,
                             })));
+
+                            console.info("");
                         } else {
                             Console.warn("no plugins installed");
                         }
@@ -240,20 +244,20 @@ export = function Command(): void {
                     }
 
                     Plugins.uninstall(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).finally(() => {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
-
+                        spinner = Spinner({ stream: process.stdout }).start();
                         plugins = Plugins.installed();
-
                         spinner.stop();
 
                         if (plugins.length > 0) {
+                            console.info("");
+
                             Console.table(plugins.map((item: { [key: string]: any }) => ({
                                 name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                 version: item.version,
                                 path: item.directory,
                             })));
+
+                            console.info("");
                         } else {
                             Console.warn("no plugins installed");
                         }
@@ -264,6 +268,7 @@ export = function Command(): void {
                     break;
 
                 case "update":
+                case "upgrade":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
 
@@ -301,20 +306,20 @@ export = function Command(): void {
                         }
 
                         Plugins.upgrade(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
-                            spinner = Spinner({
-                                stream: process.stdout,
-                            }).start();
-
+                            spinner = Spinner({ stream: process.stdout }).start();
                             plugins = Plugins.installed();
-
                             spinner.stop();
 
                             if (plugins.length > 0) {
+                                console.info("");
+
                                 Console.table(plugins.map((item: { [key: string]: any }) => ({
                                     name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                     version: item.version,
                                     path: item.directory,
                                 })));
+
+                                console.info("");
                             } else {
                                 Console.warn("no plugins installed");
                             }
@@ -323,20 +328,20 @@ export = function Command(): void {
                         });
                     } else {
                         Plugins.upgrade().finally(() => {
-                            spinner = Spinner({
-                                stream: process.stdout,
-                            }).start();
-
+                            spinner = Spinner({ stream: process.stdout }).start();
                             plugins = Plugins.installed();
-
                             spinner.stop();
 
                             if (plugins.length > 0) {
+                                console.info("");
+
                                 Console.table(plugins.map((item: { [key: string]: any }) => ({
                                     name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                     version: item.version,
                                     path: item.directory,
                                 })));
+
+                                console.info("");
                             } else {
                                 Console.warn("no plugins installed");
                             }
@@ -355,9 +360,7 @@ export = function Command(): void {
                         return;
                     }
 
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
+                    spinner = Spinner({ stream: process.stdout }).start();
 
                     if (!command.instance || command.instance === "") {
                         for (let i = 0; i < State.instances.length; i += 1) {
@@ -386,7 +389,9 @@ export = function Command(): void {
                         State.id = "api";
 
                         if (combined.length > 0) {
+                            console.info("");
                             Console.table(combined);
+                            console.info("");
                         } else {
                             Console.warn("no plugins installed");
                         }
@@ -396,11 +401,15 @@ export = function Command(): void {
                         spinner.stop();
 
                         if (plugins.length > 0) {
+                            console.info("");
+
                             Console.table(plugins.map((item) => ({
                                 name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                 version: item.version,
                                 path: item.directory,
                             })));
+
+                            console.info("");
                         } else {
                             Console.warn("no plugins installed");
                         }
@@ -460,9 +469,7 @@ export = function Command(): void {
 
             State.timestamps = true;
 
-            const spinner = Spinner({
-                stream: process.stdout,
-            }).start();
+            const spinner = Spinner({ stream: process.stdout }).start();
 
             let instance: string;
 
@@ -549,15 +556,13 @@ export = function Command(): void {
                 case "create":
                     Instances.createService(command.instance, parseInt(command.port, 10), command.skip, 0).then((results) => {
                         if (results) {
-                            spinner = Spinner({
-                                stream: process.stdout,
-                            }).start();
-
+                            spinner = Spinner({ stream: process.stdout }).start();
                             instances = Instances.list();
-
                             spinner.stop();
 
                             if (instances.length > 0) {
+                                console.info("");
+
                                 Console.table(instances.map((item) => ({
                                     id: item.id,
                                     type: item.type,
@@ -567,6 +572,8 @@ export = function Command(): void {
                                     pin: item.pin,
                                     username: item.username,
                                 })));
+
+                                console.info("");
                             }
                         } else {
                             Console.error("unable to create instance.");
@@ -598,9 +605,7 @@ export = function Command(): void {
                     }
 
                     if (sanitize(command.instance) !== "api") {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
+                        spinner = Spinner({ stream: process.stdout }).start();
 
                         Instances.removeService(command.instance).then((results) => {
                             if (results) {
@@ -609,6 +614,8 @@ export = function Command(): void {
                                 spinner.stop();
 
                                 if (instances.length > 0) {
+                                    console.info("");
+
                                     Console.table(instances.map((item) => ({
                                         id: item.id,
                                         type: item.type,
@@ -618,6 +625,8 @@ export = function Command(): void {
                                         pin: item.pin,
                                         username: item.username,
                                     })));
+
+                                    console.info("");
                                 }
                             } else {
                                 spinner.stop();
@@ -653,9 +662,7 @@ export = function Command(): void {
                     }
 
                     if (sanitize(command.instance) !== "api") {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
+                        spinner = Spinner({ stream: process.stdout }).start();
 
                         Instances.export(command.instance).then((filename) => {
                             copyFileSync(
@@ -677,15 +684,13 @@ export = function Command(): void {
 
                 case "ls":
                 case "list":
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
-
+                    spinner = Spinner({ stream: process.stdout }).start();
                     instances = Instances.list();
-
                     spinner.stop();
 
                     if (instances.length > 0) {
+                        console.info("");
+
                         Console.table(instances.map((item) => ({
                             id: item.id,
                             type: item.type,
@@ -695,6 +700,8 @@ export = function Command(): void {
                             pin: item.pin,
                             username: item.username,
                         })));
+
+                        console.info("");
                     } else {
                         Console.warn("no instances");
                     }
@@ -730,9 +737,7 @@ export = function Command(): void {
                         return;
                     }
 
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
+                    spinner = Spinner({ stream: process.stdout }).start();
 
                     Extentions.enable(name).then((results) => {
                         spinner.stop();
@@ -759,9 +764,7 @@ export = function Command(): void {
                         return;
                     }
 
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
+                    spinner = Spinner({ stream: process.stdout }).start();
 
                     Extentions.disable(name).then((results) => {
                         spinner.stop();
@@ -787,15 +790,13 @@ export = function Command(): void {
                         return;
                     }
 
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
-
+                    spinner = Spinner({ stream: process.stdout }).start();
                     list = Extentions.list();
-
                     spinner.stop();
 
+                    console.info("");
                     Console.table(list);
+                    console.info("");
                     break;
 
                 default:
@@ -819,10 +820,36 @@ export = function Command(): void {
 
             let spinner: Spinner.Ora;
             let entries: string[] = [];
+            let data: { [key: string]: any } = {};
+            let reboot = false;
 
             switch (action) {
                 case "info":
-                    Console.table([System.info()]);
+                    spinner = Spinner({ stream: process.stdout }).start();
+
+                    data = {
+                        system: [System.info()],
+                        runtime: [System.runtime.info()],
+                        cli: [System.cli.info()],
+                        hoobsd: [System.hoobsd.info()],
+                    };
+
+                    delete data.cli[0].cli_mode;
+                    delete data.hoobsd[0].hoobsd_mode;
+                    delete data.cli[0].cli_download;
+                    delete data.hoobsd[0].hoobsd_download;
+
+                    spinner.stop();
+
+                    console.info("");
+                    Console.table(data.system);
+                    console.info("");
+                    Console.table(data.runtime);
+                    console.info("");
+                    Console.table(data.cli);
+                    console.info("");
+                    Console.table(data.hoobsd);
+                    console.info("");
                     break;
 
                 case "backup":
@@ -839,7 +866,9 @@ export = function Command(): void {
                             }
 
                             if (list.length > 0) {
+                                console.info("");
                                 Console.table(list);
+                                console.info("");
                             } else {
                                 Console.warn("no backups");
                             }
@@ -847,9 +876,7 @@ export = function Command(): void {
                             break;
 
                         default:
-                            spinner = Spinner({
-                                stream: process.stdout,
-                            }).start();
+                            spinner = Spinner({ stream: process.stdout }).start();
 
                             Instances.backup().then((filename) => {
                                 copyFileSync(
@@ -875,9 +902,7 @@ export = function Command(): void {
                     Console.warn("this will remove all current settings and plugins and replace it with the backup");
 
                     if (file && existsSync(file)) {
-                        spinner = Spinner({
-                            stream: process.stdout,
-                        }).start();
+                        spinner = Spinner({ stream: process.stdout }).start();
 
                         Instances.restore(file).finally(() => {
                             spinner.stop();
@@ -893,9 +918,7 @@ export = function Command(): void {
                 case "purge":
                     Console.warn("this will remove the connection to homekit, you will need to re-pair");
 
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
+                    spinner = Spinner({ stream: process.stdout }).start();
 
                     Instances.purge().then(() => {
                         spinner.stop();
@@ -909,20 +932,84 @@ export = function Command(): void {
                 case "reset":
                     Console.warn("this will remove all settings and plugins, you will need to restore or initilize this device");
 
-                    spinner = Spinner({
-                        stream: process.stdout,
-                    }).start();
-
+                    spinner = Spinner({ stream: process.stdout }).start();
                     Instances.reset();
-
                     spinner.stop();
 
                     Console.info("configuration and plugins removed");
-
                     break;
 
+                case "update":
                 case "upgrade":
-                    Console.info("system upgrade not implimented");
+                    data = System.runtime.info();
+
+                    console.info("");
+                    Console.table([data]);
+                    console.info("");
+
+                    if (!data.node_upgraded) {
+                        Console.info("syncing repositories");
+
+                        spinner = Spinner({ stream: process.stdout }).start();
+                        System.sync();
+                        spinner.stop();
+
+                        Console.info("upgrading node");
+
+                        spinner = Spinner({ stream: process.stdout }).start();
+                        System.runtime.upgrade();
+                        spinner.stop();
+                    } else {
+                        Console.info(Chalk.cyan("node is already up-to-date"));
+                    }
+
+                    data = System.cli.info();
+
+                    console.info("");
+                    Console.table([data]);
+                    console.info("");
+
+                    if (!data.cli_upgraded) {
+                        Console.info("upgrading cli");
+
+                        spinner = Spinner({ stream: process.stdout }).start();
+                        System.cli.upgrade();
+                        spinner.stop();
+                    } else {
+                        Console.info(Chalk.cyan("cli is already up-to-date"));
+                    }
+
+                    data = System.hoobsd.info();
+
+                    console.info("");
+                    Console.table([data]);
+                    console.info("");
+
+                    if (!data.hoobsd_upgraded) {
+                        Console.info("upgrading hoobsd");
+
+                        spinner = Spinner({ stream: process.stdout }).start();
+                        System.hoobsd.upgrade();
+                        spinner.stop();
+
+                        reboot = true;
+                    } else {
+                        Console.info(Chalk.cyan("hoobsd is already up-to-date"));
+                    }
+
+                    if (reboot && State.container) {
+                        Console.info(Chalk.yellow("you need to restart this container"));
+                    } else if (reboot) {
+                        const { proceed } = (await prompt([{
+                            type: "confirm",
+                            name: "proceed",
+                            message: Chalk.yellow("you need to reboot, do you want to reboot now"),
+                            default: false,
+                        }]));
+
+                        if (!proceed) System.reboot();
+                    }
+
                     break;
 
                 default:

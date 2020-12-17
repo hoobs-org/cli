@@ -107,9 +107,7 @@ class Logger {
     }
 
     table(value: any) {
-        CONSOLE_LOG("");
         CONSOLE_LOG(grid(value));
-        CONSOLE_LOG("");
     }
 
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {

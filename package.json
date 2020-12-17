@@ -1,5 +1,5 @@
 {
-    "name": "@hoobs/cli",
+    "name": "hbs",
     "version": "4.0.4",
     "description": "Command line interface for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
@@ -17,7 +17,7 @@
     "scripts": {
         "build": "bin/build --lint --pack",
         "lint": "eslint 'src/**/*.ts'",
-        "hoobs": "sudo bin/hoobs --mode development"
+        "hbs": "sudo bin/hbs --mode development"
     },
     "dependencies": {
         "archiver": "^5.0.2",

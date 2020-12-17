@@ -16,10 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+/* eslint-disable no-template-curly-in-string */
+
+import { join } from "path";
 import { execSync } from "child_process";
 import { existsSync } from "fs-extra";
+import Semver from "semver";
 import Instances from "./instances";
 import { Console } from "../logger";
+import { parseJson } from "../formatters";
+
+const HBS_REPO = "https://api.github.com/repos/hoobs-org/cli/";
+const HOOBSD_REPO = "https://api.github.com/repos/hoobs-org/hoobsd/";
 
 export default class System {
     static info(): { [key: string]: any } {
@@ -39,23 +47,17 @@ export default class System {
         }
 
         results.arch = System.command("uname -m");
-        results.init_system = Instances.initSystem();
-
-        const runtime = System.runtime.info();
-
-        results.node_prefix = runtime.prefix;
-        results.node_version = runtime.version;
-        results.hoobsd_running = System.running();
+        results.init_system = Instances.initSystem() || "";
 
         switch (results.distribution) {
             case "alpine":
-                results.package_manager = System.command("command -v apk") !== "" ? "apk" : null;
+                results.package_manager = System.command("command -v apk") !== "" ? "apk" : "";
                 break;
 
             case "ubuntu":
             case "debian":
             case "raspbian":
-                results.package_manager = System.command("command -v apt-get") !== "" ? "apt-get" : null;
+                results.package_manager = System.command("command -v apt-get") !== "" ? "apt-get" : "";
                 break;
 
             case "fedora":
@@ -66,24 +68,16 @@ export default class System {
                 } else if (System.command("command -v yum") !== "") {
                     results.package_manager = "yum";
                 } else {
-                    results.package_manager = null;
+                    results.package_manager = "";
                 }
 
                 break;
 
             default:
-                results.package_manager = null;
+                results.package_manager = "";
         }
 
         return results;
-    }
-
-    static running(): boolean {
-        if (System.command("pidof hoobsd") !== "") {
-            return true;
-        }
-
-        return false;
     }
 
     static command(value: string, multiline?: boolean): string {
@@ -95,66 +89,303 @@ export default class System {
             results = "";
         }
 
-        if (!multiline) {
-            results = results.replace(/\n/g, "");
-        }
+        if (!multiline) results = results.replace(/\n/g, "");
 
         return results;
+    }
+
+    static sync(): void {
+        const system = System.info();
+
+        if (system.package_manager) {
+            switch (system.distribution) {
+                case "alpine":
+                    execSync("sed -i -e 's/v[[:digit:]]\\..*\\//edge\\//g' /etc/apk/repositories");
+                    execSync("apk upgrade --update-cache --available");
+                    break;
+
+                case "ubuntu":
+                case "debian":
+                case "raspbian":
+                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash");
+                    break;
+
+                case "fedora":
+                case "rhel":
+                case "centos":
+                    execSync("curl -sL https://rpm.nodesource.com/setup_lts.x | bash");
+                    break;
+            }
+        }
+    }
+
+    static reboot(): void {
+        execSync("shutdown -r now");
+    }
+
+    static get cli(): { [key: string]: any } {
+        return {
+            info: (): { [key: string]: any } => {
+                let path = "/usr/bin/hbs";
+                let prefix = "/usr/";
+
+                const paths = (process.env.PATH || "").split(":");
+
+                for (let i = 0; i < paths.length; i += 1) {
+                    if (existsSync(join(paths[i], "hbs"))) {
+                        path = join(paths[i], "hbs");
+
+                        break;
+                    }
+                }
+
+                if (!existsSync(path)) path = "";
+                if (path !== "") prefix = path.replace("bin/hbs", "");
+
+                let installed = "";
+                let release = "";
+                let download = "";
+
+                if (path !== "") installed = System.command(`${path} -v`);
+                if (!Semver.valid(installed)) installed = "";
+
+                const data = System.cli.release();
+
+                release = data.release || "";
+                download = data.download || "";
+
+                if ((Semver.valid(installed) && Semver.valid(release) && Semver.gt(installed, release)) || !Semver.valid(release)) {
+                    release = installed;
+                }
+
+                let mode = "none";
+
+                if (existsSync(`${prefix}lib/hbs/package.json`)) mode = "production";
+                if (existsSync(`${prefix}/package.json`)) mode = "development";
+
+                return {
+                    cli_prefix: prefix,
+                    cli_version: installed,
+                    cli_release: release,
+                    cli_upgraded: installed === release || mode === "development" ? true : !Semver.gt(release, installed),
+                    cli_download: download,
+                    cli_mode: mode,
+                };
+            },
+
+            release: (): { [key: string]: string } => {
+                const data = parseJson<{ [key: string]: any }>(System.command(`curl -sL ${HBS_REPO}releases/latest`, true), {});
+                const release = data.tag_name || "";
+                const download = ((data.assets || []).find((item: any) => item.name === `hbs-${release}.tar.gz`) || {}).browser_download_url;
+
+                return {
+                    release,
+                    download,
+                };
+            },
+
+            upgrade: (): void => {
+                const data = System.cli.info();
+
+                execSync(`curl -sL ${data.cli_download} --output ./hbs.tar.gz`);
+                execSync(`tar -xzf ./hbs.tar.gz -C ${data.cli_prefix} --strip-components=1 --no-same-owner`);
+                execSync("rm -f ./hbs.tar.gz");
+
+                if (data.cli_mode === "production") {
+                    execSync("sudo yarn install --force --production", { cwd: join(data.cli_prefix, "lib/hbs") });
+                }
+            },
+        };
+    }
+
+    static get hoobsd(): { [key: string]: any } {
+        return {
+            info: (): { [key: string]: any } => {
+                let path = "/usr/bin/hoobsd";
+                let prefix = "/usr/";
+
+                const paths = (process.env.PATH || "").split(":");
+
+                for (let i = 0; i < paths.length; i += 1) {
+                    if (existsSync(join(paths[i], "hoobsd"))) {
+                        path = join(paths[i], "hoobsd");
+
+                        break;
+                    }
+                }
+
+                if (!existsSync(path)) path = "";
+                if (path !== "") prefix = path.replace("bin/hoobsd", "");
+
+                let installed = "";
+                let release = "";
+                let download = "";
+
+                if (path !== "") installed = System.command(`${path} -v`);
+                if (!Semver.valid(installed)) installed = "";
+
+                const data = System.hoobsd.release();
+
+                release = data.release || "";
+                download = data.download || "";
+
+                if ((Semver.valid(installed) && Semver.valid(release) && Semver.gt(installed, release)) || !Semver.valid(release)) {
+                    release = installed;
+                }
+
+                let mode = "none";
+
+                if (existsSync(`${prefix}lib/hoobsd/package.json`)) mode = "production";
+                if (existsSync(`${prefix}/package.json`)) mode = "development";
+
+                return {
+                    hoobsd_prefix: prefix,
+                    hoobsd_version: installed,
+                    hoobsd_release: release,
+                    hoobsd_upgraded: installed === release || mode === "development" ? true : !Semver.gt(release, installed),
+                    hoobsd_download: download,
+                    hoobsd_mode: mode,
+                    hoobsd_running: System.hoobsd.running(),
+                };
+            },
+
+            running: (): boolean => {
+                if (System.command("pidof hoobsd") !== "") return true;
+
+                return false;
+            },
+
+            release: (): { [key: string]: string } => {
+                const data = parseJson<{ [key: string]: any }>(System.command(`curl -sL ${HOOBSD_REPO}releases/latest`, true), {});
+                const release = data.tag_name || "";
+                const download = ((data.assets || []).find((item: any) => item.name === `hoobsd-${release}.tar.gz`) || {}).browser_download_url;
+
+                return {
+                    release,
+                    download,
+                };
+            },
+
+            upgrade: (): void => {
+                const data = System.hoobsd.info();
+
+                execSync(`curl -sL ${data.hoobsd_download} --output ./hoobsd.tar.gz`);
+                execSync(`tar -xzf ./hoobsd.tar.gz -C ${data.hoobsd_prefix} --strip-components=1 --no-same-owner`);
+                execSync("rm -f ./hoobsd.tar.gz");
+
+                if (data.hoobsd_mode === "production") {
+                    execSync("sudo yarn install --force --production", { cwd: join(data.hoobsd_prefix, "lib/hoobsd") });
+                }
+            },
+        };
     }
 
     static get runtime(): { [key: string]: any } {
         return {
             info: (): { [key: string]: any } => {
-                let path = "/usr/local/bin/node";
+                let path = "/usr/bin/node";
 
-                if (!existsSync(path)) path = "/usr/bin/node";
+                const paths = (process.env.PATH || "").split(":");
+
+                for (let i = 0; i < paths.length; i += 1) {
+                    if (existsSync(join(paths[i], "node"))) {
+                        path = join(paths[i], "node");
+
+                        break;
+                    }
+                }
+
                 if (!existsSync(path)) path = "";
 
+                let installed = "";
+                let release = "";
+
+                if (path !== "") installed = System.command(`${path} -v`).replace("v", "");
+                if (!Semver.valid(installed)) installed = "";
+
+                release = System.runtime.release();
+
+                if ((Semver.valid(installed) && Semver.valid(release) && Semver.gt(installed, release)) || !Semver.valid(release)) {
+                    release = installed;
+                }
+
                 return {
-                    path: path !== "" ? path : null,
-                    prefix: path ? path.replace("bin/node", "") : null,
-                    version: path !== "" ? System.command(`${path} -v`).replace("v", "") : null,
+                    node_prefix: path !== "" ? path.replace("bin/node", "") : "",
+                    node_version: installed,
+                    node_release: release,
+                    node_upgraded: installed === release || release === "" || installed === "" ? true : !Semver.gt(release, installed),
                 };
             },
 
-            install: (): void => {
+            release: (): string => {
                 const system = System.info();
+
+                let data: any = "";
 
                 if (system.package_manager) {
                     switch (system.distribution) {
                         case "alpine":
-                            execSync("sed -i -e 's/v[[:digit:]]\\..*\\//edge\\//g' /etc/apk/repositories", { stdio: "inherit" });
-                            execSync(`${system.distribution} upgrade --update-cache --available`, { stdio: "inherit" });
-                            execSync(`${system.distribution} update`, { stdio: "inherit" });
-                            execSync(`${system.distribution} add nodejs`, { stdio: "inherit" });
+                            data = System.command("apk version nodejs");
+                            data = data.split("\n");
+                            data = data[data.length - 1];
+                            data = data.split("=");
+                            data = (data[data.length - 1] || "").trim();
+                            data = data.split("-")[0] || "";
+
+                            return data || "";
+
+                        case "ubuntu":
+                        case "debian":
+                        case "raspbian":
+                            data = System.command("apt-cache show nodejs | grep Version");
+                            data = data.split("\n")[0] || "";
+                            data = (data.split(":")[1] || "").trim();
+                            data = (data.split(/[-~]+/)[0] || "").trim();
+
+                            return data || "";
+
+                        case "fedora":
+                        case "rhel":
+                        case "centos":
+                            data = System.command(`${system.package_manager} info nodejs | grep Version`);
+                            data = data.split("\n")[1] || "";
+                            data = (data.split(":")[1] || "").trim();
+
+                            return data || "";
+                    }
+                }
+
+                return System.command("curl -sL https://nodejs.org/en/download/ | grep 'Latest LTS Version' | awk -F'[<>]' '{print $5}'");
+            },
+
+            upgrade: (): void => {
+                const system = System.info();
+                const release = System.runtime.release();
+
+                if (system.package_manager) {
+                    switch (system.distribution) {
+                        case "alpine":
+                            execSync("apk update");
+                            execSync("apk add curl tar git python3 make gcc g++ nodejs yarn");
                             break;
 
                         case "ubuntu":
                         case "debian":
                         case "raspbian":
-                            switch (system.arch) {
-                                case "x86_64":
-                                case "amd64":
-                                case "armv7l":
-                                case "armhf":
-                                case "arm64":
-                                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash -", { stdio: "inherit" });
-                                    execSync(`${system.distribution} update`, { stdio: "inherit" });
-                                    execSync(`${system.distribution} install -y build-essential nodejs`, { stdio: "inherit" });
-                                    break;
-
-                                default:
-                                    Console.error(`unsupported architecture "${system.arch}", node must be installed manually.`);
-                                    break;
-                            }
-
+                            execSync("apt-get update");
+                            execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs yarn");
                             break;
 
                         case "fedora":
                         case "rhel":
                         case "centos":
-                            execSync("curl -sL https://rpm.nodesource.com/setup_lts.x | bash -", { stdio: "inherit" });
-                            execSync(`${system.distribution} install -y gcc-c++ make nodejs`, { stdio: "inherit" });
+                            execSync(`${system.package_manager} update -y curl tar git policycoreutils python3 make gcc gcc-c++ nodejs yarnpkg`);
+                            break;
+
+                        case "macos":
+                            execSync(`curl -sL https://nodejs.org/dist/v${release}/node-v${release}.pkg --output ./node.pkg`);
+                            execSync("installer -pkg ./node.pkg -target /");
+                            execSync("rm -f ./node.pkg");
                             break;
 
                         default:
