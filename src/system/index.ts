@@ -26,6 +26,8 @@ import Instances from "./instances";
 import { Console } from "../logger";
 import { parseJson } from "../formatters";
 
+const CACHE: { [key: string]: any } = {};
+
 export default class System {
     static info(): { [key: string]: any } {
         const results: { [key: string]: any } = {};
@@ -185,13 +187,11 @@ export default class System {
             },
 
             release: (): { [key: string]: string } => {
-                const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hbs/latest", true), {});
-                const release = (data.results || {}).version || "";
-                const download = (data.results || {}).download || "";
+                if (!CACHE.cli) CACHE.cli = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hbs/latest", true), {}).results || {};
 
                 return {
-                    release,
-                    download,
+                    release: CACHE.cli.version || "",
+                    download: CACHE.cli.download || "",
                 };
             },
 
@@ -267,13 +267,11 @@ export default class System {
             },
 
             release: (): { [key: string]: string } => {
-                const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hoobsd/latest", true), {});
-                const release = (data.results || {}).version || "";
-                const download = (data.results || {}).download || "";
+                if (!CACHE.hoobsd) CACHE.hoobsd = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hoobsd/latest", true), {}).results || {};
 
                 return {
-                    release,
-                    download,
+                    release: CACHE.hoobsd.version || "",
+                    download: CACHE.hoobsd.download || "",
                 };
             },
 
@@ -366,7 +364,9 @@ export default class System {
                     }
                 }
 
-                return (parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/node/latest", true), {}).results || {}).version || "";
+                if (!CACHE.node) CACHE.node = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/node/latest", true), {}).results || {};
+
+                return CACHE.node.version || "";
             },
 
             upgrade: (): void => {
