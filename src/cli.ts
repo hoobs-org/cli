@@ -808,6 +808,7 @@ export = function Command(): void {
     Program.command("system <action> [file]")
         .description("reboot, reset and upgrade this device")
         .option("--beta", "enable beta versions")
+        .option("--test", "test upgrade operation")
         .action(async (action, file, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("root is required, did you forget to use 'sudo'?");
@@ -958,10 +959,12 @@ export = function Command(): void {
                         Console.info("upgrading node");
 
                         spinner = Spinner({ stream: process.stdout }).start();
-                        System.runtime.upgrade(command.beta);
+
+                        if (!command.test) System.runtime.upgrade(command.beta);
+
                         spinner.stop();
                     } else {
-                        Console.info(Chalk.cyan("node is already up-to-date"));
+                        Console.info(Chalk.green("node is already up-to-date"));
                     }
 
                     data = System.cli.info();
@@ -974,10 +977,12 @@ export = function Command(): void {
                         Console.info("upgrading cli");
 
                         spinner = Spinner({ stream: process.stdout }).start();
-                        System.cli.upgrade(command.beta);
+
+                        if (!command.test) System.cli.upgrade(command.beta);
+
                         spinner.stop();
                     } else {
-                        Console.info(Chalk.cyan("cli is already up-to-date"));
+                        Console.info(Chalk.green("cli is already up-to-date"));
                     }
 
                     data = System.hoobsd.info();
@@ -990,27 +995,29 @@ export = function Command(): void {
                         Console.info("upgrading hoobsd");
 
                         spinner = Spinner({ stream: process.stdout }).start();
-                        System.hoobsd.upgrade(command.beta);
+
+                        if (!command.test) System.hoobsd.upgrade(command.beta);
+
                         spinner.stop();
 
                         reboot = true;
                     } else {
-                        Console.info(Chalk.cyan("hoobsd is already up-to-date"));
+                        Console.info(Chalk.green("hoobsd is already up-to-date"));
                     }
 
-                    if (State.mode === "production") {
-                        if (reboot && State.container) {
-                            Console.info(Chalk.yellow("you need to restart this container"));
-                        } else if (reboot) {
-                            const { proceed } = (await prompt([{
-                                type: "confirm",
-                                name: "proceed",
-                                message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
-                                default: false,
-                            }]));
+                    if (!command.test && reboot && State.container && State.mode === "production") {
+                        Console.info(Chalk.yellow("you need to restart this container"));
+                    } else if (!command.test && reboot && State.mode === "production") {
+                        const { proceed } = (await prompt([{
+                            type: "confirm",
+                            name: "proceed",
+                            message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
+                            default: false,
+                        }]));
 
-                            if (!proceed) System.restart();
-                        }
+                        if (!proceed) System.restart();
+                    } else if (command.test && reboot) {
+                        Console.info(Chalk.yellow("this will require a reboot"));
                     }
 
                     break;
