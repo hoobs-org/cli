@@ -807,8 +807,8 @@ export = function Command(): void {
 
     Program.command("system <action> [file]")
         .description("reboot, reset and upgrade this device")
+        .option("-t, --test", "test upgrade operation")
         .option("--beta", "enable beta versions")
-        .option("--test", "test upgrade operation")
         .action(async (action, file, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("root is required, did you forget to use 'sudo'?");
@@ -968,10 +968,6 @@ export = function Command(): void {
                 case "upgrade":
                     data = System.runtime.info();
 
-                    console.info("");
-                    Console.table([data]);
-                    console.info("");
-
                     if (!data.node_upgraded) {
                         Console.info("syncing repositories");
 
@@ -992,10 +988,6 @@ export = function Command(): void {
 
                     data = System.cli.info();
 
-                    console.info("");
-                    Console.table([data]);
-                    console.info("");
-
                     if (!data.cli_upgraded) {
                         Console.info("upgrading cli");
 
@@ -1009,10 +1001,6 @@ export = function Command(): void {
                     }
 
                     data = System.hoobsd.info();
-
-                    console.info("");
-                    Console.table([data]);
-                    console.info("");
 
                     if (!data.hoobsd_upgraded) {
                         Console.info("upgrading hoobsd");
