@@ -826,31 +826,54 @@ export = function Command(): void {
             let reboot = false;
 
             switch (action) {
-                case "info":
+                case "version":
+                case "versions":
                     spinner = Spinner({ stream: process.stdout }).start();
 
                     data = {
-                        system: [System.info()],
-                        runtime: [System.runtime.info(command.beta)],
-                        cli: [System.cli.info(command.beta)],
-                        hoobsd: [System.hoobsd.info(command.beta)],
+                        system: System.info(),
+                        runtime: System.runtime.info(command.beta),
+                        cli: System.cli.info(command.beta),
+                        hoobsd: System.hoobsd.info(command.beta),
                     };
 
-                    delete data.cli[0].cli_mode;
-                    delete data.hoobsd[0].hoobsd_mode;
-                    delete data.cli[0].cli_download;
-                    delete data.hoobsd[0].hoobsd_download;
+                    list.push({
+                        application: "node",
+                        distribution: data.system.distribution,
+                        package_manager: data.system.package_manager,
+                        version: data.runtime.node_version,
+                        release: data.runtime.node_release,
+                        upgraded: data.runtime.node_upgraded,
+                        init_system: "",
+                        running: "",
+                    });
+
+                    list.push({
+                        application: "cli",
+                        distribution: data.system.distribution,
+                        package_manager: data.system.package_manager,
+                        version: data.cli.cli_version,
+                        release: data.cli.cli_release,
+                        upgraded: data.cli.cli_upgraded,
+                        init_system: "",
+                        running: "",
+                    });
+
+                    list.push({
+                        application: "hoobsd",
+                        distribution: data.system.distribution,
+                        package_manager: data.system.package_manager,
+                        version: data.hoobsd.hoobsd_version,
+                        release: data.hoobsd.hoobsd_release,
+                        upgraded: data.hoobsd.hoobsd_upgraded,
+                        init_system: data.system.init_system,
+                        running: data.hoobsd.hoobsd_running,
+                    });
 
                     spinner.stop();
 
                     console.info("");
-                    Console.table(data.system);
-                    console.info("");
-                    Console.table(data.runtime);
-                    console.info("");
-                    Console.table(data.cli);
-                    console.info("");
-                    Console.table(data.hoobsd);
+                    Console.table(list);
                     console.info("");
                     break;
 
