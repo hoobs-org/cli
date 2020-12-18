@@ -196,7 +196,7 @@ export default class Plugins {
         });
     }
 
-    static uninstall(name: string) {
+    static uninstall(name: string): Promise<void> {
         return new Promise((resolve, reject) => {
             const flags = [];
 
@@ -258,7 +258,7 @@ export default class Plugins {
         });
     }
 
-    static upgrade(name?: string, version?: string) {
+    static upgrade(name?: string, version?: string): Promise<void> {
         const tag = version || "latest";
 
         return new Promise((resolve) => {

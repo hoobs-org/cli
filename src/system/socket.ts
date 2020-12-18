@@ -25,7 +25,7 @@ import { Events } from "../logger";
 const sockets: { [key: string]: any } = {};
 
 export default class Socket {
-    static emit(event: Events, body: any): Promise<any> {
+    static emit(event: Events, body: any): Promise<void> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
