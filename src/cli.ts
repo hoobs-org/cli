@@ -153,6 +153,12 @@ export = function Command(): void {
                         return;
                     }
 
+                    if (!plugin) {
+                        Console.warn("please define a plugin");
+
+                        return;
+                    }
+
                     if (!command.instance || command.instance === "" || State.id === "api") {
                         if (State.instances.filter((item) => item.type === "bridge").length === 1) {
                             State.id = State.instances.filter((item) => item.type === "bridge")[0].id;
@@ -211,6 +217,12 @@ export = function Command(): void {
                 case "uninstall":
                     if (State.instances.filter((item) => item.type === "bridge").length === 0) {
                         Console.warn("no instances defined");
+
+                        return;
+                    }
+
+                    if (!plugin) {
+                        Console.warn("please define a plugin");
 
                         return;
                     }
@@ -837,16 +849,18 @@ export = function Command(): void {
                         hoobsd: System.hoobsd.info(command.beta),
                     };
 
-                    list.push({
-                        application: "node",
-                        distribution: data.system.distribution,
-                        package_manager: data.system.package_manager,
-                        version: data.runtime.node_version,
-                        release: data.runtime.node_release,
-                        upgraded: data.runtime.node_upgraded,
-                        init_system: "",
-                        running: "",
-                    });
+                    if ((data.system.product === "box" || data.system.product === "card") && data.package_manager === "apt-get") {
+                        list.push({
+                            application: "node",
+                            distribution: data.system.distribution,
+                            package_manager: data.system.package_manager,
+                            version: data.runtime.node_version,
+                            release: data.runtime.node_release,
+                            upgraded: data.runtime.node_upgraded,
+                            init_system: "",
+                            running: "",
+                        });
+                    }
 
                     list.push({
                         application: "cli",
@@ -966,24 +980,28 @@ export = function Command(): void {
 
                 case "update":
                 case "upgrade":
-                    data = System.runtime.info();
+                    data = System.info();
 
-                    if (!data.node_upgraded) {
-                        Console.info("syncing repositories");
+                    if ((data.product === "box" || data.product === "card") && data.package_manager === "apt-get") {
+                        data = System.runtime.info();
 
-                        spinner = Spinner({ stream: process.stdout }).start();
-                        System.sync(command.beta);
-                        spinner.stop();
+                        if (!data.node_upgraded) {
+                            Console.info("syncing repositories");
 
-                        Console.info("upgrading node");
+                            spinner = Spinner({ stream: process.stdout }).start();
+                            System.sync(command.beta);
+                            spinner.stop();
 
-                        spinner = Spinner({ stream: process.stdout }).start();
+                            Console.info("upgrading node");
 
-                        if (!command.test) System.runtime.upgrade(command.beta);
+                            spinner = Spinner({ stream: process.stdout }).start();
 
-                        spinner.stop();
-                    } else {
-                        Console.info(Chalk.green("node is already up-to-date"));
+                            if (!command.test) System.runtime.upgrade();
+
+                            spinner.stop();
+                        } else {
+                            Console.info(Chalk.green("node is already up-to-date"));
+                        }
                     }
 
                     data = System.cli.info();
