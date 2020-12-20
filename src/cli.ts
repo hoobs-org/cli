@@ -37,7 +37,7 @@ import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
-if (System.command("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+if (System.shellSync("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
@@ -58,7 +58,6 @@ export = function Command(): void {
         .action(async (command) => {
             State.instances = Instances.list();
 
-            let spinner: Spinner.Ora;
             let instances = [];
 
             if (State.instances.findIndex((n) => n.id === "api") >= 0) {
@@ -88,11 +87,9 @@ export = function Command(): void {
                     ])).port, 10);
                 }
 
-                Instances.createService("API", parseInt(command.port, 10), command.pin || "031-45-154", command.skip).then((results) => {
+                Instances.create("API", parseInt(command.port, 10), command.pin || "031-45-154", command.skip).then((results) => {
                     if (results) {
-                        spinner = Spinner({ stream: process.stdout }).start();
                         instances = Instances.list();
-                        spinner.stop();
 
                         if (instances.length > 0) {
                             console.info("");
@@ -137,7 +134,6 @@ export = function Command(): void {
                 return;
             }
 
-            let spinner: Spinner.Ora;
             let combined: { [key: string]: any }[] = [];
             let plugin: string = name;
             let plugins: { [key: string]: any }[] = [];
@@ -189,9 +185,7 @@ export = function Command(): void {
                     }
 
                     Plugins.install(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
-                        spinner = Spinner({ stream: process.stdout }).start();
                         plugins = Plugins.installed();
-                        spinner.stop();
 
                         if (plugins.length > 0) {
                             console.info("");
@@ -256,9 +250,7 @@ export = function Command(): void {
                     }
 
                     Plugins.uninstall(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).finally(() => {
-                        spinner = Spinner({ stream: process.stdout }).start();
                         plugins = Plugins.installed();
-                        spinner.stop();
 
                         if (plugins.length > 0) {
                             console.info("");
@@ -318,9 +310,7 @@ export = function Command(): void {
                         }
 
                         Plugins.upgrade(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
-                            spinner = Spinner({ stream: process.stdout }).start();
                             plugins = Plugins.installed();
-                            spinner.stop();
 
                             if (plugins.length > 0) {
                                 console.info("");
@@ -340,9 +330,7 @@ export = function Command(): void {
                         });
                     } else {
                         Plugins.upgrade().finally(() => {
-                            spinner = Spinner({ stream: process.stdout }).start();
                             plugins = Plugins.installed();
-                            spinner.stop();
 
                             if (plugins.length > 0) {
                                 console.info("");
@@ -372,8 +360,6 @@ export = function Command(): void {
                         return;
                     }
 
-                    spinner = Spinner({ stream: process.stdout }).start();
-
                     if (!command.instance || command.instance === "") {
                         for (let i = 0; i < State.instances.length; i += 1) {
                             if (State.instances[i].type === "bridge") {
@@ -396,8 +382,6 @@ export = function Command(): void {
                             return 0;
                         });
 
-                        spinner.stop();
-
                         State.id = "api";
 
                         if (combined.length > 0) {
@@ -409,8 +393,6 @@ export = function Command(): void {
                         }
                     } else {
                         plugins = Plugins.installed();
-
-                        spinner.stop();
 
                         if (plugins.length > 0) {
                             console.info("");
@@ -481,8 +463,6 @@ export = function Command(): void {
 
             State.timestamps = true;
 
-            const spinner = Spinner({ stream: process.stdout }).start();
-
             let instance: string;
 
             if (command.instance) {
@@ -490,8 +470,6 @@ export = function Command(): void {
             }
 
             const messages = Console.load(parseInt(command.tail, 10) || 50, instance!);
-
-            spinner.stop();
 
             for (let i = 0; i < messages.length; i += 1) {
                 if (messages[i].message && messages[i].message !== "") {
@@ -566,11 +544,9 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "create":
-                    Instances.createService(command.instance, parseInt(command.port, 10), command.skip, 0).then((results) => {
+                    Instances.create(command.instance, parseInt(command.port, 10), command.skip, 0).then((results) => {
                         if (results) {
-                            spinner = Spinner({ stream: process.stdout }).start();
                             instances = Instances.list();
-                            spinner.stop();
 
                             if (instances.length > 0) {
                                 console.info("");
@@ -619,7 +595,7 @@ export = function Command(): void {
                     if (sanitize(command.instance) !== "api") {
                         spinner = Spinner({ stream: process.stdout }).start();
 
-                        Instances.removeService(command.instance).then((results) => {
+                        Instances.uninstall(command.instance).then((results) => {
                             if (results) {
                                 instances = Instances.list();
 
@@ -696,9 +672,7 @@ export = function Command(): void {
 
                 case "ls":
                 case "list":
-                    spinner = Spinner({ stream: process.stdout }).start();
                     instances = Instances.list();
-                    spinner.stop();
 
                     if (instances.length > 0) {
                         console.info("");
@@ -802,9 +776,7 @@ export = function Command(): void {
                         return;
                     }
 
-                    spinner = Spinner({ stream: process.stdout }).start();
                     list = Extentions.list();
-                    spinner.stop();
 
                     console.info("");
                     Console.table(list);
@@ -831,10 +803,10 @@ export = function Command(): void {
             State.instances = Instances.list();
 
             const list: { [key: string]: any}[] = [];
+            const waits: Promise<void>[] = [];
 
             let spinner: Spinner.Ora;
             let entries: string[] = [];
-            let data: { [key: string]: any } = {};
             let reboot = false;
 
             switch (action) {
@@ -842,53 +814,69 @@ export = function Command(): void {
                 case "versions":
                     spinner = Spinner({ stream: process.stdout }).start();
 
-                    data = {
-                        system: System.info(),
-                        runtime: System.runtime.info(command.beta),
-                        cli: System.cli.info(command.beta),
-                        hoobsd: System.hoobsd.info(command.beta),
-                    };
+                    System.info().then((system) => {
+                        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                            waits.push(new Promise<void>((resolve) => {
+                                System.runtime.info(command.beta).then((results: { [key: string]: any }) => {
+                                    list.push({
+                                        application: "node",
+                                        distribution: system.distribution,
+                                        package_manager: system.package_manager,
+                                        version: results.node_version,
+                                        latest: results.node_current,
+                                        upgraded: results.node_upgraded,
+                                        init_system: "",
+                                        running: "",
+                                    });
 
-                    if ((data.system.product === "box" || data.system.product === "card") && data.package_manager === "apt-get") {
-                        list.push({
-                            application: "node",
-                            distribution: data.system.distribution,
-                            package_manager: data.system.package_manager,
-                            version: data.runtime.node_version,
-                            release: data.runtime.node_release,
-                            upgraded: data.runtime.node_upgraded,
-                            init_system: "",
-                            running: "",
+                                    resolve();
+                                });
+                            }));
+                        }
+
+                        waits.push(new Promise<void>((resolve) => {
+                            System.cli.info(command.beta).then((results: { [key: string]: any }) => {
+                                list.push({
+                                    application: "cli",
+                                    distribution: system.distribution,
+                                    package_manager: system.package_manager,
+                                    version: results.cli_version,
+                                    latest: results.cli_current,
+                                    upgraded: results.cli_upgraded,
+                                    init_system: "",
+                                    running: "",
+                                });
+
+                                resolve();
+                            });
+                        }));
+
+                        waits.push(new Promise<void>((resolve) => {
+                            System.hoobsd.info(command.beta).then((results: { [key: string]: any }) => {
+                                list.push({
+                                    application: "hoobsd",
+                                    distribution: system.distribution,
+                                    package_manager: system.package_manager,
+                                    version: results.hoobsd_version,
+                                    latest: results.hoobsd_current,
+                                    upgraded: results.hoobsd_upgraded,
+                                    init_system: system.init_system,
+                                    running: results.hoobsd_running,
+                                });
+
+                                resolve();
+                            });
+                        }));
+
+                        Promise.all(waits).then(() => {
+                            spinner.stop();
+
+                            console.info("");
+                            Console.table(list);
+                            console.info("");
                         });
-                    }
-
-                    list.push({
-                        application: "cli",
-                        distribution: data.system.distribution,
-                        package_manager: data.system.package_manager,
-                        version: data.cli.cli_version,
-                        release: data.cli.cli_release,
-                        upgraded: data.cli.cli_upgraded,
-                        init_system: "",
-                        running: "",
                     });
 
-                    list.push({
-                        application: "hoobsd",
-                        distribution: data.system.distribution,
-                        package_manager: data.system.package_manager,
-                        version: data.hoobsd.hoobsd_version,
-                        release: data.hoobsd.hoobsd_release,
-                        upgraded: data.hoobsd.hoobsd_upgraded,
-                        init_system: data.system.init_system,
-                        running: data.hoobsd.hoobsd_running,
-                    });
-
-                    spinner.stop();
-
-                    console.info("");
-                    Console.table(list);
-                    console.info("");
                     break;
 
                 case "backup":
@@ -971,83 +959,122 @@ export = function Command(): void {
                 case "reset":
                     Console.warn("this will remove all settings and plugins, you will need to restore or initilize this device");
 
-                    spinner = Spinner({ stream: process.stdout }).start();
                     Instances.reset();
-                    spinner.stop();
 
                     Console.info("configuration and plugins removed");
                     break;
 
                 case "update":
                 case "upgrade":
-                    data = System.info();
+                    spinner = Spinner({ stream: process.stdout }).start();
 
-                    if ((data.product === "box" || data.product === "card") && data.package_manager === "apt-get") {
-                        data = System.runtime.info();
-
-                        if (!data.node_upgraded) {
-                            Console.info("syncing repositories");
-
-                            spinner = Spinner({ stream: process.stdout }).start();
-                            System.sync(command.beta);
-                            spinner.stop();
-
-                            Console.info("upgrading node");
-
-                            spinner = Spinner({ stream: process.stdout }).start();
-
-                            if (!command.test) System.runtime.upgrade();
-
-                            spinner.stop();
-                        } else {
-                            Console.info(Chalk.green("node is already up-to-date"));
-                        }
-                    }
-
-                    data = System.cli.info();
-
-                    if (!data.cli_upgraded) {
-                        Console.info("upgrading cli");
-
-                        spinner = Spinner({ stream: process.stdout }).start();
-
-                        if (!command.test) System.cli.upgrade(command.beta);
-
-                        spinner.stop();
-                    } else {
-                        Console.info(Chalk.green("cli is already up-to-date"));
-                    }
-
-                    data = System.hoobsd.info();
-
-                    if (!data.hoobsd_upgraded) {
-                        Console.info("upgrading hoobsd");
-
-                        spinner = Spinner({ stream: process.stdout }).start();
-
-                        if (!command.test) System.hoobsd.upgrade(command.beta);
-
+                    System.info().then((system) => {
                         spinner.stop();
 
-                        reboot = true;
-                    } else {
-                        Console.info(Chalk.green("hoobsd is already up-to-date"));
-                    }
+                        Promise.all([new Promise<void>((resolve) => {
+                            if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                                spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
 
-                    if (!command.test && reboot && State.container && State.mode === "production") {
-                        Console.info(Chalk.yellow("you need to restart this container"));
-                    } else if (!command.test && reboot && State.mode === "production") {
-                        const { proceed } = (await prompt([{
-                            type: "confirm",
-                            name: "proceed",
-                            message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
-                            default: false,
-                        }]));
+                                System.runtime.info(command.beta).then((results: { [key: string]: any }) => {
+                                    spinner.stop();
 
-                        if (!proceed) System.restart();
-                    } else if (command.test && reboot) {
-                        Console.info(Chalk.yellow("this will require a reboot"));
-                    }
+                                    if (!results.node_upgraded) {
+                                        if (command.test) {
+                                            Console.info(Chalk.yellow(`node will be upgraded to ${results.node_current}`));
+                                        } else {
+                                            spinner = Spinner({ text: "upgrading node", stream: process.stdout }).start();
+
+                                            System.runtime.upgrade().then(() => {
+                                                spinner.stop();
+
+                                                Console.info(Chalk.green(`node upgraded to ${results.node_current}`));
+
+                                                resolve();
+                                            });
+                                        }
+                                    } else {
+                                        Console.info(Chalk.green("node is already up-to-date"));
+
+                                        resolve();
+                                    }
+                                });
+                            } else {
+                                resolve();
+                            }
+                        })]).then(() => {
+                            Promise.all([new Promise<void>((resolve) => {
+                                spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
+
+                                System.cli.info(command.beta).then((results: { [key: string]: any }) => {
+                                    spinner.stop();
+
+                                    if (!results.cli_upgraded) {
+                                        if (command.test) {
+                                            Console.info(Chalk.yellow(`cli will be upgraded to ${results.cli_current}`));
+                                        } else {
+                                            spinner = Spinner({ text: "upgrading cli", stream: process.stdout }).start();
+
+                                            System.cli.upgrade().then(() => {
+                                                spinner.stop();
+
+                                                Console.info(Chalk.green(`cli upgraded to ${results.cli_current}`));
+
+                                                resolve();
+                                            });
+                                        }
+                                    } else {
+                                        Console.info(Chalk.green("cli is already up-to-date"));
+
+                                        resolve();
+                                    }
+                                });
+                            })]).then(() => {
+                                Promise.all([new Promise<void>((resolve) => {
+                                    spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
+
+                                    System.hoobsd.info(command.beta).then((results: { [key: string]: any }) => {
+                                        spinner.stop();
+
+                                        if (!results.hoobsd_upgraded) {
+                                            if (command.test) {
+                                                Console.info(Chalk.yellow(`hoobsd will be upgraded to ${results.hoobsd_current}`));
+                                            } else {
+                                                spinner = Spinner({ text: "upgrading hoobsd", stream: process.stdout }).start();
+                                                reboot = results.hoobsd_running;
+
+                                                System.hoobsd.upgrade().then(() => {
+                                                    spinner.stop();
+
+                                                    Console.info(Chalk.green(`hoobsd upgraded to ${results.hoobsd_current}`));
+
+                                                    resolve();
+                                                });
+                                            }
+                                        } else {
+                                            Console.info(Chalk.green("hoobsd is already up-to-date"));
+
+                                            resolve();
+                                        }
+                                    });
+                                })]).then(async () => {
+                                    if (!command.test && reboot && State.container && State.mode === "production") {
+                                        Console.info(Chalk.yellow("you need to restart this container"));
+                                    } else if (!command.test && reboot && State.mode === "production") {
+                                        const { proceed } = (await prompt([{
+                                            type: "confirm",
+                                            name: "proceed",
+                                            message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
+                                            default: false,
+                                        }]));
+
+                                        if (!proceed) System.restart();
+                                    } else if (command.test && reboot) {
+                                        Console.info(Chalk.yellow("this will require a reboot"));
+                                    }
+                                });
+                            });
+                        });
+                    });
 
                     break;
 
