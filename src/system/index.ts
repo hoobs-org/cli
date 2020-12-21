@@ -21,7 +21,7 @@
 
 import { join } from "path";
 import { exec, execSync } from "child_process";
-import { existsSync } from "fs-extra";
+import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
 import Releases from "./releases";
 
@@ -51,6 +51,7 @@ export default class System {
 
         if (existsSync("/etc/systemd/system")) results.init_system = "systemd";
         if (existsSync("/Library/LaunchDaemons/")) results.init_system = "launchd";
+        if (await System.shell("cat /proc/version | grep microsoft") !== "") results.init_system = "";
 
         switch (results.distribution) {
             case "alpine":
@@ -114,6 +115,28 @@ export default class System {
         CACHE.system = results;
 
         return results;
+    }
+
+    static async hostname(value: string) {
+        const system = await System.info();
+
+        if (system.mdns) {
+            let formatted = value || "";
+
+            formatted = formatted.replace("https://", "");
+            formatted = formatted.replace("http://", "");
+            formatted = formatted.replace(/ /g, "-");
+            formatted = formatted.split(".")[0];
+
+            if (formatted && formatted !== "" && formatted !== system.mdns_broadcast) {
+                const broadcast = await System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
+                const content = readFileSync("/etc/avahi/avahi-daemon.conf").toString();
+
+                writeFileSync("/etc/avahi/avahi-daemon.conf", content.replace(broadcast, `host-name=${formatted}`));
+
+                await System.shell("systemctl restart avahi-daemon");
+            }
+        }
     }
 
     static shell(command: string, multiline?: boolean): Promise<string> {
@@ -222,12 +245,12 @@ export default class System {
             upgrade: async (beta: boolean): Promise<void> => {
                 const data = await System.cli.info(beta);
 
-                execSync(`curl -sL ${data.cli_download} --output ./hbs.tar.gz`);
-                execSync(`tar -xzf ./hbs.tar.gz -C ${data.cli_prefix} --strip-components=1 --no-same-owner`);
-                execSync("rm -f ./hbs.tar.gz");
+                execSync(`curl -sL ${data.cli_download} --output ./hbs.tar.gz`, { stdio: "ignore" });
+                execSync(`tar -xzf ./hbs.tar.gz -C ${data.cli_prefix} --strip-components=1 --no-same-owner`, { stdio: "ignore" });
+                execSync("rm -f ./hbs.tar.gz", { stdio: "ignore" });
 
                 if (data.cli_mode === "production") {
-                    execSync("yarn install --force --production", { cwd: join(data.cli_prefix, "lib/hbs") });
+                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.cli_prefix, "lib/hbs") });
                 }
             },
         };
@@ -294,12 +317,12 @@ export default class System {
             upgrade: async (beta: boolean): Promise<void> => {
                 const version = await System.hoobsd.info(beta);
 
-                execSync(`curl -sL ${version.hoobsd_download} --output ./hoobsd.tar.gz`);
-                execSync(`tar -xzf ./hoobsd.tar.gz -C ${version.hoobsd_prefix} --strip-components=1 --no-same-owner`);
-                execSync("rm -f ./hoobsd.tar.gz");
+                execSync(`curl -sL ${version.hoobsd_download} --output ./hoobsd.tar.gz`, { stdio: "ignore" });
+                execSync(`tar -xzf ./hoobsd.tar.gz -C ${version.hoobsd_prefix} --strip-components=1 --no-same-owner`, { stdio: "ignore" });
+                execSync("rm -f ./hoobsd.tar.gz", { stdio: "ignore" });
 
                 if (version.hoobsd_mode === "production") {
-                    execSync("yarn install --force --production", { cwd: join(version.hoobsd_prefix, "lib/hoobsd") });
+                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(version.hoobsd_prefix, "lib/hoobsd") });
                 }
             },
         };
@@ -344,7 +367,7 @@ export default class System {
                 const system = await System.info();
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
-                    execSync(`curl -sL https://deb.nodesource.com/setup_${beta ? "current" : "lts"}.x | bash`);
+                    execSync(`curl -sL https://deb.nodesource.com/setup_${beta ? "current" : "lts"}.x | bash`, { stdio: "ignore" });
 
                     let data: any = "";
 
@@ -365,8 +388,8 @@ export default class System {
                 const system = await System.info();
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
-                    execSync("apt-get update");
-                    execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs yarn");
+                    execSync("apt-get update", { stdio: "ignore" });
+                    execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs yarn", { stdio: "ignore" });
                 }
             },
         };

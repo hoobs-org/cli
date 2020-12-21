@@ -50,12 +50,14 @@ export = function Command(): void {
         .option("--container", "run in a container", () => { State.container = true; })
         .option("--verbose", "turn on verbose logging", () => { State.verbose = true; });
 
-    Program.command("initilize")
+    Program.command("install")
         .description("initial setup")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-n, --pin <pin>", "set the pin for the bridge")
         .option("-s, --skip", "skip init system intergration")
         .action(async (command) => {
+            if ((await System.hoobsd.info()).hoobsd_version === "") await System.hoobsd.upgrade();
+
             State.instances = Instances.list();
 
             let instances = [];
@@ -810,6 +812,21 @@ export = function Command(): void {
             let reboot = false;
 
             switch (action) {
+                case "hostname":
+                    System.info().then(async (system) => {
+                        if (system.mdns && file) {
+                            Console.info("setting hostname");
+
+                            await System.hostname(file);
+                        } else if (system.mdns) {
+                            Console.info(Chalk.cyan(system.mdns_broadcast));
+                        } else {
+                            Console.info(Program.helpInformation());
+                        }
+                    });
+
+                    break;
+
                 case "version":
                 case "versions":
                     spinner = Spinner({ stream: process.stdout }).start();
