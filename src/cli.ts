@@ -54,7 +54,6 @@ export = function Command(): void {
         .description("initial setup")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-n, --pin <pin>", "set the pin for the bridge")
-        .option("-s, --skip", "skip init system intergration")
         .action(async (command) => {
             if ((await System.hoobsd.info()).hoobsd_version === "") await System.hoobsd.upgrade();
 
@@ -89,7 +88,7 @@ export = function Command(): void {
                     ])).port, 10);
                 }
 
-                Instances.create("API", parseInt(command.port, 10), command.pin || "031-45-154", command.skip).then((results) => {
+                Instances.create("API", parseInt(command.port, 10), command.pin || "031-45-154", 0).then((results) => {
                     if (results) {
                         instances = Instances.list();
 
@@ -524,7 +523,6 @@ export = function Command(): void {
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
-        .option("-s, --skip", "skip init system intergration")
         .action(async (action, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -546,7 +544,7 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "create":
-                    Instances.create(command.instance, parseInt(command.port, 10), command.skip, 0).then((results) => {
+                    Instances.create(command.instance, parseInt(command.port, 10), "031-45-154", 0).then((results) => {
                         if (results) {
                             instances = Instances.list();
 

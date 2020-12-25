@@ -287,12 +287,12 @@ export default class Instances {
         writeFileSync(Paths.instancesPath(), formatJson(instances));
     }
 
-    static create(name: string, port: number, pin: string, autostart: number, skip?: boolean): Promise<boolean> {
+    static create(name: string, port: number, pin: string, autostart: number): Promise<boolean> {
         return new Promise((resolve) => {
             if (!existsSync(Paths.instancesPath())) writeFileSync(Paths.instancesPath(), "[]");
 
             if (name && port && State.instances.findIndex((n) => n.id === sanitize(name)) === -1 && State.instances.findIndex((n) => n.port === port) === -1) {
-                if (sanitize(name) === "api" && !skip) Instances.install();
+                if (sanitize(name) === "api" && State.mode === "production") Instances.install();
 
                 Socket.emit(Events.NOTIFICATION, {
                     instance: "api",
@@ -369,7 +369,7 @@ export default class Instances {
                     if (result && result.name && result.port) {
                         const id = sanitize(result.name);
 
-                        if (sanitize(name) === "api" && !skip) Instances.install();
+                        if (sanitize(name) === "api" && State.mode === "production") Instances.install();
 
                         Socket.emit(Events.NOTIFICATION, {
                             instance: "api",
@@ -441,14 +441,14 @@ export default class Instances {
             }
         }
 
-        if (existsSync("/etc/systemd/system/hoobsd.service")) {
+        if (State.mode === "production" && existsSync("/etc/systemd/system/hoobsd.service")) {
             execSync("systemctl stop hoobsd.service");
             execSync("systemctl disable hoobsd.service");
 
             execSync("rm -f /etc/systemd/system/hoobsd.service");
         }
 
-        if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
+        if (State.mode === "production" && existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
             execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
             execSync("rm -f /Library/LaunchDaemons/org.hoobsd.plist");
         }
@@ -587,7 +587,7 @@ export default class Instances {
         });
     }
 
-    static restore(file: string, remove?: boolean, skip?: boolean): Promise<void> {
+    static restore(file: string, remove?: boolean): Promise<void> {
         return new Promise((resolve) => {
             Instances.metadata(file).then((metadata) => {
                 if (metadata.type === "full") {
@@ -627,7 +627,7 @@ export default class Instances {
                                 });
                             }
 
-                            if (instances.find((item) => item.type === "api") && !skip) Instances.install();
+                            if (instances.find((item) => item.type === "api") && State.mode === "production") Instances.install();
 
                             resolve();
                         }, 1000);
