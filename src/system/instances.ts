@@ -50,7 +50,8 @@ import {
     sanitize,
 } from "../formatters";
 
-const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
+const PROMPT: Inquirer.PromptModule = Inquirer.createPromptModule();
+const INSTANCE_TEARDOWN_DELAY = 1000;
 
 export interface InstanceRecord {
     id: string;
@@ -316,7 +317,7 @@ export default class Instances {
                     resolve(true);
                 });
             } else {
-                prompt([
+                PROMPT([
                     {
                         type: "input",
                         name: "name",
@@ -630,7 +631,7 @@ export default class Instances {
                             if (instances.find((item) => item.type === "api") && State.mode === "production") Instances.install();
 
                             resolve();
-                        }, 1000);
+                        }, INSTANCE_TEARDOWN_DELAY);
                     });
                 } else {
                     resolve();

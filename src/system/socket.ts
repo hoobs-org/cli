@@ -22,7 +22,8 @@ import { join } from "path";
 import Paths from "./paths";
 import { Events } from "../logger";
 
-const sockets: { [key: string]: any } = {};
+const SOCKETS: { [key: string]: any } = {};
+const SOCKET_CONNECTION_DELAY = 500;
 
 export default class Socket {
     static emit(event: Events, body: any): Promise<void> {
@@ -35,26 +36,26 @@ export default class Socket {
                 return;
             }
 
-            if (!sockets["api.sock"]) {
-                sockets["api.sock"] = new RawIPC.IPC();
+            if (!SOCKETS["api.sock"]) {
+                SOCKETS["api.sock"] = new RawIPC.IPC();
 
-                sockets["api.sock"].config.appspace = "/";
-                sockets["api.sock"].config.socketRoot = Paths.storagePath();
-                sockets["api.sock"].config.logInColor = true;
-                sockets["api.sock"].config.logger = () => { };
-                sockets["api.sock"].config.maxRetries = 0;
-                sockets["api.sock"].config.stopRetrying = true;
+                SOCKETS["api.sock"].config.appspace = "/";
+                SOCKETS["api.sock"].config.socketRoot = Paths.storagePath();
+                SOCKETS["api.sock"].config.logInColor = true;
+                SOCKETS["api.sock"].config.logger = () => { };
+                SOCKETS["api.sock"].config.maxRetries = 0;
+                SOCKETS["api.sock"].config.stopRetrying = true;
             }
 
-            sockets["api.sock"].connectTo("api.sock", () => {
-                sockets["api.sock"].of["api.sock"].emit(event, {
+            SOCKETS["api.sock"].connectTo("api.sock", () => {
+                SOCKETS["api.sock"].of["api.sock"].emit(event, {
                     session,
                     body,
                 });
 
                 setTimeout(() => {
                     resolve();
-                }, 500);
+                }, SOCKET_CONNECTION_DELAY);
             });
         });
     }
