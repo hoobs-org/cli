@@ -61,7 +61,7 @@ export = function Command(): void {
 
             let bridges = [];
 
-            if (State.bridges.findIndex((n) => n.id === "api") >= 0) {
+            if (State.bridges.findIndex((n) => n.id === "hub") >= 0) {
                 Console.warn("this system is already initilized.");
             } else {
                 if (process.env.USER !== "root") {
@@ -76,7 +76,7 @@ export = function Command(): void {
                             type: "number",
                             name: "port",
                             default: "50826",
-                            message: "enter the port for the api",
+                            message: "enter the port for the hub",
                             validate: (value: number | undefined) => {
                                 if (!value || Number.isNaN(value)) return "invalid port number";
                                 if (value < 1 || value > 65535) return "select a port between 1 and 65535";
@@ -88,7 +88,7 @@ export = function Command(): void {
                     ])).port, 10);
                 }
 
-                Bridges.create("API", parseInt(command.port, 10), command.pin || "031-45-154", 0).then((results) => {
+                Bridges.create("Hub", parseInt(command.port, 10), command.pin || "031-45-154", 0).then((results) => {
                     if (results) {
                         bridges = Bridges.list();
 
@@ -129,7 +129,7 @@ export = function Command(): void {
             State.id = sanitize(command.bridge);
             State.bridges = Bridges.list();
 
-            if (action !== "create" && State.bridges.findIndex((n) => n.id === "api") === -1) {
+            if (action !== "create" && State.bridges.findIndex((n) => n.id === "hub") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
@@ -156,7 +156,7 @@ export = function Command(): void {
                         return;
                     }
 
-                    if (!command.bridge || command.bridge === "" || State.id === "api") {
+                    if (!command.bridge || command.bridge === "" || State.id === "hub") {
                         if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
                             State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
@@ -222,7 +222,7 @@ export = function Command(): void {
                         return;
                     }
 
-                    if (!command.bridge || command.bridge === "" || State.id === "api") {
+                    if (!command.bridge || command.bridge === "" || State.id === "hub") {
                         if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
                             State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
@@ -280,7 +280,7 @@ export = function Command(): void {
                         return;
                     }
 
-                    if (!command.bridge || command.bridge === "" || State.id === "api") {
+                    if (!command.bridge || command.bridge === "" || State.id === "hub") {
                         if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
                             State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
@@ -355,7 +355,7 @@ export = function Command(): void {
 
                 case "ls":
                 case "list":
-                    if (State.id === "api") {
+                    if (State.id === "hub") {
                         Console.warn("please define a valid bridge");
 
                         return;
@@ -383,7 +383,7 @@ export = function Command(): void {
                             return 0;
                         });
 
-                        State.id = "api";
+                        State.id = "hub";
 
                         if (combined.length > 0) {
                             console.info("");
@@ -444,7 +444,7 @@ export = function Command(): void {
         });
 
     Program.command("log")
-        .description("show the combined log from the api and bridges")
+        .description("show the combined log from the hub and bridges")
         .option("-b, --bridge <name>", "set the bridge name")
         .option("-t, --tail <lines>", "set the number of lines")
         .action((command) => {
@@ -456,7 +456,7 @@ export = function Command(): void {
 
             State.bridges = Bridges.list();
 
-            if (State.bridges.findIndex((n) => n.id === "api") === -1) {
+            if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
@@ -489,16 +489,16 @@ export = function Command(): void {
                 return;
             }
 
-            State.id = sanitize(command.bridge || "api");
+            State.id = sanitize(command.bridge || "hub");
             State.bridges = Bridges.list();
 
-            if (State.bridges.findIndex((n) => n.id === "api") === -1) {
+            if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
             }
 
-            if (!command.bridge || command.bridge === "" || State.id === "api") {
+            if (!command.bridge || command.bridge === "" || State.id === "hub") {
                 if (State.bridges.length === 1) {
                     State.id = State.bridges[0].id;
                 } else {
@@ -535,7 +535,7 @@ export = function Command(): void {
             let spinner: Spinner.Ora;
             let bridges = [];
 
-            if (State.bridges.findIndex((n) => n.id === "api") === -1) {
+            if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
@@ -592,7 +592,7 @@ export = function Command(): void {
                         }
                     }
 
-                    if (sanitize(command.bridge) !== "api") {
+                    if (sanitize(command.bridge) !== "hub") {
                         spinner = Spinner({ stream: process.stdout }).start();
 
                         Bridges.uninstall(command.bridge).then((results) => {
@@ -625,7 +625,7 @@ export = function Command(): void {
                             process.exit();
                         });
                     } else {
-                        Console.warn("this is not an bridge, to remove the api run a system reset.");
+                        Console.warn("this is not an bridge, to remove the hub run a system reset.");
                     }
 
                     break;
@@ -649,7 +649,7 @@ export = function Command(): void {
                         }
                     }
 
-                    if (sanitize(command.bridge) !== "api") {
+                    if (sanitize(command.bridge) !== "hub") {
                         spinner = Spinner({ stream: process.stdout }).start();
 
                         Bridges.export(command.bridge).then((filename) => {
@@ -717,7 +717,7 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "install":
-                    if (State.bridges.findIndex((n) => n.id === "api") === -1) {
+                    if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
                         return;
@@ -744,7 +744,7 @@ export = function Command(): void {
                 case "rm":
                 case "remove":
                 case "uninstall":
-                    if (State.bridges.findIndex((n) => n.id === "api") === -1) {
+                    if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
                         return;
@@ -770,7 +770,7 @@ export = function Command(): void {
 
                 case "ls":
                 case "list":
-                    if (State.bridges.findIndex((n) => n.id === "api") === -1) {
+                    if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
                         return;

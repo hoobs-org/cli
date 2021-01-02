@@ -133,7 +133,7 @@ class Logger {
             prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
         }
 
-        if (data.bridge && data.bridge !== "" && data.bridge !== "api") {
+        if (data.bridge && data.bridge !== "" && data.bridge !== "hub") {
             prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
         }
 

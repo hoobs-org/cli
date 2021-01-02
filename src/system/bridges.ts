@@ -126,7 +126,7 @@ export default class Bridges {
 
                 if (index >= 0) {
                     Socket.emit(Events.NOTIFICATION, {
-                        bridge: "api",
+                        bridge: "hub",
                         data: {
                             title: "Bridge Removed",
                             description: `Bridge "${name}" removed.`,
@@ -147,7 +147,7 @@ export default class Bridges {
                     });
                 } else {
                     Socket.emit(Events.NOTIFICATION, {
-                        bridge: "api",
+                        bridge: "hub",
                         data: {
                             title: "Bridge Not Removed",
                             description: `Unable to remove bridge "${name}".`,
@@ -178,7 +178,7 @@ export default class Bridges {
                     execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
-                    execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} api" >> /etc/systemd/system/hoobsd.service`);
+                    execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} hub" >> /etc/systemd/system/hoobsd.service`);
                     execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
@@ -207,7 +207,7 @@ export default class Bridges {
                     execSync("echo \"<plist version=\"1.0\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"    <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>Label</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <string>org.hoobsd.api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <string>org.hoobsd.hub</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>EnvironmentVariables</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"            <key>PATH</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
@@ -220,7 +220,7 @@ export default class Bridges {
                     execSync("echo \"        <key>ProgramArguments</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync(`echo "            <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
-                    execSync("echo \"            <string>api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"            <string>hub</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
@@ -249,7 +249,7 @@ export default class Bridges {
         for (let i = 0; i < State.bridges.length; i += 1) {
             const { ...bridge } = State.bridges[i];
 
-            if (bridge.id === "api") {
+            if (bridge.id === "hub") {
                 bridges.unshift({
                     id: bridge.id,
                     type: bridge.type,
@@ -272,7 +272,7 @@ export default class Bridges {
             }
         }
 
-        if (id === "api") {
+        if (id === "hub") {
             bridges.unshift({
                 id,
                 type,
@@ -304,10 +304,10 @@ export default class Bridges {
             if (!existsSync(Paths.bridgesPath())) writeFileSync(Paths.bridgesPath(), "[]");
 
             if (name && reserved.indexOf(id) === -1 && port && State.bridges.findIndex((n) => n.id === id) === -1 && State.bridges.findIndex((n) => n.port === port) === -1) {
-                if (id === "api" && State.mode === "production") Bridges.install();
+                if (id === "hub" && State.mode === "production") Bridges.install();
 
                 Socket.emit(Events.NOTIFICATION, {
-                    bridge: "api",
+                    bridge: "hub",
                     data: {
                         title: "Bridge Added",
                         description: `Bridge "${name}" added.`,
@@ -315,15 +315,15 @@ export default class Bridges {
                         icon: "layers",
                     },
                 }).then(() => {
-                    if (id === "api") {
-                        console.log("api created you can start the api with this command");
-                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} api`));
+                    if (id === "hub") {
+                        console.log("hub created you can start the hub with this command");
+                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} hub`));
                     } else {
                         console.log("bridge created you can start the bridge with this command");
                         console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${id}'`));
                     }
 
-                    Bridges.append(id, name, id === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
+                    Bridges.append(id, name, id === "hub" ? "hub" : "bridge", port, pin, Config.generateUsername(), autostart);
 
                     resolve(true);
                 });
@@ -382,10 +382,10 @@ export default class Bridges {
                     if (result && result.name && result.port) {
                         id = sanitize(result.name);
 
-                        if (id === "api" && State.mode === "production") Bridges.install();
+                        if (id === "hub" && State.mode === "production") Bridges.install();
 
                         Socket.emit(Events.NOTIFICATION, {
-                            bridge: "api",
+                            bridge: "hub",
                             data: {
                                 title: "Bridge Added",
                                 description: `Bridge "${result.name}" added.`,
@@ -393,11 +393,11 @@ export default class Bridges {
                                 icon: "layers",
                             },
                         }).then(() => {
-                            Bridges.append(id, result.name, id === "api" ? "api" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
+                            Bridges.append(id, result.name, id === "hub" ? "hub" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
 
-                            if (id === "api") {
-                                console.log("api created you can start the api with this command");
-                                console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} api`));
+                            if (id === "hub") {
+                                console.log("hub created you can start the hub with this command");
+                                console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} hub`));
                             } else {
                                 console.log("bridge created you can start the bridge with this command");
                                 console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${id}'`));
@@ -640,7 +640,7 @@ export default class Bridges {
                                 });
                             }
 
-                            if (bridges.find((item) => item.type === "api") && State.mode === "production") Bridges.install();
+                            if (bridges.find((item) => item.type === "hub") && State.mode === "production") Bridges.install();
 
                             resolve();
                         }, BRIDGE_TEARDOWN_DELAY);
