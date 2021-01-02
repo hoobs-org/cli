@@ -66,6 +66,15 @@ export interface BridgeRecord {
     plugins?: string;
 }
 
+const reserved = [
+    "new",
+    "add",
+    "bridge",
+    "bridges",
+    "library",
+    "advanced",
+];
+
 export default class Bridges {
     static locate() {
         const paths = (process.env.PATH || "").split(":");
@@ -290,10 +299,12 @@ export default class Bridges {
 
     static create(name: string, port: number, pin: string, autostart: number): Promise<boolean> {
         return new Promise((resolve) => {
+            let id = sanitize(name);
+
             if (!existsSync(Paths.bridgesPath())) writeFileSync(Paths.bridgesPath(), "[]");
 
-            if (name && port && State.bridges.findIndex((n) => n.id === sanitize(name)) === -1 && State.bridges.findIndex((n) => n.port === port) === -1) {
-                if (sanitize(name) === "api" && State.mode === "production") Bridges.install();
+            if (name && reserved.indexOf(id) === -1 && port && State.bridges.findIndex((n) => n.id === id) === -1 && State.bridges.findIndex((n) => n.port === port) === -1) {
+                if (id === "api" && State.mode === "production") Bridges.install();
 
                 Socket.emit(Events.NOTIFICATION, {
                     bridge: "api",
@@ -304,15 +315,15 @@ export default class Bridges {
                         icon: "layers",
                     },
                 }).then(() => {
-                    if (sanitize(name) === "api") {
+                    if (id === "api") {
                         console.log("api created you can start the api with this command");
                         console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} api`));
                     } else {
                         console.log("bridge created you can start the bridge with this command");
-                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${sanitize(name)}'`));
+                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${id}'`));
                     }
 
-                    Bridges.append(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
+                    Bridges.append(id, name, id === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
 
                     resolve(true);
                 });
@@ -324,6 +335,7 @@ export default class Bridges {
                         message: "enter a name for this bridge",
                         validate: (value: string | undefined) => {
                             if (!value || value === "") return "a name is required";
+                            if (reserved.indexOf(sanitize(value)) >= 0) return "name reserved please choose a different name";
                             if (State.bridges.findIndex((n) => n.id === sanitize(value)) >= 0) return "bridge name must be uniqie";
 
                             return true;
@@ -368,9 +380,9 @@ export default class Bridges {
                     },
                 ]).then((result) => {
                     if (result && result.name && result.port) {
-                        const id = sanitize(result.name);
+                        id = sanitize(result.name);
 
-                        if (sanitize(name) === "api" && State.mode === "production") Bridges.install();
+                        if (id === "api" && State.mode === "production") Bridges.install();
 
                         Socket.emit(Events.NOTIFICATION, {
                             bridge: "api",
