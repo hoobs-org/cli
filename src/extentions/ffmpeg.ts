@@ -70,7 +70,7 @@ export default class FFMPEG {
                 execSync("ldconfig", options);
 
                 Socket.emit(Events.NOTIFICATION, {
-                    instance: "api",
+                    bridge: "api",
                     data: {
                         title: "FFMPEG Installed",
                         description: "FFMPEG has been installed and is ready to use.",
@@ -84,7 +84,7 @@ export default class FFMPEG {
                 });
             } else if ((utsname.sysname || "").toLowerCase() !== "linux") {
                 Socket.emit(Events.NOTIFICATION, {
-                    instance: "api",
+                    bridge: "api",
                     data: {
                         title: "FFMPEG Not Installed",
                         description: "This version of FFMPEG is only supported on linux.",
@@ -98,7 +98,7 @@ export default class FFMPEG {
                 });
             } else if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
                 Socket.emit(Events.NOTIFICATION, {
-                    instance: "api",
+                    bridge: "api",
                     data: {
                         title: "FFMPEG Not Installed",
                         description: "This version of FFMPEG is only supported on ARM processors.",
@@ -112,7 +112,7 @@ export default class FFMPEG {
                 });
             } else if (!Paths.tryCommand("apt-get")) {
                 Socket.emit(Events.NOTIFICATION, {
-                    instance: "api",
+                    bridge: "api",
                     data: {
                         title: "FFMPEG Not Installed",
                         description: "This version of FFMPEG requires the APT package manager.",
@@ -403,7 +403,7 @@ export default class FFMPEG {
             Paths.tryUnlink("/usr/local/share/man/man3/libswscale.3");
 
             Socket.emit(Events.NOTIFICATION, {
-                instance: "api",
+                bridge: "api",
                 data: {
                     title: "FFMPEG Removed",
                     description: "FFMPEG has been removed.",
@@ -418,7 +418,7 @@ export default class FFMPEG {
         }
 
         Socket.emit(Events.NOTIFICATION, {
-            instance: "api",
+            bridge: "api",
             data: {
                 title: "FFMPEG Not Removed",
                 description: "This can only remove FFMPEG installed by HOOBS.",

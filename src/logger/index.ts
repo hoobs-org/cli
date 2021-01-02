@@ -38,7 +38,7 @@ export const enum LogLevel {
 
 export interface Message {
     level: LogLevel;
-    instance?: string;
+    bridge?: string;
     display?: string;
     timestamp: number;
     plugin?: string;
@@ -90,11 +90,11 @@ class Logger {
         Chalk.level = 1;
     }
 
-    load(tail?: number, instance?: string): Message[] {
+    load(tail?: number, bridge?: string): Message[] {
         let results: Message[] = [];
 
         try {
-            results = (parseJson<Message[]>(gunzipSync(readFileSync(Paths.logPath())).toString(), [])).filter((m) => (instance ? m.instance === instance : true));
+            results = (parseJson<Message[]>(gunzipSync(readFileSync(Paths.logPath())).toString(), [])).filter((m) => (bridge ? m.bridge === bridge : true));
         } catch (_error) {
             results = [];
         }
@@ -123,7 +123,7 @@ class Logger {
             data = message;
         }
 
-        if (!data || (data.message === "" && data.instance)) {
+        if (!data || (data.message === "" && data.bridge)) {
             return;
         }
 
@@ -133,8 +133,8 @@ class Logger {
             prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
         }
 
-        if (data.instance && data.instance !== "" && data.instance !== "api") {
-            prefixes.push(colorize(State.instances.findIndex((instance) => instance.id === data.instance), true)(data.display || data.instance));
+        if (data.bridge && data.bridge !== "" && data.bridge !== "api") {
+            prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
         }
 
         if (data.prefix && data.prefix !== "") {

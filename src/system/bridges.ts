@@ -51,9 +51,9 @@ import {
 } from "../formatters";
 
 const PROMPT: Inquirer.PromptModule = Inquirer.createPromptModule();
-const INSTANCE_TEARDOWN_DELAY = 1000;
+const BRIDGE_TEARDOWN_DELAY = 1000;
 
-export interface InstanceRecord {
+export interface BridgeRecord {
     id: string;
     type: string;
     display: string;
@@ -66,7 +66,7 @@ export interface InstanceRecord {
     plugins?: string;
 }
 
-export default class Instances {
+export default class Bridges {
     static locate() {
         const paths = (process.env.PATH || "").split(":");
 
@@ -91,20 +91,20 @@ export default class Instances {
         return results;
     }
 
-    static list(): InstanceRecord[] {
-        const host = Instances.network()[0];
+    static list(): BridgeRecord[] {
+        const host = Bridges.network()[0];
 
-        let instances: InstanceRecord[] = [];
+        let bridges: BridgeRecord[] = [];
 
-        if (existsSync(Paths.instancesPath())) instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
+        if (existsSync(Paths.bridgesPath())) bridges = loadJson<BridgeRecord[]>(Paths.bridgesPath(), []);
 
-        for (let i = 0; i < instances.length; i += 1) {
-            instances[i].host = host;
+        for (let i = 0; i < bridges.length; i += 1) {
+            bridges[i].host = host;
 
-            if (existsSync(join(Paths.storagePath(instances[i].id), "package.json"))) instances[i].plugins = join(Paths.storagePath(instances[i].id), "node_modules");
+            if (existsSync(join(Paths.storagePath(bridges[i].id), "package.json"))) bridges[i].plugins = join(Paths.storagePath(bridges[i].id), "node_modules");
         }
 
-        return instances;
+        return bridges;
     }
 
     static uninstall(name: string): Promise<boolean> {
@@ -113,14 +113,14 @@ export default class Instances {
                 resolve(false);
             } else {
                 const id = sanitize(name);
-                const index = State.instances.findIndex((n: InstanceRecord) => n.id === id);
+                const index = State.bridges.findIndex((n: BridgeRecord) => n.id === id);
 
                 if (index >= 0) {
                     Socket.emit(Events.NOTIFICATION, {
-                        instance: "api",
+                        bridge: "api",
                         data: {
-                            title: "Instance Removed",
-                            description: `Instance "${name}" removed.`,
+                            title: "Bridge Removed",
+                            description: `Bridge "${name}" removed.`,
                             type: NotificationType.WARN,
                             icon: "layers",
                         },
@@ -130,18 +130,18 @@ export default class Instances {
                         removeSync(join(Paths.storagePath(), `${id}.persist`));
                         removeSync(join(Paths.storagePath(), `${id}.conf`));
 
-                        State.instances.splice(index, 1);
+                        State.bridges.splice(index, 1);
 
-                        writeFileSync(Paths.instancesPath(), formatJson(State.instances));
+                        writeFileSync(Paths.bridgesPath(), formatJson(State.bridges));
 
                         resolve(true);
                     });
                 } else {
                     Socket.emit(Events.NOTIFICATION, {
-                        instance: "api",
+                        bridge: "api",
                         data: {
-                            title: "Instance Not Removed",
-                            description: `Unable to remove instance "${name}".`,
+                            title: "Bridge Not Removed",
+                            description: `Unable to remove bridge "${name}".`,
                             type: NotificationType.ERROR,
                         },
                     }).then(() => {
@@ -169,7 +169,7 @@ export default class Instances {
                     execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
-                    execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} api" >> /etc/systemd/system/hoobsd.service`);
+                    execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} api" >> /etc/systemd/system/hoobsd.service`);
                     execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
@@ -207,10 +207,10 @@ export default class Instances {
                     execSync("echo \"            <string>/var/root</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>Program</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync(`echo "        <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
+                    execSync(`echo "        <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
                     execSync("echo \"        <key>ProgramArguments</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync(`echo "            <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
+                    execSync(`echo "            <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
                     execSync("echo \"            <string>api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
@@ -235,36 +235,36 @@ export default class Instances {
     }
 
     static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
-        const instances: InstanceRecord[] = [];
+        const bridges: BridgeRecord[] = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            const { ...instance } = State.instances[i];
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            const { ...bridge } = State.bridges[i];
 
-            if (instance.id === "api") {
-                instances.unshift({
-                    id: instance.id,
-                    type: instance.type,
-                    display: instance.display,
-                    port: instance.port,
-                    pin: instance.pin,
-                    username: instance.username,
+            if (bridge.id === "api") {
+                bridges.unshift({
+                    id: bridge.id,
+                    type: bridge.type,
+                    display: bridge.display,
+                    port: bridge.port,
+                    pin: bridge.pin,
+                    username: bridge.username,
                     autostart: 0,
                 });
             } else {
-                instances.push({
-                    id: instance.id,
-                    type: instance.type,
-                    display: instance.display,
-                    port: instance.port,
-                    pin: instance.pin,
-                    username: instance.username,
-                    autostart: instance.autostart,
+                bridges.push({
+                    id: bridge.id,
+                    type: bridge.type,
+                    display: bridge.display,
+                    port: bridge.port,
+                    pin: bridge.pin,
+                    username: bridge.username,
+                    autostart: bridge.autostart,
                 });
             }
         }
 
         if (id === "api") {
-            instances.unshift({
+            bridges.unshift({
                 id,
                 type,
                 display,
@@ -274,7 +274,7 @@ export default class Instances {
                 autostart: 0,
             });
         } else {
-            instances.push({
+            bridges.push({
                 id,
                 type,
                 display,
@@ -285,34 +285,34 @@ export default class Instances {
             });
         }
 
-        writeFileSync(Paths.instancesPath(), formatJson(instances));
+        writeFileSync(Paths.bridgesPath(), formatJson(bridges));
     }
 
     static create(name: string, port: number, pin: string, autostart: number): Promise<boolean> {
         return new Promise((resolve) => {
-            if (!existsSync(Paths.instancesPath())) writeFileSync(Paths.instancesPath(), "[]");
+            if (!existsSync(Paths.bridgesPath())) writeFileSync(Paths.bridgesPath(), "[]");
 
-            if (name && port && State.instances.findIndex((n) => n.id === sanitize(name)) === -1 && State.instances.findIndex((n) => n.port === port) === -1) {
-                if (sanitize(name) === "api" && State.mode === "production") Instances.install();
+            if (name && port && State.bridges.findIndex((n) => n.id === sanitize(name)) === -1 && State.bridges.findIndex((n) => n.port === port) === -1) {
+                if (sanitize(name) === "api" && State.mode === "production") Bridges.install();
 
                 Socket.emit(Events.NOTIFICATION, {
-                    instance: "api",
+                    bridge: "api",
                     data: {
-                        title: "Instance Added",
-                        description: `Instance "${name}" added.`,
+                        title: "Bridge Added",
+                        description: `Bridge "${name}" added.`,
                         type: NotificationType.SUCCESS,
                         icon: "layers",
                     },
                 }).then(() => {
                     if (sanitize(name) === "api") {
                         console.log("api created you can start the api with this command");
-                        console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
+                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} api`));
                     } else {
-                        console.log("instance created you can start the instance with this command");
-                        console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${sanitize(name)}'`));
+                        console.log("bridge created you can start the bridge with this command");
+                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${sanitize(name)}'`));
                     }
 
-                    Instances.append(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
+                    Bridges.append(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, Config.generateUsername(), autostart);
 
                     resolve(true);
                 });
@@ -321,10 +321,10 @@ export default class Instances {
                     {
                         type: "input",
                         name: "name",
-                        message: "enter a name for this instance",
+                        message: "enter a name for this bridge",
                         validate: (value: string | undefined) => {
                             if (!value || value === "") return "a name is required";
-                            if (State.instances.findIndex((n) => n.id === sanitize(value)) >= 0) return "instance name must be uniqie";
+                            if (State.bridges.findIndex((n) => n.id === sanitize(value)) >= 0) return "bridge name must be uniqie";
 
                             return true;
                         },
@@ -335,15 +335,15 @@ export default class Instances {
                         default: () => {
                             port = port || 50826;
 
-                            while (State.instances.findIndex((item) => parseInt(`${item.port}`, 10) === port) >= 0) port += 1000;
+                            while (State.bridges.findIndex((item) => parseInt(`${item.port}`, 10) === port) >= 0) port += 1000;
 
                             return `${port}`;
                         },
-                        message: "enter the port for the instance",
+                        message: "enter the port for the bridge",
                         validate: (value: number | undefined) => {
                             if (!value || Number.isNaN(value)) return "invalid port number";
                             if (value < 1 || value > 65535) return "select a port between 1 and 65535";
-                            if (State.instances.findIndex((n) => n.port === value) >= 0) return "port is already in use";
+                            if (State.bridges.findIndex((n) => n.port === value) >= 0) return "port is already in use";
 
                             return true;
                         },
@@ -370,25 +370,25 @@ export default class Instances {
                     if (result && result.name && result.port) {
                         const id = sanitize(result.name);
 
-                        if (sanitize(name) === "api" && State.mode === "production") Instances.install();
+                        if (sanitize(name) === "api" && State.mode === "production") Bridges.install();
 
                         Socket.emit(Events.NOTIFICATION, {
-                            instance: "api",
+                            bridge: "api",
                             data: {
-                                title: "Instance Added",
-                                description: `Instance "${result.name}" added.`,
+                                title: "Bridge Added",
+                                description: `Bridge "${result.name}" added.`,
                                 type: NotificationType.SUCCESS,
                                 icon: "layers",
                             },
                         }).then(() => {
-                            Instances.append(id, result.name, id === "api" ? "api" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
+                            Bridges.append(id, result.name, id === "api" ? "api" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
 
                             if (id === "api") {
                                 console.log("api created you can start the api with this command");
-                                console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} api`));
+                                console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} api`));
                             } else {
-                                console.log("instance created you can start the instance with this command");
-                                console.log(Chalk.yellow(`${join(Instances.locate(), "hoobsd")} start --instance '${id}'`));
+                                console.log("bridge created you can start the bridge with this command");
+                                console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${id}'`));
                             }
 
                             resolve(true);
@@ -412,7 +412,7 @@ export default class Instances {
             ensureDirSync(join(Paths.storagePath(), `${State.id}.accessories`));
 
             Socket.emit(Events.NOTIFICATION, {
-                instance: State.id,
+                bridge: State.id,
                 data: {
                     title: "Caches Purged",
                     description: "Accessory and connection cache purged.",
@@ -426,7 +426,7 @@ export default class Instances {
     }
 
     static async reset(): Promise<void> {
-        await Instances.backup();
+        await Bridges.backup();
 
         const entries = readdirSync(Paths.storagePath());
 
@@ -459,32 +459,32 @@ export default class Instances {
         return new Promise((resolve, reject) => {
             id = sanitize(id);
 
-            const instance = State.instances.find((item) => item.id === id);
+            const bridge = State.bridges.find((item) => item.id === id);
 
             writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
                 date: (new Date()).getTime(),
-                type: "instance",
+                type: "bridge",
                 data: {
-                    type: instance?.type,
-                    ports: instance?.ports,
-                    autostart: instance?.autostart,
+                    type: bridge?.type,
+                    ports: bridge?.ports,
+                    autostart: bridge?.autostart,
                 },
                 product: "hoobs",
                 generator: "hbs",
                 version: State.version,
             }));
 
-            if (!instance) reject(new Error("instance does not exist"));
+            if (!bridge) reject(new Error("bridge does not exist"));
 
             const filename = `${id}_${new Date().getTime()}`;
             const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.instance`));
+                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.bridge`));
                 unlinkSync(join(Paths.storagePath(), "meta"));
 
-                resolve(`${filename}.instance`);
+                resolve(`${filename}.bridge`);
             });
 
             archive.on("error", (error) => {
@@ -494,9 +494,9 @@ export default class Instances {
             archive.pipe(output);
 
             archive.file(join(Paths.storagePath(), "meta"), { name: "meta" });
-            archive.file(join(Paths.storagePath(), `${instance?.id}.conf`), { name: `${instance?.id}.conf` });
+            archive.file(join(Paths.storagePath(), `${bridge?.id}.conf`), { name: `${bridge?.id}.conf` });
 
-            Instances.dig(archive, join(Paths.storagePath(), `${instance?.id}`));
+            Bridges.dig(archive, join(Paths.storagePath(), `${bridge?.id}`));
 
             archive.finalize();
         });
@@ -535,7 +535,7 @@ export default class Instances {
 
                 if (path !== Paths.backupPath()) {
                     if (lstatSync(path).isDirectory()) {
-                        Instances.dig(archive, path);
+                        Bridges.dig(archive, path);
                     } else {
                         archive.file(path, { name: entries[i] });
                     }
@@ -590,7 +590,7 @@ export default class Instances {
 
     static restore(file: string, remove?: boolean): Promise<void> {
         return new Promise((resolve) => {
-            Instances.metadata(file).then((metadata) => {
+            Bridges.metadata(file).then((metadata) => {
                 if (metadata.type === "full") {
                     const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
                     const entries = readdirSync(Paths.storagePath());
@@ -619,19 +619,19 @@ export default class Instances {
                         unlinkSync(filename);
 
                         setTimeout(() => {
-                            const instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
+                            const bridges = loadJson<BridgeRecord[]>(Paths.bridgesPath(), []);
 
-                            for (let i = 0; i < instances.length; i += 1) {
+                            for (let i = 0; i < bridges.length; i += 1) {
                                 execSync(`${Paths.yarn()} install --unsafe-perm --ignore-engines`, {
-                                    cwd: Paths.storagePath(instances[i].id),
+                                    cwd: Paths.storagePath(bridges[i].id),
                                     stdio: "inherit",
                                 });
                             }
 
-                            if (instances.find((item) => item.type === "api") && State.mode === "production") Instances.install();
+                            if (bridges.find((item) => item.type === "api") && State.mode === "production") Bridges.install();
 
                             resolve();
-                        }, INSTANCE_TEARDOWN_DELAY);
+                        }, BRIDGE_TEARDOWN_DELAY);
                     });
                 } else {
                     resolve();

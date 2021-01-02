@@ -46,10 +46,10 @@ export default class Plugins {
         return join(Paths.storagePath(State.id), "node_modules");
     }
 
-    static installed(instance?: string): { [key: string]: any }[] {
+    static installed(bridge?: string): { [key: string]: any }[] {
         const results: { [key: string]: any }[] = [];
 
-        Plugins.load(instance || State.id, (name, scope, directory, pjson) => {
+        Plugins.load(bridge || State.id, (name, scope, directory, pjson) => {
             results.push({
                 scope,
                 name,
@@ -61,9 +61,9 @@ export default class Plugins {
         return results;
     }
 
-    static load(instance: string, callback: (name: string, scope: string, directory: string, pjson: { [key: string]: any }, library: string) => void): void {
-        if (existsSync(join(Paths.storagePath(instance), "package.json"))) {
-            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(instance), "package.json"), {}).dependencies || {});
+    static load(bridge: string, callback: (name: string, scope: string, directory: string, pjson: { [key: string]: any }, library: string) => void): void {
+        if (existsSync(join(Paths.storagePath(bridge), "package.json"))) {
+            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(bridge), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 if (plugins[i] !== "hap-nodejs") {
@@ -168,7 +168,7 @@ export default class Plugins {
                     }
 
                     Socket.emit(Events.NOTIFICATION, {
-                        instance: State.id,
+                        bridge: State.id,
                         data: {
                             title: "Plugin Installed",
                             description: `${tag !== "latest" ? `${name} ${tag}` : name} has been installed.`,
@@ -182,7 +182,7 @@ export default class Plugins {
                     });
                 } else {
                     Socket.emit(Events.NOTIFICATION, {
-                        instance: State.id,
+                        bridge: State.id,
                         data: {
                             title: "Plugin Not Installed",
                             description: `Unable to install ${name}.`,
@@ -230,7 +230,7 @@ export default class Plugins {
                     }
 
                     Socket.emit(Events.NOTIFICATION, {
-                        instance: State.id,
+                        bridge: State.id,
                         data: {
                             title: "Plugin Uninstalled",
                             description: `${name} has been removed.`,
@@ -244,7 +244,7 @@ export default class Plugins {
                     });
                 } else {
                     Socket.emit(Events.NOTIFICATION, {
-                        instance: State.id,
+                        bridge: State.id,
                         data: {
                             title: "Plugin Not Uninstalled",
                             description: `Unable to uninstall ${name}.`,
@@ -276,7 +276,7 @@ export default class Plugins {
 
             proc.on("close", () => {
                 Socket.emit(Events.NOTIFICATION, {
-                    instance: State.id,
+                    bridge: State.id,
                     data: {
                         title: name ? "Plugin Upgraded" : "Plugins Upgraded",
                         description: name ? `${tag !== "latest" ? `${name} ${tag}` : name} has been upgraded.` : "All plugins have been upgraded",

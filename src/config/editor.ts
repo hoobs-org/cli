@@ -32,7 +32,7 @@ export default class Editor {
             stream: process.stdout,
         }).start();
 
-        const index = State.instances.findIndex((item) => item.id === State.id);
+        const index = State.bridges.findIndex((item) => item.id === State.id);
 
         if (index >= 0) {
             writeFileSync(join(Paths.storagePath(), `${State.id}.config.json`), formatJson(Config.configuration()));
@@ -50,7 +50,7 @@ export default class Editor {
                 unlinkSync(join(Paths.storagePath(), `${State.id}.config.json`));
             });
         } else {
-            Console.warn("please define a valid instance");
+            Console.warn("please define a valid bridge");
         }
     }
 }

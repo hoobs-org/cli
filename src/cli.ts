@@ -27,7 +27,7 @@ import { existsSync, copyFileSync, readdirSync } from "fs-extra";
 import Paths from "./system/paths";
 import State from "./state";
 import System from "./system";
-import Instances from "./system/instances";
+import Bridges from "./system/bridges";
 import Editor from "./config/editor";
 import Extentions from "./extentions";
 import Plugins from "./plugins";
@@ -57,11 +57,11 @@ export = function Command(): void {
         .action(async (command) => {
             if ((await System.hoobsd.info()).hoobsd_version === "") await System.hoobsd.upgrade();
 
-            State.instances = Instances.list();
+            State.bridges = Bridges.list();
 
-            let instances = [];
+            let bridges = [];
 
-            if (State.instances.findIndex((n) => n.id === "api") >= 0) {
+            if (State.bridges.findIndex((n) => n.id === "api") >= 0) {
                 Console.warn("this system is already initilized.");
             } else {
                 if (process.env.USER !== "root") {
@@ -80,7 +80,7 @@ export = function Command(): void {
                             validate: (value: number | undefined) => {
                                 if (!value || Number.isNaN(value)) return "invalid port number";
                                 if (value < 1 || value > 65535) return "select a port between 1 and 65535";
-                                if (State.instances.findIndex((n) => n.port === value) >= 0) return "port is already in use";
+                                if (State.bridges.findIndex((n) => n.port === value) >= 0) return "port is already in use";
 
                                 return true;
                             },
@@ -88,14 +88,14 @@ export = function Command(): void {
                     ])).port, 10);
                 }
 
-                Instances.create("API", parseInt(command.port, 10), command.pin || "031-45-154", 0).then((results) => {
+                Bridges.create("API", parseInt(command.port, 10), command.pin || "031-45-154", 0).then((results) => {
                     if (results) {
-                        instances = Instances.list();
+                        bridges = Bridges.list();
 
-                        if (instances.length > 0) {
+                        if (bridges.length > 0) {
                             console.info("");
 
-                            Console.table(instances.map((item) => ({
+                            Console.table(bridges.map((item) => ({
                                 id: item.id,
                                 type: item.type,
                                 display: item.display,
@@ -117,8 +117,8 @@ export = function Command(): void {
         });
 
     Program.command("plugin [action] [name]")
-        .description("manage plugins for a given instance")
-        .option("-i, --instance <name>", "set the instance name")
+        .description("manage plugins for a given bridge")
+        .option("-b, --bridge <name>", "set the bridge name")
         .action(async (action, name, command) => {
             if (action !== "create" && process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -126,10 +126,10 @@ export = function Command(): void {
                 return;
             }
 
-            State.id = sanitize(command.instance);
-            State.instances = Instances.list();
+            State.id = sanitize(command.bridge);
+            State.bridges = Bridges.list();
 
-            if (action !== "create" && State.instances.findIndex((n) => n.id === "api") === -1) {
+            if (action !== "create" && State.bridges.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
@@ -144,8 +144,8 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "install":
-                    if (State.instances.filter((item) => item.type === "bridge").length === 0) {
-                        Console.warn("no instances defined");
+                    if (State.bridges.filter((item) => item.type === "bridge").length === 0) {
+                        Console.warn("no bridges defined");
 
                         return;
                     }
@@ -156,21 +156,21 @@ export = function Command(): void {
                         return;
                     }
 
-                    if (!command.instance || command.instance === "" || State.id === "api") {
-                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
-                            State.id = State.instances.filter((item) => item.type === "bridge")[0].id;
+                    if (!command.bridge || command.bridge === "" || State.id === "api") {
+                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
-                            const { instance } = (await prompt([{
+                            const { bridge } = (await prompt([{
                                 type: "list",
-                                name: "instance",
-                                message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                name: "bridge",
+                                message: "Please select an bridge",
+                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
                             }]));
 
-                            State.id = instance;
+                            State.id = bridge;
                         }
                     }
 
@@ -210,8 +210,8 @@ export = function Command(): void {
                 case "rm":
                 case "remove":
                 case "uninstall":
-                    if (State.instances.filter((item) => item.type === "bridge").length === 0) {
-                        Console.warn("no instances defined");
+                    if (State.bridges.filter((item) => item.type === "bridge").length === 0) {
+                        Console.warn("no bridges defined");
 
                         return;
                     }
@@ -222,21 +222,21 @@ export = function Command(): void {
                         return;
                     }
 
-                    if (!command.instance || command.instance === "" || State.id === "api") {
-                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
-                            State.id = State.instances.filter((item) => item.type === "bridge")[0].id;
+                    if (!command.bridge || command.bridge === "" || State.id === "api") {
+                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
-                            const { instance } = (await prompt([{
+                            const { bridge } = (await prompt([{
                                 type: "list",
-                                name: "instance",
-                                message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                name: "bridge",
+                                message: "Please select an bridge",
+                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
                             }]));
 
-                            State.id = instance;
+                            State.id = bridge;
                         }
                     }
 
@@ -274,27 +274,27 @@ export = function Command(): void {
 
                 case "update":
                 case "upgrade":
-                    if (State.instances.filter((item) => item.type === "bridge").length === 0) {
-                        Console.warn("no instances defined");
+                    if (State.bridges.filter((item) => item.type === "bridge").length === 0) {
+                        Console.warn("no bridges defined");
 
                         return;
                     }
 
-                    if (!command.instance || command.instance === "" || State.id === "api") {
-                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
-                            State.id = State.instances.filter((item) => item.type === "bridge")[0].id;
+                    if (!command.bridge || command.bridge === "" || State.id === "api") {
+                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
-                            const { instance } = (await prompt([{
+                            const { bridge } = (await prompt([{
                                 type: "list",
-                                name: "instance",
-                                message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                name: "bridge",
+                                message: "Please select an bridge",
+                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
                             }]));
 
-                            State.id = instance;
+                            State.id = bridge;
                         }
                     }
 
@@ -356,20 +356,20 @@ export = function Command(): void {
                 case "ls":
                 case "list":
                     if (State.id === "api") {
-                        Console.warn("please define a valid instance");
+                        Console.warn("please define a valid bridge");
 
                         return;
                     }
 
-                    if (!command.instance || command.instance === "") {
-                        for (let i = 0; i < State.instances.length; i += 1) {
-                            if (State.instances[i].type === "bridge") {
-                                State.id = State.instances[i].id;
+                    if (!command.bridge || command.bridge === "") {
+                        for (let i = 0; i < State.bridges.length; i += 1) {
+                            if (State.bridges[i].type === "bridge") {
+                                State.id = State.bridges[i].id;
 
                                 plugins = Plugins.installed();
 
                                 combined = [...combined, ...(plugins.map((item) => ({
-                                    instance: State.id,
+                                    bridge: State.id,
                                     name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
                                     version: item.version,
                                     path: item.directory,
@@ -444,8 +444,8 @@ export = function Command(): void {
         });
 
     Program.command("log")
-        .description("show the combined log from the api and instances")
-        .option("-i, --instance <name>", "set the instance name")
+        .description("show the combined log from the api and bridges")
+        .option("-b, --bridge <name>", "set the bridge name")
         .option("-t, --tail <lines>", "set the number of lines")
         .action((command) => {
             if (process.env.USER !== "root") {
@@ -454,9 +454,9 @@ export = function Command(): void {
                 return;
             }
 
-            State.instances = Instances.list();
+            State.bridges = Bridges.list();
 
-            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+            if (State.bridges.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
@@ -464,13 +464,13 @@ export = function Command(): void {
 
             State.timestamps = true;
 
-            let instance: string;
+            let bridge: string;
 
-            if (command.instance) {
-                instance = sanitize(command.instance);
+            if (command.bridge) {
+                bridge = sanitize(command.bridge);
             }
 
-            const messages = Console.load(parseInt(command.tail, 10) || 50, instance!);
+            const messages = Console.load(parseInt(command.tail, 10) || 50, bridge!);
 
             for (let i = 0; i < messages.length; i += 1) {
                 if (messages[i].message && messages[i].message !== "") {
@@ -480,8 +480,8 @@ export = function Command(): void {
         });
 
     Program.command("config")
-        .description("manage the configuration for a given instance")
-        .option("-i, --instance <name>", "set the instance name")
+        .description("manage the configuration for a given bridge")
+        .option("-b, --bridge <name>", "set the bridge name")
         .action(async (command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -489,39 +489,39 @@ export = function Command(): void {
                 return;
             }
 
-            State.id = sanitize(command.instance || "api");
-            State.instances = Instances.list();
+            State.id = sanitize(command.bridge || "api");
+            State.bridges = Bridges.list();
 
-            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+            if (State.bridges.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
             }
 
-            if (!command.instance || command.instance === "" || State.id === "api") {
-                if (State.instances.length === 1) {
-                    State.id = State.instances[0].id;
+            if (!command.bridge || command.bridge === "" || State.id === "api") {
+                if (State.bridges.length === 1) {
+                    State.id = State.bridges[0].id;
                 } else {
-                    const { instance } = (await prompt([{
+                    const { bridge } = (await prompt([{
                         type: "list",
-                        name: "instance",
-                        message: "Please select an instance",
-                        choices: State.instances.map((item) => ({
+                        name: "bridge",
+                        message: "Please select an bridge",
+                        choices: State.bridges.map((item) => ({
                             name: item.display,
                             value: item.id,
                         })),
                     }]));
 
-                    State.id = instance;
+                    State.id = bridge;
                 }
             }
 
             Editor.nano();
         });
 
-    Program.command("instance [action]")
-        .description("manage server instances")
-        .option("-i, --instance <name>", "set the instance name")
+    Program.command("bridge [action]")
+        .description("manage server bridges")
+        .option("-b, --bridge <name>", "set the bridge name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .action(async (action, command) => {
             if (process.env.USER !== "root") {
@@ -530,12 +530,12 @@ export = function Command(): void {
                 return;
             }
 
-            State.instances = Instances.list();
+            State.bridges = Bridges.list();
 
             let spinner: Spinner.Ora;
-            let instances = [];
+            let bridges = [];
 
-            if (State.instances.findIndex((n) => n.id === "api") === -1) {
+            if (State.bridges.findIndex((n) => n.id === "api") === -1) {
                 Console.warn("system is not initilized, please initilize the system first.");
 
                 return;
@@ -544,14 +544,14 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "create":
-                    Instances.create(command.instance, parseInt(command.port, 10), "031-45-154", 0).then((results) => {
+                    Bridges.create(command.bridge, parseInt(command.port, 10), "031-45-154", 0).then((results) => {
                         if (results) {
-                            instances = Instances.list();
+                            bridges = Bridges.list();
 
-                            if (instances.length > 0) {
+                            if (bridges.length > 0) {
                                 console.info("");
 
-                                Console.table(instances.map((item) => ({
+                                Console.table(bridges.map((item) => ({
                                     id: item.id,
                                     type: item.type,
                                     display: item.display,
@@ -564,7 +564,7 @@ export = function Command(): void {
                                 console.info("");
                             }
                         } else {
-                            Console.error("unable to create instance.");
+                            Console.error("unable to create bridge.");
                         }
 
                         process.exit();
@@ -574,37 +574,37 @@ export = function Command(): void {
 
                 case "rm":
                 case "remove":
-                    if (!command.instance || command.instance === "") {
-                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
-                            command.instance = State.instances.filter((item) => item.type === "bridge")[0].id;
+                    if (!command.bridge || command.bridge === "") {
+                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
+                            command.bridge = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
-                            const { instance } = (await prompt([{
+                            const { bridge } = (await prompt([{
                                 type: "list",
-                                name: "instance",
-                                message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                name: "bridge",
+                                message: "Please select an bridge",
+                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
                             }]));
 
-                            command.instance = instance;
+                            command.bridge = bridge;
                         }
                     }
 
-                    if (sanitize(command.instance) !== "api") {
+                    if (sanitize(command.bridge) !== "api") {
                         spinner = Spinner({ stream: process.stdout }).start();
 
-                        Instances.uninstall(command.instance).then((results) => {
+                        Bridges.uninstall(command.bridge).then((results) => {
                             if (results) {
-                                instances = Instances.list();
+                                bridges = Bridges.list();
 
                                 spinner.stop();
 
-                                if (instances.length > 0) {
+                                if (bridges.length > 0) {
                                     console.info("");
 
-                                    Console.table(instances.map((item) => ({
+                                    Console.table(bridges.map((item) => ({
                                         id: item.id,
                                         type: item.type,
                                         display: item.display,
@@ -619,48 +619,48 @@ export = function Command(): void {
                             } else {
                                 spinner.stop();
 
-                                Console.error("unable to remove instance.");
+                                Console.error("unable to remove bridge.");
                             }
 
                             process.exit();
                         });
                     } else {
-                        Console.warn("this is not an instance, to remove the api run a system reset.");
+                        Console.warn("this is not an bridge, to remove the api run a system reset.");
                     }
 
                     break;
 
                 case "export":
-                    if (!command.instance || command.instance === "") {
-                        if (State.instances.filter((item) => item.type === "bridge").length === 1) {
-                            command.instance = State.instances.filter((item) => item.type === "bridge")[0].id;
+                    if (!command.bridge || command.bridge === "") {
+                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
+                            command.bridge = State.bridges.filter((item) => item.type === "bridge")[0].id;
                         } else {
-                            const { instance } = (await prompt([{
+                            const { bridge } = (await prompt([{
                                 type: "list",
-                                name: "instance",
-                                message: "Please select an instance",
-                                choices: State.instances.filter((item) => item.type === "bridge").map((item) => ({
+                                name: "bridge",
+                                message: "Please select an bridge",
+                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
                             }]));
 
-                            command.instance = instance;
+                            command.bridge = bridge;
                         }
                     }
 
-                    if (sanitize(command.instance) !== "api") {
+                    if (sanitize(command.bridge) !== "api") {
                         spinner = Spinner({ stream: process.stdout }).start();
 
-                        Instances.export(command.instance).then((filename) => {
+                        Bridges.export(command.bridge).then((filename) => {
                             copyFileSync(
                                 join(Paths.backupPath(), filename),
-                                join(process.cwd(), `${sanitize(command.instance)}.instance`),
+                                join(process.cwd(), `${sanitize(command.bridge)}.bridge`),
                             );
 
                             spinner.stop();
 
-                            Console.info(`instance exported ${Chalk.yellow(join(process.cwd(), filename))}`);
+                            Console.info(`bridge exported ${Chalk.yellow(join(process.cwd(), filename))}`);
                         }).catch((error) => {
                             spinner.stop();
 
@@ -672,12 +672,12 @@ export = function Command(): void {
 
                 case "ls":
                 case "list":
-                    instances = Instances.list();
+                    bridges = Bridges.list();
 
-                    if (instances.length > 0) {
+                    if (bridges.length > 0) {
                         console.info("");
 
-                        Console.table(instances.map((item) => ({
+                        Console.table(bridges.map((item) => ({
                             id: item.id,
                             type: item.type,
                             display: item.display,
@@ -689,7 +689,7 @@ export = function Command(): void {
 
                         console.info("");
                     } else {
-                        Console.warn("no instances");
+                        Console.warn("no bridges");
                     }
 
                     break;
@@ -709,7 +709,7 @@ export = function Command(): void {
                 return;
             }
 
-            State.instances = Instances.list();
+            State.bridges = Bridges.list();
 
             let spinner: Spinner.Ora;
             let list: { [key: string]: any }[] = [];
@@ -717,7 +717,7 @@ export = function Command(): void {
             switch (action) {
                 case "add":
                 case "install":
-                    if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                    if (State.bridges.findIndex((n) => n.id === "api") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
                         return;
@@ -744,7 +744,7 @@ export = function Command(): void {
                 case "rm":
                 case "remove":
                 case "uninstall":
-                    if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                    if (State.bridges.findIndex((n) => n.id === "api") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
                         return;
@@ -770,7 +770,7 @@ export = function Command(): void {
 
                 case "ls":
                 case "list":
-                    if (State.instances.findIndex((n) => n.id === "api") === -1) {
+                    if (State.bridges.findIndex((n) => n.id === "api") === -1) {
                         Console.warn("system is not initilized, please initilize the system first.");
 
                         return;
@@ -800,7 +800,7 @@ export = function Command(): void {
                 return;
             }
 
-            State.instances = Instances.list();
+            State.bridges = Bridges.list();
 
             const list: { [key: string]: any}[] = [];
             const waits: Promise<void>[] = [];
@@ -920,7 +920,7 @@ export = function Command(): void {
                         default:
                             spinner = Spinner({ stream: process.stdout }).start();
 
-                            Instances.backup().then((filename) => {
+                            Bridges.backup().then((filename) => {
                                 copyFileSync(
                                     join(Paths.backupPath(), filename),
                                     join(process.cwd(), "hoobs.backup"),
@@ -946,7 +946,7 @@ export = function Command(): void {
                     if (file && existsSync(file)) {
                         spinner = Spinner({ stream: process.stdout }).start();
 
-                        Instances.restore(file).finally(() => {
+                        Bridges.restore(file).finally(() => {
                             spinner.stop();
 
                             Console.info("restore complete");
@@ -962,7 +962,7 @@ export = function Command(): void {
 
                     spinner = Spinner({ stream: process.stdout }).start();
 
-                    Instances.purge().then(() => {
+                    Bridges.purge().then(() => {
                         spinner.stop();
 
                         Console.info("bridge caches purged");
@@ -974,7 +974,7 @@ export = function Command(): void {
                 case "reset":
                     Console.warn("this will remove all settings and plugins, you will need to restore or initilize this device");
 
-                    Instances.reset();
+                    Bridges.reset();
 
                     Console.info("configuration and plugins removed");
                     break;
