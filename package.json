@@ -10,7 +10,7 @@
     "bugs": {
         "url": "https://github.com/hoobs-org/cli/issues"
     },
-    "main": "lib/cli.js",
+    "main": "lib/main.js",
     "author": {
         "name": "Michael J Kellsy"
     },
