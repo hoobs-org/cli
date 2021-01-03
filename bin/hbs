@@ -20,4 +20,4 @@
 
 process.title = "hbs";
 
-require("../lib/hbs/cli")();
+require("../lib/hbs/main")();

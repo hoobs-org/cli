@@ -41,7 +41,7 @@ if (System.shellSync("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
-export = function Command(): void {
+export = function Main(): void {
     Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
