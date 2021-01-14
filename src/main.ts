@@ -55,7 +55,7 @@ export = function Main(): void {
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-n, --pin <pin>", "set the pin for the bridge")
         .action(async (command) => {
-            if ((await System.hoobsd.info()).hoobsd_version === "") await System.hoobsd.upgrade();
+            if (State.mode !== "development" && (await System.hoobsd.info()).hoobsd_version === "") await System.hoobsd.upgrade();
 
             State.bridges = Bridges.list();
 
