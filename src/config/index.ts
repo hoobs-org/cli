@@ -51,7 +51,7 @@ export default class Config {
             dependencies: {},
         };
 
-        if (existsSync(join(Paths.storagePath(State.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(State.id), "package.json"), {}));
+        if (existsSync(join(Paths.data(State.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.data(State.id), "package.json"), {}));
 
         Config.savePackage(pjson);
 
@@ -71,12 +71,12 @@ export default class Config {
             };
         }
 
-        if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+        if (existsSync(Paths.config)) config = _.extend(config, loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
 
         if (State.id !== "hub") {
             let bridges: any = [];
 
-            if (existsSync(Paths.bridgesPath())) bridges = loadJson<BridgeRecord[]>(Paths.bridgesPath(), []);
+            if (existsSync(Paths.bridges)) bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
             const index = bridges.findIndex((n: any) => n.id === State.id);
 
@@ -91,7 +91,7 @@ export default class Config {
     static saveConfig(config: any): void {
         let current: any = {};
 
-        if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
+        if (existsSync(Paths.config)) current = loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
         if (State.id !== "hub") {
             config.accessories = config?.accessories || [];
@@ -102,16 +102,16 @@ export default class Config {
         }
 
         if (!jsonEquals(current, config)) {
-            writeFileSync(Paths.configPath(), formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+            writeFileSync(Paths.config, formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
         }
     }
 
     static touchConfig(): void {
         let config: any = {};
 
-        if (existsSync(Paths.configPath())) config = loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
+        if (existsSync(Paths.config)) config = loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
-        writeFileSync(Paths.configPath(), formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+        writeFileSync(Paths.config, formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
     }
 
     static filterConfig(value: any): void {
@@ -137,12 +137,12 @@ export default class Config {
     static savePackage(pjson: any): void {
         let current: any = {};
 
-        if (existsSync(join(Paths.storagePath(State.id), "package.json"))) {
-            current = loadJson<any>(join(Paths.storagePath(State.id), "package.json"), {});
+        if (existsSync(join(Paths.data(State.id), "package.json"))) {
+            current = loadJson<any>(join(Paths.data(State.id), "package.json"), {});
         }
 
         if (!jsonEquals(current, pjson)) {
-            writeFileSync(join(Paths.storagePath(State.id), "package.json"), formatJson(pjson));
+            writeFileSync(join(Paths.data(State.id), "package.json"), formatJson(pjson));
         }
     }
 }

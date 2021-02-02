@@ -35,19 +35,19 @@ export default class Editor {
         const index = State.bridges.findIndex((item) => item.id === State.id);
 
         if (index >= 0) {
-            writeFileSync(join(Paths.storagePath(), `${State.id}.config.json`), formatJson(Config.configuration()));
+            writeFileSync(join(Paths.data(), `${State.id}.config.json`), formatJson(Config.configuration()));
 
             spinner.stop();
 
-            spawn("nano", [join(Paths.storagePath(), `${State.id}.config.json`)], {
+            spawn("nano", [join(Paths.data(), `${State.id}.config.json`)], {
                 stdio: "inherit",
                 detached: true,
             }).on("data", (data) => {
                 process.stdout.pipe(data);
             }).on("close", () => {
-                Config.saveConfig(loadJson<any>(join(Paths.storagePath(), `${State.id}.config.json`), {}));
+                Config.saveConfig(loadJson<any>(join(Paths.data(), `${State.id}.config.json`), {}));
 
-                unlinkSync(join(Paths.storagePath(), `${State.id}.config.json`));
+                unlinkSync(join(Paths.data(), `${State.id}.config.json`));
             });
         } else {
             Console.warn("please define a valid bridge");

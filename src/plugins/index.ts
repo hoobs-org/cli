@@ -43,7 +43,7 @@ import { loadJson } from "../formatters";
 
 export default class Plugins {
     static get directory(): string {
-        return join(Paths.storagePath(State.id), "node_modules");
+        return join(Paths.data(State.id), "node_modules");
     }
 
     static installed(bridge?: string): { [key: string]: any }[] {
@@ -62,8 +62,8 @@ export default class Plugins {
     }
 
     static load(bridge: string, callback: (name: string, scope: string, directory: string, pjson: { [key: string]: any }, library: string) => void): void {
-        if (existsSync(join(Paths.storagePath(bridge), "package.json"))) {
-            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(bridge), "package.json"), {}).dependencies || {});
+        if (existsSync(join(Paths.data(bridge), "package.json"))) {
+            const plugins = Object.keys(loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 if (plugins[i] !== "hap-nodejs") {
@@ -85,7 +85,7 @@ export default class Plugins {
 
     static linkLibs(): Promise<void> {
         return new Promise((resolve) => {
-            if (!existsSync(join(Paths.storagePath(State.id), "node_modules", "hap-nodejs"))) {
+            if (!existsSync(join(Paths.data(State.id), "node_modules", "hap-nodejs"))) {
                 const flags = [];
 
                 flags.push("add");
@@ -93,8 +93,8 @@ export default class Plugins {
                 flags.push("--ignore-engines");
                 flags.push("hap-nodejs");
 
-                const proc = spawn(Paths.yarn(), flags, {
-                    cwd: Paths.storagePath(State.id),
+                const proc = spawn(Paths.yarn, flags, {
+                    cwd: Paths.data(State.id),
                     stdio: "ignore",
                 });
 
@@ -118,8 +118,8 @@ export default class Plugins {
             flags.push("--ignore-engines");
             flags.push(`${name}@${tag}`);
 
-            const proc = spawn(Paths.yarn(), flags, {
-                cwd: Paths.storagePath(State.id),
+            const proc = spawn(Paths.yarn, flags, {
+                cwd: Paths.data(State.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
@@ -203,8 +203,8 @@ export default class Plugins {
             flags.push("remove");
             flags.push(name);
 
-            const proc = spawn(Paths.yarn(), flags, {
-                cwd: Paths.storagePath(State.id),
+            const proc = spawn(Paths.yarn, flags, {
+                cwd: Paths.data(State.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
@@ -269,8 +269,8 @@ export default class Plugins {
 
             if (name) flags.push(`${name}@${tag}`);
 
-            const proc = spawn(Paths.yarn(), flags, {
-                cwd: Paths.storagePath(State.id),
+            const proc = spawn(Paths.yarn, flags, {
+                cwd: Paths.data(State.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
@@ -351,11 +351,11 @@ export default class Plugins {
 
                     user: {
                         configPath() {
-                            return Paths.configPath();
+                            return Paths.config;
                         },
 
                         storagePath() {
-                            return Paths.storagePath();
+                            return Paths.data();
                         },
                     },
                 };
@@ -417,7 +417,7 @@ export default class Plugins {
                 prefix = undefined;
 
                 try {
-                    prefix = (`${execSync(`${Paths.yarn()} global dir`)}`).trim();
+                    prefix = (`${execSync(`${Paths.yarn} global dir`)}`).trim();
                 } catch (error) {
                     prefix = undefined;
                 }

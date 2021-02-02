@@ -59,15 +59,15 @@ export default class Paths {
         return false;
     }
 
-    static applicationPath(): string {
+    static get application(): string {
         return File.existsSync(join(__dirname, "../package.json")) ? join(__dirname, "../") : join(__dirname, "../../../");
     }
 
-    static yarn(): string {
-        return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
+    static get yarn(): string {
+        return join(Paths.application, "/node_modules/yarn/bin/yarn");
     }
 
-    static storagePath(bridge?: string): string {
+    static data(bridge?: string): string {
         let path = "/var/lib/hoobs";
 
         if (State.container) {
@@ -83,21 +83,21 @@ export default class Paths {
         return path;
     }
 
-    static logPath(): string {
-        return join(Paths.storagePath(), "hoobs.log");
+    static get log(): string {
+        return join(Paths.data(), "hoobs.log");
     }
 
-    static bridgesPath(): string {
-        return join(Paths.storagePath(), "bridges.conf");
+    static get bridges(): string {
+        return join(Paths.data(), "bridges.conf");
     }
 
-    static configPath(): string {
-        return join(Paths.storagePath(), `${State.id}.conf`);
+    static get config(): string {
+        return join(Paths.data(), `${State.id}.conf`);
     }
 
-    static backupPath(): string {
-        File.ensureDirSync(join(Paths.storagePath(), "backups"));
+    static get backups(): string {
+        File.ensureDirSync(join(Paths.data(), "backups"));
 
-        return join(Paths.storagePath(), "backups");
+        return join(Paths.data(), "backups");
     }
 }

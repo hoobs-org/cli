@@ -30,7 +30,7 @@ export default class Socket {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
-            if (!existsSync(join(Paths.storagePath(), "api.sock"))) {
+            if (!existsSync(join(Paths.data(), "api.sock"))) {
                 resolve();
 
                 return;
@@ -40,7 +40,7 @@ export default class Socket {
                 SOCKETS["api.sock"] = new RawIPC.IPC();
 
                 SOCKETS["api.sock"].config.appspace = "/";
-                SOCKETS["api.sock"].config.socketRoot = Paths.storagePath();
+                SOCKETS["api.sock"].config.socketRoot = Paths.data();
                 SOCKETS["api.sock"].config.logInColor = true;
                 SOCKETS["api.sock"].config.logger = () => { };
                 SOCKETS["api.sock"].config.maxRetries = 0;

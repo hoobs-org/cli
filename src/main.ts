@@ -99,7 +99,7 @@ export = function Main(): void {
                                 id: item.id,
                                 type: item.type,
                                 display: item.display,
-                                running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                running: existsSync(join(Paths.data(), `${item.id}.sock`)),
                                 port: item.port,
                                 pin: item.pin,
                                 username: item.username,
@@ -555,7 +555,7 @@ export = function Main(): void {
                                     id: item.id,
                                     type: item.type,
                                     display: item.display,
-                                    running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                    running: existsSync(join(Paths.data(), `${item.id}.sock`)),
                                     port: item.port,
                                     pin: item.pin,
                                     username: item.username,
@@ -608,7 +608,7 @@ export = function Main(): void {
                                         id: item.id,
                                         type: item.type,
                                         display: item.display,
-                                        running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                                        running: existsSync(join(Paths.data(), `${item.id}.sock`)),
                                         port: item.port,
                                         pin: item.pin,
                                         username: item.username,
@@ -654,7 +654,7 @@ export = function Main(): void {
 
                         Bridges.export(command.bridge).then((filename) => {
                             copyFileSync(
-                                join(Paths.backupPath(), filename),
+                                join(Paths.backups, filename),
                                 join(process.cwd(), `${sanitize(command.bridge)}.bridge`),
                             );
 
@@ -681,7 +681,7 @@ export = function Main(): void {
                             id: item.id,
                             type: item.type,
                             display: item.display,
-                            running: existsSync(join(Paths.storagePath(), `${item.id}.sock`)),
+                            running: existsSync(join(Paths.data(), `${item.id}.sock`)),
                             port: item.port,
                             pin: item.pin,
                             username: item.username,
@@ -898,12 +898,12 @@ export = function Main(): void {
                     switch (file) {
                         case "ls":
                         case "list":
-                            entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".backup"));
+                            entries = readdirSync(Paths.backups).filter((item) => item.endsWith(".backup"));
 
                             for (let i = 0; i < entries.length; i += 1) {
                                 list.push({
                                     date: (new Date(parseInt(entries[i].replace(".backup", ""), 10))).toLocaleString(),
-                                    path: join(Paths.backupPath(), entries[i]),
+                                    path: join(Paths.backups, entries[i]),
                                 });
                             }
 
@@ -922,7 +922,7 @@ export = function Main(): void {
 
                             Bridges.backup().then((filename) => {
                                 copyFileSync(
-                                    join(Paths.backupPath(), filename),
+                                    join(Paths.backups, filename),
                                     join(process.cwd(), "hoobs.backup"),
                                 );
 

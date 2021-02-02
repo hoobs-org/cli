@@ -94,7 +94,7 @@ class Logger {
         let results: Message[] = [];
 
         try {
-            results = (parseJson<Message[]>(gunzipSync(readFileSync(Paths.logPath())).toString(), [])).filter((m) => (bridge ? m.bridge === bridge : true));
+            results = (parseJson<Message[]>(gunzipSync(readFileSync(Paths.log)).toString(), [])).filter((m) => (bridge ? m.bridge === bridge : true));
         } catch (_error) {
             results = [];
         }

@@ -54,7 +54,7 @@ export default class FFMPEG {
             ];
 
             const options: ExecSyncOptions = {
-                cwd: join(Paths.storagePath(), ".."),
+                cwd: join(Paths.data(), ".."),
                 stdio: ["inherit", "inherit", "inherit"],
             };
 
