@@ -173,7 +173,7 @@ export default class Plugins {
                             title: "Plugin Installed",
                             description: `${tag !== "latest" ? `${name} ${tag}` : name} has been installed.`,
                             type: NotificationType.SUCCESS,
-                            icon: "extension",
+                            icon: "puzzle",
                         },
                     }).then(() => {
                         Config.saveConfig(config);
@@ -235,7 +235,7 @@ export default class Plugins {
                             title: "Plugin Uninstalled",
                             description: `${name} has been removed.`,
                             type: NotificationType.WARN,
-                            icon: "extension",
+                            icon: "puzzle",
                         },
                     }).then(() => {
                         Config.saveConfig(config);
@@ -281,7 +281,7 @@ export default class Plugins {
                         title: name ? "Plugin Upgraded" : "Plugins Upgraded",
                         description: name ? `${tag !== "latest" ? `${name} ${tag}` : name} has been upgraded.` : "All plugins have been upgraded",
                         type: NotificationType.SUCCESS,
-                        icon: "extension",
+                        icon: "puzzle",
                     },
                 }).then(() => {
                     Config.touchConfig();

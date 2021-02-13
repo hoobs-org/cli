@@ -75,7 +75,7 @@ export default class FFMPEG {
                         title: "FFMPEG Installed",
                         description: "FFMPEG has been installed and is ready to use.",
                         type: NotificationType.SUCCESS,
-                        icon: "build",
+                        icon: "wrench",
                     },
                 }).then(() => {
                     resolve({
@@ -408,7 +408,7 @@ export default class FFMPEG {
                     title: "FFMPEG Removed",
                     description: "FFMPEG has been removed.",
                     type: NotificationType.WARN,
-                    icon: "build",
+                    icon: "wrench",
                 },
             });
 
