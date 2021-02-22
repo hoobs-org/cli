@@ -523,6 +523,7 @@ export = function Main(): void {
         .description("manage server bridges")
         .option("-b, --bridge <name>", "set the bridge name")
         .option("-p, --port <port>", "change the port the bridge runs on")
+        .option("-u, --uuid <name>", "uuid for managing cache")
         .action(async (action, command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
@@ -626,6 +627,75 @@ export = function Main(): void {
                         });
                     } else {
                         Console.warn("this is not an bridge, to remove the hub run a system reset.");
+                    }
+
+                    break;
+
+                case "cache":
+                    State.id = sanitize(command.bridge || "hub");
+
+                    if (!command.bridge || command.bridge === "" || State.id === "hub") {
+                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
+                        } else {
+                            const { bridge } = (await prompt([{
+                                type: "list",
+                                name: "bridge",
+                                message: "Please select an bridge",
+                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
+                                    name: item.display,
+                                    value: item.id,
+                                })),
+                            }]));
+
+                            State.id = bridge;
+                        }
+                    }
+
+                    if (sanitize(command.bridge) !== "hub") {
+                        console.info("");
+                        Console.table(Bridges.cache());
+                        console.info("");
+                    } else {
+                        Console.warn("not a valid bridge.");
+                    }
+
+                    break;
+
+                case "purge":
+                    State.id = sanitize(command.bridge || "hub");
+
+                    if (!command.bridge || command.bridge === "" || State.id === "hub") {
+                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
+                            State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
+                        } else {
+                            const { bridge } = (await prompt([{
+                                type: "list",
+                                name: "bridge",
+                                message: "Please select an bridge",
+                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
+                                    name: item.display,
+                                    value: item.id,
+                                })),
+                            }]));
+
+                            State.id = bridge;
+                        }
+                    }
+
+                    if (sanitize(command.bridge) !== "hub") {
+                        Console.warn("this will remove the connection to homekit, you will need to re-pair");
+
+                        spinner = Spinner({ stream: process.stdout }).start();
+
+                        Bridges.purge(command.uuid).then(() => {
+                            spinner.stop();
+
+                            Console.info("bridge caches purged");
+                            process.exit();
+                        });
+                    } else {
+                        Console.warn("not a valid bridge.");
                     }
 
                     break;
@@ -954,20 +1024,6 @@ export = function Main(): void {
                     } else {
                         Console.warn("invalid restore file");
                     }
-
-                    break;
-
-                case "purge":
-                    Console.warn("this will remove the connection to homekit, you will need to re-pair");
-
-                    spinner = Spinner({ stream: process.stdout }).start();
-
-                    Bridges.purge().then(() => {
-                        spinner.stop();
-
-                        Console.info("bridge caches purged");
-                        process.exit();
-                    });
 
                     break;
 

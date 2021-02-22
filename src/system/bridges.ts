@@ -413,27 +413,49 @@ export default class Bridges {
         });
     }
 
-    static purge(): Promise<void> {
+    static cache(): { [key: string]: any }[] {
+        const working = loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
+
+        return working.map((item: { [key: string]: any }) => ({
+            uuid: item.UUID,
+            bridge: State.id,
+            name: item.displayName,
+            plugin: item.plugin,
+        }));
+    }
+
+    static purge(uuid?: string): Promise<void> {
         return new Promise((resolve) => {
-            if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
+            if (uuid) {
+                const working = loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
+                const index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
-            ensureDirSync(join(Paths.data(), `${State.id}.persist`));
+                if (index >= 0) working.splice(index, 1);
 
-            if (existsSync(join(Paths.data(), `${State.id}.accessories`))) removeSync(join(Paths.data(), `${State.id}.accessories`));
+                writeFileSync(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), formatJson(working));
 
-            ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
-
-            Socket.emit(Events.NOTIFICATION, {
-                bridge: State.id,
-                data: {
-                    title: "Caches Purged",
-                    description: "Accessory and connection cache purged.",
-                    type: NotificationType.SUCCESS,
-                    icon: "memory",
-                },
-            }).then(() => {
                 resolve();
-            });
+            } else {
+                if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
+
+                ensureDirSync(join(Paths.data(), `${State.id}.persist`));
+
+                if (existsSync(join(Paths.data(), `${State.id}.accessories`))) removeSync(join(Paths.data(), `${State.id}.accessories`));
+
+                ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
+
+                Socket.emit(Events.NOTIFICATION, {
+                    bridge: State.id,
+                    data: {
+                        title: "Caches Purged",
+                        description: "Accessory and connection cache purged.",
+                        type: NotificationType.SUCCESS,
+                        icon: "memory",
+                    },
+                }).then(() => {
+                    resolve();
+                });
+            }
         });
     }
 
