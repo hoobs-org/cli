@@ -428,9 +428,12 @@ export default class Bridges {
         return new Promise((resolve) => {
             if (uuid) {
                 const working = loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
-                const index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+                let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
-                if (index >= 0) working.splice(index, 1);
+                while (index >= 0) {
+                    working.splice(index, 1);
+                    index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+                }
 
                 writeFileSync(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), formatJson(working));
 
