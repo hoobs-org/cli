@@ -206,7 +206,8 @@ export default class System {
 
                 let installed = "";
 
-                if (path !== "") installed = await System.shell(`${path} -v`);
+                if (path !== "") installed = await System.shell(`${path} -v`, true);
+                if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
                 const release = await System.cli.release(beta);
@@ -277,7 +278,8 @@ export default class System {
 
                 let installed = "";
 
-                if (path !== "") installed = await System.shell(`${path} -v`);
+                if (path !== "") installed = await System.shell(`${path} -v`, true);
+                if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
                 const release = await System.hoobsd.release(beta);

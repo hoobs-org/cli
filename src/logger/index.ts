@@ -99,9 +99,8 @@ class Logger {
             results = [];
         }
 
-        if (tail && tail > 0 && tail < results.length) {
-            results.splice(0, results.length - tail);
-        }
+        if (!State.debug) results = results.filter((message) => message.level !== LogLevel.DEBUG);
+        if (tail && tail > 0 && tail < results.length) results.splice(0, results.length - tail);
 
         return results;
     }
@@ -123,23 +122,13 @@ class Logger {
             data = message;
         }
 
-        if (!data || (data.message === "" && data.bridge)) {
-            return;
-        }
+        if (!data || (data.message === "" && data.bridge)) return;
 
         const prefixes = [];
 
-        if (State.timestamps && data.message && data.message !== "") {
-            prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
-        }
-
-        if (data.bridge && data.bridge !== "" && data.bridge !== "hub") {
-            prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
-        }
-
-        if (data.prefix && data.prefix !== "") {
-            prefixes.push(colorize(data.prefix)(data.prefix));
-        }
+        if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+        if (data.bridge && data.bridge !== "" && data.bridge !== "hub") prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+        if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
 
         let colored = data.message;
 
