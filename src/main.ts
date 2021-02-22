@@ -872,7 +872,7 @@ export = function Main(): void {
 
             State.bridges = Bridges.list();
 
-            const list: { [key: string]: any}[] = [];
+            const list: { [key: string]: any }[] = [];
             const waits: Promise<void>[] = [];
 
             let spinner: Spinner.Ora;

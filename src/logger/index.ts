@@ -25,6 +25,7 @@ import State from "../state";
 import Paths from "../system/paths";
 
 import {
+    formatJson,
     parseJson,
     colorize,
 } from "../formatters";
@@ -113,6 +114,8 @@ class Logger {
         let data: Message;
 
         if (typeof message === "string") {
+            if (message.startsWith("Initializing HAP-NodeJS")) return;
+
             data = {
                 level,
                 timestamp: new Date().getTime(),
@@ -187,19 +190,34 @@ class Logger {
 const system: Logger = new Logger();
 
 console.debug = function debug(message: string, ...parameters: any[]) {
-    system.debug(message, ...parameters);
+    if (typeof message === "string") {
+        system.debug(message, ...parameters);
+    } else {
+        system.debug(formatJson(message));
+    }
 };
 
 console.log = function log(message: string, ...parameters: any[]) {
-    system.info(message, ...parameters);
+    if (typeof message === "string") {
+        system.info(message, ...parameters);
+    } else {
+        system.info(formatJson(message));
+    }
 };
 
 console.warn = function warn(message: string, ...parameters: any[]) {
-    system.warn(message, ...parameters);
+    if (typeof message === "string") {
+        system.warn(message, ...parameters);
+    } else {
+        system.warn(formatJson(message));
+    }
 };
 
 console.error = function error(message: string, ...parameters: any[]) {
-    system.error(message, ...parameters);
+    if (typeof message === "string") {
+        system.error(message, ...parameters);
+    } else {
+        system.error(formatJson(message));
+    }
 };
-
 export const Console: Logger = system;

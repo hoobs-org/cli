@@ -44,7 +44,7 @@ export default class Config {
         return value;
     }
 
-    static configuration(): { [key: string]: any} {
+    static configuration(): { [key: string]: any } {
         let pjson = {
             name: "plugins",
             description: "HOOBS Plugins",
