@@ -16,12 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import { existsSync } from "fs-extra";
 import Paths from "../system/paths";
-import Ffmpeg from "./ffmpeg";
+import FFMPEG from "./ffmpeg";
+import GUI from "./gui";
 
 export default class Extentions {
     static list() {
         return [{
+            feature: "gui",
+            description: "enables the gui",
+            enabled: existsSync("/usr/lib/hoobs/package.json"),
+        }, {
             feature: "ffmpeg",
             description: "enables ffmpeg camera support",
             enabled: Paths.tryCommand("ffmpeg"),
@@ -32,7 +38,23 @@ export default class Extentions {
         return new Promise((resolve) => {
             switch (name) {
                 case "ffmpeg":
-                    Ffmpeg.enable().then((results) => {
+                    FFMPEG.enable().then((results) => {
+                        if (results.error) {
+                            resolve({
+                                success: false,
+                                error: results.error,
+                            });
+                        } else {
+                            resolve({
+                                success: true,
+                            });
+                        }
+                    });
+
+                    break;
+
+                case "gui":
+                    GUI.enable().then((results) => {
                         if (results.error) {
                             resolve({
                                 success: false,
@@ -62,7 +84,7 @@ export default class Extentions {
 
             switch (name) {
                 case "ffmpeg":
-                    results = Ffmpeg.disable();
+                    results = FFMPEG.disable();
 
                     if (results.error) {
                         return resolve({
@@ -75,6 +97,19 @@ export default class Extentions {
                         success: true,
                     });
 
+                case "gui":
+                    results = GUI.disable();
+
+                    if (results.error) {
+                        return resolve({
+                            success: false,
+                            error: results.error,
+                        });
+                    }
+
+                    return resolve({
+                        success: true,
+                    });
                 default:
                     return resolve({
                         success: false,

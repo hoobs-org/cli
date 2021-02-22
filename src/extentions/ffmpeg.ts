@@ -18,116 +18,124 @@
 
 import { removeSync } from "fs-extra";
 import { execSync, ExecSyncOptions } from "child_process";
-import { join } from "path";
+import { join, basename } from "path";
 import { uname, Utsname } from "node-uname";
 import Paths from "../system/paths";
 import Socket from "../system/socket";
+import Releases from "../system/releases";
 import { Events, NotificationType } from "../logger";
 
 export default class FFMPEG {
     static enable(): Promise<{ success: boolean, error?: string | undefined }> {
         return new Promise((resolve) => {
-            const download = "https://github.com/hoobs-org/hoobs-build/raw/master/stage7/00-ffmpeg/files/ffmpeg.tar.gz";
+            const release: { [key: string]: any } = Releases.fetch("ffmpeg");
 
-            const packages = [
-                "libtool-bin",
-                "libtool",
-                "openssl",
-                "libopus-dev",
-                "libx264-dev",
-                "libvpx-dev",
-                "libvorbis-dev",
-                "libtheora-dev",
-                "libmp3lame-dev",
-                "libfreetype6-dev",
-                "libass-dev",
-                "libspeex-dev",
-                "libfontconfig-dev",
-                "frei0r-plugins-dev",
-                "libfribidi-dev",
-                "librubberband-dev",
-                "libsoxr-dev",
-                "libvidstab-dev",
-                "libwebp-dev",
-                "libxml2-dev",
-                "libxvidcore-dev",
-            ];
+            if (release) {
+                const packages = [
+                    "libtool-bin",
+                    "libtool",
+                    "openssl",
+                    "libopus-dev",
+                    "libx264-dev",
+                    "libvpx-dev",
+                    "libvorbis-dev",
+                    "libtheora-dev",
+                    "libmp3lame-dev",
+                    "libfreetype6-dev",
+                    "libass-dev",
+                    "libspeex-dev",
+                    "libfontconfig-dev",
+                    "frei0r-plugins-dev",
+                    "libfribidi-dev",
+                    "librubberband-dev",
+                    "libsoxr-dev",
+                    "libvidstab-dev",
+                    "libwebp-dev",
+                    "libxml2-dev",
+                    "libxvidcore-dev",
+                ];
 
-            const options: ExecSyncOptions = {
-                cwd: join(Paths.data(), ".."),
-                stdio: ["inherit", "inherit", "inherit"],
-            };
+                const options: ExecSyncOptions = {
+                    cwd: join(Paths.data(), ".."),
+                    stdio: ["inherit", "inherit", "inherit"],
+                };
 
-            const utsname: Utsname = uname();
+                const utsname: Utsname = uname();
 
-            if ((utsname.sysname || "").toLowerCase() === "linux" && ((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64") && Paths.tryCommand("apt-get")) {
-                execSync("apt-get update", options);
-                execSync(`apt-get install -y ${packages.join(" ")}`, options);
-                execSync(`wget ${download}`, options);
-                execSync("tar -xzf ./ffmpeg.tar.gz -C /usr/local --strip-components=1 --no-same-owner", options);
-                execSync("rm -f ./ffmpeg.tar.gz", options);
-                execSync("ldconfig -n /usr/local/lib", options);
-                execSync("ldconfig", options);
+                if ((utsname.sysname || "").toLowerCase() === "linux" && ((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64") && Paths.tryCommand("apt-get")) {
+                    execSync("apt-get update", options);
+                    execSync(`apt-get install -y ${packages.join(" ")}`, options);
+                    execSync(`wget ${release.download}`, options);
+                    execSync(`tar -xzf ./${basename(release.download)} -C /usr/local --strip-components=1 --no-same-owner`, options);
+                    execSync(`rm -f ./${basename(release.download)}`, options);
+                    execSync("ldconfig -n /usr/local/lib", options);
+                    execSync("ldconfig", options);
 
-                Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Installed",
-                        description: "FFMPEG has been installed and is ready to use.",
-                        type: NotificationType.SUCCESS,
-                        icon: "wrench",
-                    },
-                }).then(() => {
-                    resolve({
-                        success: true,
+                    Socket.emit(Events.NOTIFICATION, {
+                        bridge: "hub",
+                        data: {
+                            title: "FFMPEG Installed",
+                            description: "FFMPEG has been installed and is ready to use.",
+                            type: NotificationType.SUCCESS,
+                            icon: "wrench",
+                        },
+                    }).then(() => {
+                        resolve({
+                            success: true,
+                        });
                     });
-                });
-            } else if ((utsname.sysname || "").toLowerCase() !== "linux") {
-                Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Not Installed",
-                        description: "This version of FFMPEG is only supported on linux.",
-                        type: NotificationType.ERROR,
-                    },
-                }).then(() => {
+                } else if ((utsname.sysname || "").toLowerCase() !== "linux") {
+                    Socket.emit(Events.NOTIFICATION, {
+                        bridge: "hub",
+                        data: {
+                            title: "FFMPEG Not Installed",
+                            description: "This version of FFMPEG is only supported on linux.",
+                            type: NotificationType.ERROR,
+                        },
+                    }).then(() => {
+                        resolve({
+                            success: false,
+                            error: "this version of ffmpeg is only supported on linux",
+                        });
+                    });
+                } else if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
+                    Socket.emit(Events.NOTIFICATION, {
+                        bridge: "hub",
+                        data: {
+                            title: "FFMPEG Not Installed",
+                            description: "This version of FFMPEG is only supported on ARM processors.",
+                            type: NotificationType.ERROR,
+                        },
+                    }).then(() => {
+                        resolve({
+                            success: false,
+                            error: "this version of ffmpeg is only supported on arm processors",
+                        });
+                    });
+                } else if (!Paths.tryCommand("apt-get")) {
+                    Socket.emit(Events.NOTIFICATION, {
+                        bridge: "hub",
+                        data: {
+                            title: "FFMPEG Not Installed",
+                            description: "This version of FFMPEG requires the APT package manager.",
+                            type: NotificationType.ERROR,
+                        },
+                    }).then(() => {
+                        resolve({
+                            success: false,
+                            error: "this version of ffmpeg requires the apt package manager",
+                        });
+                    });
+                } else {
                     resolve({
                         success: false,
-                        error: "this version of ffmpeg is only supported on linux",
+                        error: "unhandled error",
                     });
-                });
-            } else if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
-                Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Not Installed",
-                        description: "This version of FFMPEG is only supported on ARM processors.",
-                        type: NotificationType.ERROR,
-                    },
-                }).then(() => {
-                    resolve({
-                        success: false,
-                        error: "this version of ffmpeg is only supported on arm processors",
-                    });
-                });
-            } else if (!Paths.tryCommand("apt-get")) {
-                Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Not Installed",
-                        description: "This version of FFMPEG requires the APT package manager.",
-                        type: NotificationType.ERROR,
-                    },
-                }).then(() => {
-                    resolve({
-                        success: false,
-                        error: "this version of ffmpeg requires the apt package manager",
-                    });
-                });
+                }
             } else {
                 resolve({
                     success: false,
-                    error: "unhandled error",
+                    error: "unable to fetch release",
                 });
             }
         });

@@ -243,6 +243,7 @@ if [[ "$HBS_INSTALLED" == "false" ]]; then
 
     if [[ "_$HBS_RELEASE_URL" != "_" ]]; then
         curl -sL $HBS_RELEASE_URL --output $CURRENT_DIRECTORY/hbs.tar.gz
+
         sudo tar -xzf $CURRENT_DIRECTORY/hbs.tar.gz -C $HBS_PREFIX --strip-components=1 --no-same-owner
         sudo rm -f $CURRENT_DIRECTORY/hbs.tar.gz
     fi
@@ -265,13 +266,16 @@ if [[ "$HOOBSD_INSTALLED" == "false" ]]; then
 
     if [[ "_$HOOBSD_RELEASE_URL" != "_" ]]; then
         curl -sL $HOOBSD_RELEASE_URL --output $CURRENT_DIRECTORY/hoobsd.tar.gz
+
         sudo tar -xzf $CURRENT_DIRECTORY/hoobsd.tar.gz -C $HOOBSD_PREFIX --strip-components=1 --no-same-owner
         sudo rm -f $CURRENT_DIRECTORY/hoobsd.tar.gz
     fi
 
     if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
         gyp_rebuild $HOOBSD_PREFIX hoobsd
+
         sudo hbs install
+        sudo hbs extention add gui
     else
         print_status "[ ERROR ] hoobsd install failed"
 
