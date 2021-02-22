@@ -70,17 +70,17 @@ Program.command("cli", { isDefault: true })
             writeFileSync(join(root, "dist/lib/hbs", "package.json"), JSON.stringify(pjson, null, 4));
 
             execSync(`chmod 755 ${join(root, "dist/bin", "hbs")}`, { cwd: root, stdio: "inherit" });
-            execSync(`tar -zcf ../hbs-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
+            execSync(`tar -zcf ../hoobs-cli-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
             if (!existsSync(join(root, "../builds")))  mkdirSync(join(root, "../builds"));
-            if (existsSync(join(root, "../builds", `hbs-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hbs-${pjson.version}.tar.gz`))
-            if (existsSync(join(root, "../builds", `hbs-setup-${pjson.version}.sh`))) unlinkSync(join(root, "../builds", `hbs-setup-${pjson.version}.sh`))
+            if (existsSync(join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`))
+            if (existsSync(join(root, "../builds", `hoobs-setup-${pjson.version}.sh`))) unlinkSync(join(root, "../builds", `hoobs-setup-${pjson.version}.sh`))
 
-            moveSync(join(root, `hbs-${pjson.version}.tar.gz`), join(root, "../builds", `hbs-${pjson.version}.tar.gz`));
-            copyFileSync(join(root, "bin", "setup"), join(root, "../builds", `hbs-setup-${pjson.version}.sh`));
+            moveSync(join(root, `hoobs-cli-${pjson.version}.tar.gz`), join(root, "../builds", `hoobs-cli-${pjson.version}.tar.gz`));
+            copyFileSync(join(root, "bin", "setup"), join(root, "../builds", `hoobs-setup-${pjson.version}.sh`));
 
-            execSync(`chmod 755 ${join(root, "../builds", `hbs-setup-${pjson.version}.sh`)}`, { cwd: root, stdio: "inherit" });
+            execSync(`chmod 755 ${join(root, "../builds", `hoobs-setup-${pjson.version}.sh`)}`, { cwd: root, stdio: "inherit" });
         }
     });
 
