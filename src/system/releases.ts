@@ -22,7 +22,7 @@ const CACHE: { [key: string]: any } = {};
 
 export default class Releases {
     static async fetch(application: string, beta?: boolean) {
-        if (!CACHE[application]) return CACHE[application];
+        if (CACHE[application]) return CACHE[application];
 
         const { results } = (await Request.get(`https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`)).data;
 

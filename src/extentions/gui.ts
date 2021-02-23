@@ -26,36 +26,41 @@ import Releases from "../system/releases";
 export default class GUI {
     static enable(): Promise<{ success: boolean, error?: string | undefined }> {
         return new Promise((resolve) => {
-            const release: { [key: string]: any } = Releases.fetch("gui");
+            Releases.fetch("gui").then((release: { [key: string]: any }) => {
+                if (release) {
+                    const options: ExecSyncOptions = {
+                        cwd: join(Paths.data(), ".."),
+                        stdio: ["inherit", "inherit", "inherit"],
+                    };
 
-            if (release) {
-                const options: ExecSyncOptions = {
-                    cwd: join(Paths.data(), ".."),
-                    stdio: ["inherit", "inherit", "inherit"],
-                };
+                    const utsname: Utsname = uname();
 
-                const utsname: Utsname = uname();
+                    if ((utsname.sysname || "").toLowerCase() === "linux") {
+                        execSync(`wget ${release.download}`, options);
+                        execSync(`tar -xzf ./${basename(release.download)} -C /usr --strip-components=1 --no-same-owner`, options);
+                        execSync(`rm -f ./${basename(release.download)}`, options);
 
-                if ((utsname.sysname || "").toLowerCase() === "linux") {
-                    execSync(`wget ${release.download}`, options);
-                    execSync(`tar -xzf ./${basename(release.download)} -C /usr --strip-components=1 --no-same-owner`, options);
-                    execSync(`rm -f ./${basename(release.download)}`, options);
-
-                    resolve({
-                        success: true,
-                    });
+                        resolve({
+                            success: true,
+                        });
+                    } else {
+                        resolve({
+                            success: false,
+                            error: "not linux",
+                        });
+                    }
                 } else {
                     resolve({
                         success: false,
-                        error: "not linux",
+                        error: "mal-formed release",
                     });
                 }
-            } else {
+            }).catch(() => {
                 resolve({
                     success: false,
                     error: "unable to fetch release",
                 });
-            }
+            });
         });
     }
 

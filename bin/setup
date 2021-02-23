@@ -166,14 +166,24 @@ configure_repos() {
         "alpine")
             sudo sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories
             sudo apk upgrade --update-cache --available
+            source ~/.bashrc
             ;;
 
         "debian" | "raspbian" | "ubuntu")
-            curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+            wget https://deb.nodesource.com/setup_lts.x
+            chmod 755 ./setup_lts.x
+            sudo ./setup_lts.x
+            rm -f ./setup_lts.x
+            sudo apt-get update
+            source ~/.bashrc
             ;;
 
         "fedora" | "rhel" | "centos")
-            curl -sL https://rpm.nodesource.com/setup_lts.x | sudo bash -
+            wget https://rpm.nodesource.com/setup_lts.x
+            chmod 755 ./setup_lts.x
+            sudo ./setup_lts.x
+            rm -f ./setup_lts.x
+            source ~/.bashrc
             ;;
     esac
 }
@@ -182,23 +192,26 @@ install_node() {
     case $OS_NAME in
         "alpine")
             sudo apk update
-            sudo apk add curl tar git python3 make gcc g++ nodejs yarn
+            sudo apk add curl tar git python3 make gcc g++ nodejs
+            sudo npm install -g yarn
             ;;
 
         "debian" | "raspbian" | "ubuntu")
             sudo apt-get update
-            sudo apt-get install -y curl tar git python3 make gcc g++ nodejs yarn
+            sudo apt-get install -y curl tar git python3 make gcc g++ nodejs
+            sudo npm install -g yarn
             ;;
 
         "fedora" | "rhel" | "centos")
-            sudo $OS_PACKAGE_MNGR install -y curl tar git policycoreutils python3 make gcc gcc-c++ nodejs yarnpkg
+            sudo $OS_PACKAGE_MNGR install -y curl tar git policycoreutils python3 make gcc gcc-c++ nodejs
+            sudo npm install -g yarn
             ;;
 
         "macos")
             curl -sL https://nodejs.org/dist/v$NODE_RELEASE/node-v$NODE_RELEASE.pkg --output $CURRENT_DIRECTORY/node.pkg
             sudo installer -pkg $CURRENT_DIRECTORY/node.pkg -target /
             rm -f $CURRENT_DIRECTORY/node.pkg
-            curl -o- -L https://yarnpkg.com/install.sh | bash
+            sudo npm install -g yarn
             ;;
     esac
 }
@@ -274,8 +287,9 @@ if [[ "$HOOBSD_INSTALLED" == "false" ]]; then
     if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
         gyp_rebuild $HOOBSD_PREFIX hoobsd
 
-        sudo hbs install
+        sudo hbs install -p 80
         sudo hbs extention add gui
+        sudo hoobsd service restart
     else
         print_status "[ ERROR ] hoobsd install failed"
 
