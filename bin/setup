@@ -74,12 +74,6 @@ get_os() {
 
 get_node()
 {
-    NODE_INSTALLED="false"
-
-    if command -v node > /dev/null; then
-        NODE_INSTALLED="true"
-    fi
-
     case $OS_NAME in
         "alpine")
             sudo apk update
@@ -105,7 +99,6 @@ get_node()
 
 get_hbs()
 {
-    HBS_INSTALLED="false"
     HBS_PREFIX="/usr/"
 
     HBS_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hbs/latest | $OS_PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
@@ -113,8 +106,6 @@ get_hbs()
     HBS_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hbs/latest | $OS_PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
 
     if command -v hbs > /dev/null; then
-        HBS_INSTALLED="true"
-
         WORKING="$PATH"
 
         local IFS=':'
@@ -134,7 +125,6 @@ get_hbs()
 
 get_hoobsd()
 {
-    HOOBSD_INSTALLED="false"
     HOOBSD_PREFIX="/usr/"
 
     HOOBSD_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/latest | $OS_PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
@@ -142,8 +132,6 @@ get_hoobsd()
     HOOBSD_RELEASE_URL=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/latest | $OS_PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['download'])")
 
     if command -v hoobsd > /dev/null; then
-        HOOBSD_INSTALLED="true"
-
         WORKING="$PATH"
 
         local IFS=':'
@@ -238,63 +226,46 @@ if [[ "_$OS_PYTHON" == "_" ]]; then
 fi
 
 configure_repos
+install_node
 get_node
-
-if [[ "$NODE_INSTALLED" = "false" ]]; then
-    print_status "installing node $NODE_RELEASE"
-
-    install_node
-    get_node
-else
-    print_status "node" "already installed"
-fi
-
 get_hbs
 
-if [[ "$HBS_INSTALLED" == "false" ]]; then
-    print_status "installing cli $HBS_RELEASE"
+print_status "installing cli $HBS_RELEASE"
 
-    if [[ "_$HBS_RELEASE_URL" != "_" ]]; then
-        curl -sL $HBS_RELEASE_URL --output $CURRENT_DIRECTORY/hbs.tar.gz
+if [[ "_$HBS_RELEASE_URL" != "_" ]]; then
+    curl -sL $HBS_RELEASE_URL --output $CURRENT_DIRECTORY/hbs.tar.gz
 
-        sudo tar -xzf $CURRENT_DIRECTORY/hbs.tar.gz -C $HBS_PREFIX --strip-components=1 --no-same-owner
-        sudo rm -f $CURRENT_DIRECTORY/hbs.tar.gz
-    fi
+    sudo tar -xzf $CURRENT_DIRECTORY/hbs.tar.gz -C $HBS_PREFIX --strip-components=1 --no-same-owner
+    sudo rm -f $CURRENT_DIRECTORY/hbs.tar.gz
+fi
 
-    if [[ -f "$HBS_PREFIX/lib/hbs/package.json" ]]; then
-        gyp_rebuild $HBS_PREFIX hbs
-    else
-        print_status "[ ERROR ] cli install failed"
-
-        exit 1
-    fi
+if [[ -f "$HBS_PREFIX/lib/hbs/package.json" ]]; then
+    gyp_rebuild $HBS_PREFIX hbs
 else
-    print_status "cli" "already installed"
+    print_status "[ ERROR ] cli install failed"
+
+    exit 1
 fi
 
 get_hoobsd
 
-if [[ "$HOOBSD_INSTALLED" == "false" ]]; then
-    print_status "installing hoobsd $HOOBSD_RELEASE"
+print_status "installing hoobsd $HOOBSD_RELEASE"
 
-    if [[ "_$HOOBSD_RELEASE_URL" != "_" ]]; then
-        curl -sL $HOOBSD_RELEASE_URL --output $CURRENT_DIRECTORY/hoobsd.tar.gz
+if [[ "_$HOOBSD_RELEASE_URL" != "_" ]]; then
+    curl -sL $HOOBSD_RELEASE_URL --output $CURRENT_DIRECTORY/hoobsd.tar.gz
 
-        sudo tar -xzf $CURRENT_DIRECTORY/hoobsd.tar.gz -C $HOOBSD_PREFIX --strip-components=1 --no-same-owner
-        sudo rm -f $CURRENT_DIRECTORY/hoobsd.tar.gz
-    fi
+    sudo tar -xzf $CURRENT_DIRECTORY/hoobsd.tar.gz -C $HOOBSD_PREFIX --strip-components=1 --no-same-owner
+    sudo rm -f $CURRENT_DIRECTORY/hoobsd.tar.gz
+fi
 
-    if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
-        gyp_rebuild $HOOBSD_PREFIX hoobsd
+if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
+    gyp_rebuild $HOOBSD_PREFIX hoobsd
 
-        sudo hbs install -p 80
-        sudo hbs extention add gui
-        sudo hoobsd service restart
-    else
-        print_status "[ ERROR ] hoobsd install failed"
-
-        exit 1
-    fi
+    sudo hbs install -p 80
+    sudo hbs extention add gui
+    sudo hoobsd service restart
 else
-    print_status "hoobsd" "already installed"
+    print_status "[ ERROR ] hoobsd install failed"
+
+    exit 1
 fi
