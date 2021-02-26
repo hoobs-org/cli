@@ -48,6 +48,7 @@ export default class Config {
         let pjson = {
             name: "plugins",
             description: "HOOBS Plugins",
+            private: true,
             dependencies: {},
         };
 
