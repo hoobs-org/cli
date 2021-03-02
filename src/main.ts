@@ -751,7 +751,7 @@ export = function Main(): void {
                             id: item.id,
                             type: item.type,
                             display: item.display,
-                            running: existsSync(join(Paths.data(), `${item.id}.sock`)),
+                            running: existsSync(join(Paths.data(), `${item.id === "hub" ? "api" : item.id}.sock`)),
                             port: item.port,
                             pin: item.pin,
                             username: item.username,
