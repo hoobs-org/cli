@@ -64,6 +64,7 @@ export interface BridgeRecord {
     autostart?: number;
     host?: string;
     plugins?: string;
+    advertiser?: string;
 }
 
 const reserved = [
@@ -243,7 +244,7 @@ export default class Bridges {
         }
     }
 
-    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
+    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number, advertiser: string) {
         const bridges: BridgeRecord[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
@@ -258,6 +259,7 @@ export default class Bridges {
                     pin: bridge.pin,
                     username: bridge.username,
                     autostart: 0,
+                    advertiser: undefined,
                 });
             } else {
                 bridges.push({
@@ -268,6 +270,7 @@ export default class Bridges {
                     pin: bridge.pin,
                     username: bridge.username,
                     autostart: bridge.autostart,
+                    advertiser: bridge.advertiser,
                 });
             }
         }
@@ -281,6 +284,7 @@ export default class Bridges {
                 pin,
                 username,
                 autostart: 0,
+                advertiser: undefined,
             });
         } else {
             bridges.push({
@@ -291,13 +295,14 @@ export default class Bridges {
                 pin,
                 username,
                 autostart: autostart || 0,
+                advertiser,
             });
         }
 
         writeFileSync(Paths.bridges, formatJson(bridges));
     }
 
-    static create(name: string, port: number, pin: string, autostart: number): Promise<boolean> {
+    static create(name: string, port: number, pin: string, autostart: number, advertiser?: string): Promise<boolean> {
         return new Promise((resolve) => {
             let id = sanitize(name);
 
@@ -323,7 +328,7 @@ export default class Bridges {
                         console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${id}'`));
                     }
 
-                    Bridges.append(id, name, id === "hub" ? "hub" : "bridge", port, pin, Config.generateUsername(), autostart);
+                    Bridges.append(id, name, id === "hub" ? "hub" : "bridge", port, pin, Config.generateUsername(), autostart, advertiser || "bonjour");
 
                     resolve(true);
                 });
@@ -367,6 +372,19 @@ export default class Bridges {
                         default: "031-45-154",
                     },
                     {
+                        type: "list",
+                        name: "advertiser",
+                        message: "Please select an advertiser",
+                        default: "bonjour",
+                        choices: [{
+                            name: "Bonjour",
+                            value: "bonjour",
+                        }, {
+                            name: "Ciao",
+                            value: "ciao",
+                        }],
+                    },
+                    {
                         type: "number",
                         name: "autostart",
                         default: "0",
@@ -393,7 +411,7 @@ export default class Bridges {
                                 icon: "layers",
                             },
                         }).then(() => {
-                            Bridges.append(id, result.name, id === "hub" ? "hub" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart);
+                            Bridges.append(id, result.name, id === "hub" ? "hub" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart, result.advertiser);
 
                             if (id === "hub") {
                                 console.log("hub created you can start the hub with this command");
@@ -505,6 +523,7 @@ export default class Bridges {
                     type: bridge?.type,
                     ports: bridge?.ports,
                     autostart: bridge?.autostart,
+                    advertiser: bridge?.advertiser,
                 },
                 product: "hoobs",
                 generator: "hbs",

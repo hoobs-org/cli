@@ -103,6 +103,7 @@ export = function Main(): void {
                                 port: item.port,
                                 pin: item.pin,
                                 username: item.username,
+                                advertiser: item.advertiser,
                             })));
 
                             console.info("");
@@ -523,6 +524,7 @@ export = function Main(): void {
         .description("manage server bridges")
         .option("-b, --bridge <name>", "set the bridge name")
         .option("-p, --port <port>", "change the port the bridge runs on")
+        .option("-a, --advertiser <name>", "set the bridge advertiser")
         .option("-u, --uuid <name>", "uuid for managing cache")
         .action(async (action, command) => {
             if (process.env.USER !== "root") {
@@ -545,7 +547,7 @@ export = function Main(): void {
             switch (action) {
                 case "add":
                 case "create":
-                    Bridges.create(command.bridge, parseInt(command.port, 10), "031-45-154", 0).then((results) => {
+                    Bridges.create(command.bridge, parseInt(command.port, 10), "031-45-154", 0, command.advertiser || "bonjour").then((results) => {
                         if (results) {
                             bridges = Bridges.list();
 
@@ -560,6 +562,7 @@ export = function Main(): void {
                                     port: item.port,
                                     pin: item.pin,
                                     username: item.username,
+                                    advertiser: item.advertiser,
                                 })));
 
                                 console.info("");
@@ -613,6 +616,7 @@ export = function Main(): void {
                                         port: item.port,
                                         pin: item.pin,
                                         username: item.username,
+                                        advertiser: item.advertiser,
                                     })));
 
                                     console.info("");
@@ -755,6 +759,7 @@ export = function Main(): void {
                             port: item.port,
                             pin: item.pin,
                             username: item.username,
+                            advertiser: item.advertiser,
                         })));
 
                         console.info("");
