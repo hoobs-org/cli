@@ -958,7 +958,33 @@ export = function Main(): void {
                             });
                         }));
 
+                        waits.push(new Promise<void>((resolve) => {
+                            System.gui.info(command.beta).then((results: { [key: string]: any }) => {
+                                if (results.gui_version) {
+                                    list.push({
+                                        application: "gui",
+                                        distribution: system.distribution,
+                                        package_manager: system.package_manager,
+                                        version: results.gui_version,
+                                        latest: results.gui_current,
+                                        upgraded: results.gui_upgraded,
+                                        init_system: "",
+                                        running: "",
+                                    });
+                                }
+
+                                resolve();
+                            });
+                        }));
+
                         Promise.all(waits).then(() => {
+                            list.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+                                if (a.application < b.application) return -1;
+                                if (a.application > b.application) return 1;
+
+                                return 0;
+                            });
+
                             spinner.stop();
 
                             console.info("");
@@ -1132,21 +1158,51 @@ export = function Main(): void {
                                             resolve();
                                         }
                                     });
-                                })]).then(async () => {
-                                    if (!command.test && reboot && State.container && State.mode === "production") {
-                                        Console.info(Chalk.yellow("you need to restart this container"));
-                                    } else if (!command.test && reboot && State.mode === "production") {
-                                        const { proceed } = (await prompt([{
-                                            type: "confirm",
-                                            name: "proceed",
-                                            message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
-                                            default: false,
-                                        }]));
+                                })]).then(() => {
+                                    Promise.all([new Promise<void>((resolve) => {
+                                        spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
 
-                                        if (!proceed) System.restart();
-                                    } else if (command.test && reboot) {
-                                        Console.info(Chalk.yellow("this will require a reboot"));
-                                    }
+                                        System.gui.info(command.beta).then((results: { [key: string]: any }) => {
+                                            spinner.stop();
+
+                                            if (results.gui_version && !results.gui_upgraded) {
+                                                if (command.test) {
+                                                    Console.info(Chalk.yellow(`gui will be upgraded to ${results.gui_current}`));
+                                                } else {
+                                                    spinner = Spinner({ text: "upgrading gui", stream: process.stdout }).start();
+
+                                                    System.gui.upgrade().then(() => {
+                                                        spinner.stop();
+
+                                                        Console.info(Chalk.green(`gui upgraded to ${results.gui_current}`));
+
+                                                        resolve();
+                                                    });
+                                                }
+                                            } else if (results.gui_version) {
+                                                Console.info(Chalk.green("gui is already up-to-date"));
+
+                                                resolve();
+                                            } else {
+                                                resolve();
+                                            }
+                                        });
+                                    })]).then(async () => {
+                                        if (!command.test && reboot && State.container && State.mode === "production") {
+                                            Console.info(Chalk.yellow("you need to restart this container"));
+                                        } else if (!command.test && reboot && State.mode === "production") {
+                                            const { proceed } = (await prompt([{
+                                                type: "confirm",
+                                                name: "proceed",
+                                                message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
+                                                default: false,
+                                            }]));
+
+                                            if (!proceed) System.restart();
+                                        } else if (command.test && reboot) {
+                                            Console.info(Chalk.yellow("this will require a reboot"));
+                                        }
+                                    });
                                 });
                             });
                         });
