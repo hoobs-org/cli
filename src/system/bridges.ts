@@ -164,7 +164,7 @@ export default class Bridges {
 
     static install(): boolean {
         try {
-            if (existsSync("/etc/systemd/system")) {
+            if (State.mode === "production" && existsSync("/etc/systemd/system")) {
                 if (existsSync("/etc/systemd/system/hoobsd.service")) {
                     execSync("systemctl stop hoobsd.service");
                     execSync("systemctl start hoobsd.service");
@@ -196,7 +196,7 @@ export default class Bridges {
                 return true;
             }
 
-            if (existsSync("/Library/LaunchDaemons/")) {
+            if (State.mode === "production" && existsSync("/Library/LaunchDaemons/")) {
                 if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
                     execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
@@ -622,25 +622,24 @@ export default class Bridges {
         return new Promise((resolve) => {
             let results: { [key: string]: any } = {};
 
-            createReadStream(file)
-                .pipe(Unzip.Parse())
-                .on("entry", async (entry) => {
-                    const filename = entry.path;
+            createReadStream(file).pipe(Unzip.Parse()).on("entry", (entry) => {
+                const filename = entry.path;
+                const { type } = entry;
 
-                    if (filename === "meta") {
-                        const content = await entry.buffer();
-
+                if (type === "File" && filename === "meta") {
+                    entry.buffer().then((content: any) => {
                         try {
                             results = JSON.parse(content);
                         } catch (_error) {
                             results = {};
                         }
-                    } else {
-                        entry.autodrain();
-
-                        resolve(results);
-                    }
-                });
+                    });
+                } else {
+                    entry.autodrain();
+                }
+            }).on("finish", () => {
+                resolve(results);
+            });
         });
     }
 
