@@ -81,12 +81,6 @@ get_node()
             NODE_RELEASE=$(apk version nodejs | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d' | awk -F'[,]' '{print $2}' | awk -F'[=]' '{print $2}' | awk -F'[ ]' '{print $2}' | awk -F'[-]' '{print $1}')
             ;;
 
-        "debian" | "raspbian" | "ubuntu")
-            sudo apt-get update
-
-            NODE_RELEASE=$(apt-cache show nodejs | grep Version | awk -F'[-~ ]' '{print $2}' | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d' | awk -F'[,]' '{print $1}')
-            ;;
-
         "fedora" | "rhel" | "centos")
             NODE_RELEASE=$($OS_PACKAGE_MNGR info nodejs | grep Version | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d' | awk -F'[,]' '{print $1}' | awk -F'[:]' '{print $2}' | awk -F'[ ]' '{print $2}')
             ;;
@@ -125,6 +119,15 @@ get_hbs()
 
 get_hoobsd()
 {
+    case $OS_NAME in
+        "alpine")
+        "fedora" | "rhel" | "centos")
+        "macos")
+            cd $1/lib/$2
+            sudo yarn install --force --production
+            cd $CURRENT_DIRECTORY
+            ;;
+    esac
     HOOBSD_PREFIX="/usr/"
 
     HOOBSD_RELEASE=$(curl -sL https://support.hoobs.org/api/releases/hoobsd/latest | $OS_PYTHON -c "import sys, json; print(json.load(sys.stdin)['results']['version'])")
@@ -151,18 +154,29 @@ get_hoobsd()
 
 configure_repos() {
     case $OS_NAME in
-        "alpine")
-            sudo sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories
-            sudo apk upgrade --update-cache --available
-            source ~/.bashrc
-            ;;
-
         "debian" | "raspbian" | "ubuntu")
+            sudo apt install -y curl
+
             wget https://deb.nodesource.com/setup_lts.x
+
             chmod 755 ./setup_lts.x
             sudo ./setup_lts.x
             rm -f ./setup_lts.x
+
+            curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+
+            curl -sL https://repo.hoobs.org/debian/pubkey.gpg | sudo apt-key add -
+            echo "deb https://repo.hoobs.org/debian/ stable main" | sudo tee /etc/apt/sources.list.d/hoobs.list
+
             sudo apt-get update
+            source ~/.bashrc
+            ;;
+            ;;
+
+        "alpine")
+            sudo sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories
+            sudo apk upgrade --update-cache --available
             source ~/.bashrc
             ;;
 
@@ -184,12 +198,6 @@ install_node() {
             sudo npm install -g yarn
             ;;
 
-        "debian" | "raspbian" | "ubuntu")
-            sudo apt-get update
-            sudo apt-get install -y curl tar git python3 make gcc g++ nodejs
-            sudo npm install -g yarn
-            ;;
-
         "fedora" | "rhel" | "centos")
             sudo $OS_PACKAGE_MNGR install -y curl tar git policycoreutils python3 make gcc gcc-c++ nodejs
             sudo npm install -g yarn
@@ -205,9 +213,13 @@ install_node() {
 }
 
 gyp_rebuild() {
-    cd $1/lib/$2
-    sudo yarn install --force --production
-    cd $CURRENT_DIRECTORY
+    case $OS_NAME in
+        "alpine" | "fedora" | "rhel" | "centos" | "macos")
+            cd $1/lib/$2
+            sudo yarn install --force --production
+            cd $CURRENT_DIRECTORY
+            ;;
+    esac
 }
 
 sudo uname > /dev/null
@@ -225,47 +237,70 @@ if [[ "_$OS_PYTHON" == "_" ]]; then
     exit 1
 fi
 
-configure_repos
-install_node
-get_node
-get_hbs
+case $OS_NAME in
+        "alpine" | "fedora" | "rhel" | "centos" | "macos")
+            configure_repos
+            install_node
+            get_node
+            get_hbs
 
-print_status "installing cli $HBS_RELEASE"
+            print_status "installing cli $HBS_RELEASE"
 
-if [[ "_$HBS_RELEASE_URL" != "_" ]]; then
-    curl -sL $HBS_RELEASE_URL --output $CURRENT_DIRECTORY/hbs.tar.gz
+            if [[ "_$HBS_RELEASE_URL" != "_" ]]; then
+                curl -sL $HBS_RELEASE_URL --output $CURRENT_DIRECTORY/hbs.tar.gz
 
-    sudo tar -xzf $CURRENT_DIRECTORY/hbs.tar.gz -C $HBS_PREFIX --strip-components=1 --no-same-owner
-    sudo rm -f $CURRENT_DIRECTORY/hbs.tar.gz
-fi
+                sudo tar -xzf $CURRENT_DIRECTORY/hbs.tar.gz -C $HBS_PREFIX --strip-components=1 --no-same-owner
+                sudo rm -f $CURRENT_DIRECTORY/hbs.tar.gz
+            fi
 
-if [[ -f "$HBS_PREFIX/lib/hbs/package.json" ]]; then
-    gyp_rebuild $HBS_PREFIX hbs
-else
-    print_status "[ ERROR ] cli install failed"
+            if [[ -f "$HBS_PREFIX/lib/hbs/package.json" ]]; then
+                gyp_rebuild $HBS_PREFIX hbs
+            else
+                print_status "[ ERROR ] cli install failed"
 
-    exit 1
-fi
+                exit 1
+            fi
 
-get_hoobsd
+            get_hoobsd
 
-print_status "installing hoobsd $HOOBSD_RELEASE"
+            print_status "installing hoobsd $HOOBSD_RELEASE"
 
-if [[ "_$HOOBSD_RELEASE_URL" != "_" ]]; then
-    curl -sL $HOOBSD_RELEASE_URL --output $CURRENT_DIRECTORY/hoobsd.tar.gz
+            if [[ "_$HOOBSD_RELEASE_URL" != "_" ]]; then
+                curl -sL $HOOBSD_RELEASE_URL --output $CURRENT_DIRECTORY/hoobsd.tar.gz
 
-    sudo tar -xzf $CURRENT_DIRECTORY/hoobsd.tar.gz -C $HOOBSD_PREFIX --strip-components=1 --no-same-owner
-    sudo rm -f $CURRENT_DIRECTORY/hoobsd.tar.gz
-fi
+                sudo tar -xzf $CURRENT_DIRECTORY/hoobsd.tar.gz -C $HOOBSD_PREFIX --strip-components=1 --no-same-owner
+                sudo rm -f $CURRENT_DIRECTORY/hoobsd.tar.gz
+            fi
 
-if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
-    gyp_rebuild $HOOBSD_PREFIX hoobsd
+            if [[ -f "$HOOBSD_PREFIX/lib/hoobsd/package.json" ]]; then
+                gyp_rebuild $HOOBSD_PREFIX hoobsd
 
-    sudo hbs install -p 80
-    sudo hbs extention add gui
-    sudo hoobsd service restart
-else
-    print_status "[ ERROR ] hoobsd install failed"
+                sudo hbs install -p 80
+                sudo hbs extention add gui
+                sudo hoobsd service restart
+            else
+                print_status "[ ERROR ] hoobsd install failed"
 
-    exit 1
-fi
+                exit 1
+            fi
+            ;;
+
+        "debian" | "raspbian" | "ubuntu")
+            configure_repos
+            install_node
+            get_node
+            get_hbs
+
+            sudo apt update
+            sudo apt install -y nodejs hoobs-cli hoobsd hoobs-gui
+
+            sudo hbs install -p 80
+            ;;
+        
+        * )
+            print_status "[ ERROR ] operating system not supported"
+
+            exit 1
+            ;;
+    esac
+

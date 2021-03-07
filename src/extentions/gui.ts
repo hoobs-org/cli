@@ -17,51 +17,38 @@
  **************************************************************************************************/
 
 import { removeSync } from "fs-extra";
-import { execSync, ExecSyncOptions } from "child_process";
-import { join, basename } from "path";
+import { execSync } from "child_process";
 import { uname, Utsname } from "node-uname";
-import Paths from "../system/paths";
+import System from "../system";
 import Releases from "../system/releases";
 
 export default class GUI {
-    static enable(): Promise<{ success: boolean, error?: string | undefined }> {
-        return new Promise((resolve) => {
-            Releases.fetch("gui").then((release: { [key: string]: any }) => {
-                if (release) {
-                    const options: ExecSyncOptions = {
-                        cwd: join(Paths.data(), ".."),
-                        stdio: ["inherit", "inherit", "inherit"],
-                    };
+    static async enable(): Promise<{ success: boolean, error?: string | undefined }> {
+        const release = await Releases.fetch("gui");
 
-                    const utsname: Utsname = uname();
+        if (release) {
+            const utsname: Utsname = uname();
+            const system = await System.info();
 
-                    if ((utsname.sysname || "").toLowerCase() === "linux") {
-                        execSync(`wget ${release.download}`, options);
-                        execSync(`tar -xzf ./${basename(release.download)} -C /usr --strip-components=1 --no-same-owner`, options);
-                        execSync(`rm -f ./${basename(release.download)}`, options);
+            if ((utsname.sysname || "").toLowerCase() === "linux" && system.package_manager === "apt-get") {
+                execSync("apt-get update", { stdio: "ignore" });
+                execSync("apt-get install -y hoobs-gui", { stdio: "ignore" });
 
-                        resolve({
-                            success: true,
-                        });
-                    } else {
-                        resolve({
-                            success: false,
-                            error: "not linux",
-                        });
-                    }
-                } else {
-                    resolve({
-                        success: false,
-                        error: "mal-formed release",
-                    });
-                }
-            }).catch(() => {
-                resolve({
-                    success: false,
-                    error: "unable to fetch release",
-                });
-            });
-        });
+                return {
+                    success: true,
+                };
+            }
+
+            return {
+                success: false,
+                error: "not linux",
+            };
+        }
+
+        return {
+            success: false,
+            error: "mal-formed release",
+        };
     }
 
     static disable(): { success: boolean, error?: string | undefined } {

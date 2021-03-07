@@ -232,15 +232,12 @@ export default class System {
                 };
             },
 
-            upgrade: async (beta: boolean): Promise<void> => {
-                const data = await System.gui.info(beta);
+            upgrade: async (): Promise<void> => {
+                const system = await System.info();
 
-                execSync(`curl -sL ${data.gui_download} --output ./gui.tar.gz`, { stdio: "ignore" });
-                execSync(`tar -xzf ./gui.tar.gz -C ${data.gui_prefix} --strip-components=1 --no-same-owner`, { stdio: "ignore" });
-                execSync("rm -f ./gui.tar.gz", { stdio: "ignore" });
-
-                if (data.gui_mode === "production") {
-                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.gui_prefix, "lib/hbs") });
+                if (system.package_manager === "apt-get") {
+                    execSync("apt-get update", { stdio: "ignore" });
+                    execSync("apt-get install -y hoobs-gui", { stdio: "ignore" });
                 }
             },
         };
@@ -304,15 +301,12 @@ export default class System {
                 };
             },
 
-            upgrade: async (beta: boolean): Promise<void> => {
-                const data = await System.cli.info(beta);
+            upgrade: async (): Promise<void> => {
+                const system = await System.info();
 
-                execSync(`curl -sL ${data.cli_download} --output ./hbs.tar.gz`, { stdio: "ignore" });
-                execSync(`tar -xzf ./hbs.tar.gz -C ${data.cli_prefix} --strip-components=1 --no-same-owner`, { stdio: "ignore" });
-                execSync("rm -f ./hbs.tar.gz", { stdio: "ignore" });
-
-                if (data.cli_mode === "production") {
-                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.cli_prefix, "lib/hbs") });
+                if (system.package_manager === "apt-get") {
+                    execSync("apt-get update", { stdio: "ignore" });
+                    execSync("apt-get install -y hoobs-cli", { stdio: "ignore" });
                 }
             },
         };
@@ -377,15 +371,12 @@ export default class System {
                 };
             },
 
-            upgrade: async (beta: boolean): Promise<void> => {
-                const version = await System.hoobsd.info(beta);
+            upgrade: async (): Promise<void> => {
+                const system = await System.info();
 
-                execSync(`curl -sL ${version.hoobsd_download} --output ./hoobsd.tar.gz`, { stdio: "ignore" });
-                execSync(`tar -xzf ./hoobsd.tar.gz -C ${version.hoobsd_prefix} --strip-components=1 --no-same-owner`, { stdio: "ignore" });
-                execSync("rm -f ./hoobsd.tar.gz", { stdio: "ignore" });
-
-                if (version.hoobsd_mode === "production") {
-                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(version.hoobsd_prefix, "lib/hoobsd") });
+                if (system.package_manager === "apt-get") {
+                    execSync("apt-get update", { stdio: "ignore" });
+                    execSync("apt-get install -y hoobsd", { stdio: "ignore" });
                 }
             },
         };
