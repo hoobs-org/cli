@@ -79,10 +79,6 @@ setup() {
         PRE_INSTALL_PKGS="${PRE_INSTALL_PKGS} lsb-release"
     fi
 
-    if [ ! -x /usr/bin/curl ] && [ ! -x /usr/bin/wget ]; then
-        PRE_INSTALL_PKGS="${PRE_INSTALL_PKGS} curl"
-    fi
-
     if [ ! -x /usr/bin/gpg ]; then
         PRE_INSTALL_PKGS="${PRE_INSTALL_PKGS} gnupg"
     fi
@@ -181,13 +177,8 @@ setup() {
 
     echo "Confirming \"${DISTRO}\" is supported..."
 
-    if [ -x /usr/bin/curl ]; then
-        exec_cmd_nobail "curl -sLf -o /dev/null 'https://deb.nodesource.com/${NODEREPO}/dists/${DISTRO}/Release'"
-        RC=$?
-    else
-        exec_cmd_nobail "wget -qO /dev/null -o /dev/null 'https://deb.nodesource.com/${NODEREPO}/dists/${DISTRO}/Release'"
-        RC=$?
-    fi
+    exec_cmd_nobail "wget -qO /dev/null -o /dev/null 'https://deb.nodesource.com/${NODEREPO}/dists/${DISTRO}/Release'"
+    RC=$?
 
     if [[ $RC != 0 ]]; then
         echo "Your distribution, identified as \"${DISTRO}\", is not currently supported, please contact NodeSource at https://github.com/nodesource/distributions/issues if you think this is incorrect or would like your distribution to be considered for support"
@@ -203,23 +194,18 @@ setup() {
 
     echo "Adding the NodeSource repository"
 
-    if [ -x /usr/bin/curl ]; then
-        exec_cmd 'curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -'
-    else
-        exec_cmd 'wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -'
-    fi
-
+    exec_cmd 'wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -'
     exec_cmd "echo 'deb https://deb.nodesource.com/${NODEREPO} ${DISTRO} main' > /etc/apt/sources.list.d/nodesource.list"
     exec_cmd "echo 'deb-src https://deb.nodesource.com/${NODEREPO} ${DISTRO} main' >> /etc/apt/sources.list.d/nodesource.list"
 
     echo "Adding the Yarn repository"
 
-    exec_cmd "curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
+    exec_cmd "wget -qO- https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
     exec_cmd "echo 'deb https://dl.yarnpkg.com/debian/ stable main' | tee /etc/apt/sources.list.d/yarn.list"
 
     echo "Adding the HOOBS repository"
 
-    exec_cmd "curl -sL https://repo.hoobs.org/debian/pubkey.gpg | apt-key add -"
+    exec_cmd "wget -qO- https://repo.hoobs.org/debian/pubkey.gpg | apt-key add -"
     exec_cmd "echo 'deb https://repo.hoobs.org/debian/ buster main' | tee /etc/apt/sources.list.d/hoobs.list"
 
     echo "Updating packages"
