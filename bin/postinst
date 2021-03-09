@@ -1,5 +1,4 @@
 #!/bin/sh
 
 cd /usr/lib/hbs
-rm -fR /usr/lib/hbs/node_modules
 yarn install --force --production
