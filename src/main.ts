@@ -63,6 +63,8 @@ export = function Main(): void {
 
             if (State.bridges.findIndex((n) => n.id === "hub") >= 0) {
                 Console.warn("this system is already initilized.");
+
+                Bridges.install();
             } else {
                 if (process.env.USER !== "root") {
                     Console.warn("you are running in user mode, did you forget to use 'sudo'?");
