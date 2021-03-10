@@ -188,7 +188,7 @@ export default class System {
 
     static get gui(): { [key: string]: any } {
         return {
-            info: (beta: boolean): { [key: string]: any } => {
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
                 let path: string | undefined = "/usr/lib/hoobs";
                 let installed: string | undefined = "";
 
@@ -197,7 +197,7 @@ export default class System {
                 if (path) installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
-                const release = System.gui.release(beta);
+                const release = await System.gui.release(beta);
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -223,8 +223,8 @@ export default class System {
                 return results;
             },
 
-            release: (beta: boolean): { [key: string]: string } => {
-                const release = Releases.fetch("gui", beta) || {};
+            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
+                const release = await Releases.fetch("gui", beta) || {};
 
                 return {
                     version: release.version || "",
@@ -245,7 +245,7 @@ export default class System {
 
     static get cli(): { [key: string]: any } {
         return {
-            info: (beta: boolean): { [key: string]: any } => {
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
                 let path = "/usr/bin/hbs";
                 let prefix = "/usr/";
 
@@ -268,7 +268,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = System.cli.release(beta);
+                const release = await System.cli.release(beta);
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -292,8 +292,8 @@ export default class System {
                 };
             },
 
-            release: (beta: boolean): { [key: string]: string } => {
-                const release = Releases.fetch("hbs", beta) || {};
+            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
+                const release = await Releases.fetch("hbs", beta) || {};
 
                 return {
                     version: release.version || "",
@@ -314,7 +314,7 @@ export default class System {
 
     static get hoobsd(): { [key: string]: any } {
         return {
-            info: (beta: boolean): { [key: string]: any } => {
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
                 let path = "/usr/bin/hoobsd";
                 let prefix = "/usr/";
 
@@ -337,7 +337,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = System.hoobsd.release(beta);
+                const release = await System.hoobsd.release(beta);
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -362,8 +362,8 @@ export default class System {
                 };
             },
 
-            release: (beta: boolean): { [key: string]: string } => {
-                const release = Releases.fetch("hoobsd", beta) || {};
+            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
+                const release = await Releases.fetch("hoobsd", beta) || {};
 
                 return {
                     version: release.version || "",
@@ -384,7 +384,7 @@ export default class System {
 
     static get runtime(): { [key: string]: any } {
         return {
-            info: (beta: boolean): { [key: string]: any } => {
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
                 let path = "/usr/bin/node";
 
                 const paths = (process.env.PATH || "").split(":");
@@ -399,7 +399,7 @@ export default class System {
 
                 if (!existsSync(path)) path = "";
 
-                let current = System.runtime.release(beta);
+                let current = await System.runtime.release(beta);
 
                 if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) {
                     current = process.version.replace("v", "");
@@ -412,9 +412,9 @@ export default class System {
                 };
             },
 
-            release: (beta: boolean): string => {
+            release: async (beta: boolean): Promise<string> => {
                 const system = System.info();
-                const release = Releases.fetch("node", beta) || {};
+                const release = await Releases.fetch("node", beta) || {};
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
                     let data: any = "";

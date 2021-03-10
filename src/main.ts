@@ -779,7 +779,7 @@ export = function Main(): void {
 
     Program.command("extention [action] [name]")
         .description("manage extentions")
-        .action((action, name) => {
+        .action(async (action, name) => {
             if (process.env.USER !== "root") {
                 Console.warn("root is required, did you forget to use 'sudo'?");
 
@@ -802,7 +802,7 @@ export = function Main(): void {
                     }
 
                     spinner = Spinner({ stream: process.stdout }).start();
-                    results = Extentions.enable(name);
+                    results = await Extentions.enable(name);
 
                     spinner.stop();
 
@@ -907,7 +907,7 @@ export = function Main(): void {
                         spinner.stop();
 
                         spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
-                        info = System.runtime.info(command.beta);
+                        info = await System.runtime.info(command.beta);
 
                         list.push({
                             application: "node",
@@ -924,7 +924,7 @@ export = function Main(): void {
                     spinner.stop();
 
                     spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
-                    info = System.cli.info(command.beta);
+                    info = await System.cli.info(command.beta);
 
                     list.push({
                         application: "cli",
@@ -940,7 +940,7 @@ export = function Main(): void {
                     spinner.stop();
 
                     spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
-                    info = System.hoobsd.info(command.beta);
+                    info = await System.hoobsd.info(command.beta);
 
                     list.push({
                         application: "hoobsd",
@@ -956,7 +956,7 @@ export = function Main(): void {
                     spinner.stop();
 
                     spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
-                    info = System.gui.info(command.beta);
+                    info = await System.gui.info(command.beta);
 
                     if (info.gui_version) {
                         list.push({
@@ -1062,7 +1062,7 @@ export = function Main(): void {
 
                     if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
                         spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
-                        info = System.runtime.info(command.beta);
+                        info = await System.runtime.info(command.beta);
 
                         spinner.stop();
 
@@ -1080,7 +1080,7 @@ export = function Main(): void {
                     }
 
                     spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
-                    info = System.cli.info(command.beta);
+                    info = await System.cli.info(command.beta);
 
                     spinner.stop();
 
@@ -1097,7 +1097,7 @@ export = function Main(): void {
                     }
 
                     spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
-                    info = System.hoobsd.info(command.beta);
+                    info = await System.hoobsd.info(command.beta);
 
                     spinner.stop();
 
@@ -1116,7 +1116,7 @@ export = function Main(): void {
                     }
 
                     spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
-                    info = System.gui.info(command.beta);
+                    info = await System.gui.info(command.beta);
 
                     spinner.stop();
 

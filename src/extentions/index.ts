@@ -34,12 +34,12 @@ export default class Extentions {
         }];
     }
 
-    static enable(name: string): { [key: string]: any } {
+    static async enable(name: string): Promise<{ [key: string]: any }> {
         let results: { success: boolean, error?: string | undefined };
 
         switch (name) {
             case "ffmpeg":
-                results = FFMPEG.enable();
+                results = await FFMPEG.enable();
 
                 if (results.error) {
                     return {
@@ -53,7 +53,7 @@ export default class Extentions {
                 };
 
             case "gui":
-                results = GUI.enable();
+                results = await GUI.enable();
 
                 if (results.error) {
                     return {

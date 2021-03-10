@@ -21,14 +21,10 @@ import Request from "axios";
 const CACHE: { [key: string]: any } = {};
 
 export default class Releases {
-    static fetch(application: string, beta?: boolean): { [key: string]: any } {
+    static async fetch(application: string, beta?: boolean): Promise<{ [key: string]: any }> {
         if (CACHE[application]) return CACHE[application];
 
-        let results: { [key: string]: any } | undefined;
-
-        (async () => {
-            results = (await Request.get(`https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`)).data.results;
-        })();
+        const { results } = (await Request.get(`https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`)).data;
 
         if (results) CACHE[application] = results;
 

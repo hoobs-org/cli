@@ -23,8 +23,8 @@ import System from "../system";
 import Releases from "../system/releases";
 
 export default class GUI {
-    static enable(): { success: boolean, error?: string | undefined } {
-        const release = Releases.fetch("gui");
+    static async enable(): Promise<{ success: boolean, error?: string | undefined }> {
+        const release = await Releases.fetch("gui");
 
         if (release) {
             const utsname: Utsname = uname();

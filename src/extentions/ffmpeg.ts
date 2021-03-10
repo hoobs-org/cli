@@ -26,8 +26,8 @@ import Releases from "../system/releases";
 import { Events, NotificationType } from "../logger";
 
 export default class FFMPEG {
-    static enable(): { success: boolean, error?: string | undefined } {
-        const release = Releases.fetch("ffmpeg");
+    static async enable(): Promise<{ success: boolean, error?: string | undefined }> {
+        const release = await Releases.fetch("ffmpeg");
 
         if (release) {
             const packages = [
@@ -70,7 +70,7 @@ export default class FFMPEG {
                 execSync("ldconfig -n /usr/local/lib", options);
                 execSync("ldconfig", options);
 
-                Socket.notify(Events.NOTIFICATION, {
+                await Socket.emit(Events.NOTIFICATION, {
                     bridge: "hub",
                     data: {
                         title: "FFMPEG Installed",
@@ -86,7 +86,7 @@ export default class FFMPEG {
             }
 
             if ((utsname.sysname || "").toLowerCase() !== "linux") {
-                Socket.notify(Events.NOTIFICATION, {
+                await Socket.emit(Events.NOTIFICATION, {
                     bridge: "hub",
                     data: {
                         title: "FFMPEG Not Installed",
@@ -102,7 +102,7 @@ export default class FFMPEG {
             }
 
             if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
-                Socket.notify(Events.NOTIFICATION, {
+                await Socket.emit(Events.NOTIFICATION, {
                     bridge: "hub",
                     data: {
                         title: "FFMPEG Not Installed",
@@ -118,7 +118,7 @@ export default class FFMPEG {
             }
 
             if (!Paths.tryCommand("apt-get")) {
-                Socket.notify(Events.NOTIFICATION, {
+                await Socket.emit(Events.NOTIFICATION, {
                     bridge: "hub",
                     data: {
                         title: "FFMPEG Not Installed",
