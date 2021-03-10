@@ -213,7 +213,6 @@ setup() {
     exec_cmd 'apt-get update'
 
     echo "Run \"${bold}sudo apt install -y hoobs${normal}\" to install HOOBS, node and yarn"
-    echo "To initilize HOOBS run \"${bold}sudo hbs install${normal}\""
 }
 
 setup
