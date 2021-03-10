@@ -37,7 +37,7 @@ import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
-if (System.shellSync("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
@@ -789,6 +789,7 @@ export = function Main(): void {
             State.bridges = Bridges.list();
 
             let spinner: Spinner.Ora;
+            let results: { [key: string]: any };
             let list: { [key: string]: any }[] = [];
 
             switch (action) {
@@ -801,20 +802,17 @@ export = function Main(): void {
                     }
 
                     spinner = Spinner({ stream: process.stdout }).start();
+                    results = Extentions.enable(name);
 
-                    Extentions.enable(name).then((results) => {
-                        spinner.stop();
+                    spinner.stop();
 
-                        if (!results.success && results.warning) {
-                            Console.error(results.warning);
-                        } else if (!results.success) {
-                            Console.error(results.error || "unhandled error");
-                        } else {
-                            Extentions.list();
-                        }
-
-                        process.exit();
-                    });
+                    if (!results.success && results.warning) {
+                        Console.error(results.warning);
+                    } else if (!results.success) {
+                        Console.error(results.error || "unhandled error");
+                    } else {
+                        Extentions.list();
+                    }
 
                     break;
 
@@ -828,20 +826,17 @@ export = function Main(): void {
                     }
 
                     spinner = Spinner({ stream: process.stdout }).start();
+                    results = Extentions.disable(name);
 
-                    Extentions.disable(name).then((results) => {
-                        spinner.stop();
+                    spinner.stop();
 
-                        if (!results.success && results.warning) {
-                            Console.error(results.warning);
-                        } else if (!results.success) {
-                            Console.error(results.error || "unhandled error");
-                        } else {
-                            Extentions.list();
-                        }
-
-                        process.exit();
-                    });
+                    if (!results.success && results.warning) {
+                        Console.error(results.warning);
+                    } else if (!results.success) {
+                        Console.error(results.error || "unhandled error");
+                    } else {
+                        Extentions.list();
+                    }
 
                     break;
 
@@ -880,121 +875,114 @@ export = function Main(): void {
             State.bridges = Bridges.list();
 
             const list: { [key: string]: any }[] = [];
-            const waits: Promise<void>[] = [];
 
+            let system: { [key: string]: any };
+            let info: { [key: string]: any };
             let spinner: Spinner.Ora;
             let entries: string[] = [];
             let reboot = false;
 
             switch (action) {
                 case "hostname":
-                    System.info().then(async (system) => {
-                        if (system.mdns && file) {
-                            Console.info("setting hostname");
+                    system = System.info();
 
-                            await System.hostname(file);
-                        } else if (system.mdns) {
-                            Console.info(Chalk.cyan(system.mdns_broadcast));
-                        } else {
-                            Console.info(Program.helpInformation());
-                        }
-                    });
+                    if (system.mdns && file) {
+                        Console.info("setting hostname");
+
+                        await System.hostname(file);
+                    } else if (system.mdns) {
+                        Console.info(Chalk.cyan(system.mdns_broadcast));
+                    } else {
+                        Console.info(Program.helpInformation());
+                    }
 
                     break;
 
                 case "version":
                 case "versions":
                     spinner = Spinner({ stream: process.stdout }).start();
+                    system = System.info();
 
-                    System.info().then((system) => {
-                        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
-                            waits.push(new Promise<void>((resolve) => {
-                                System.runtime.info(command.beta).then((results: { [key: string]: any }) => {
-                                    list.push({
-                                        application: "node",
-                                        distribution: system.distribution,
-                                        package_manager: system.package_manager,
-                                        version: results.node_version,
-                                        latest: results.node_current,
-                                        upgraded: results.node_upgraded,
-                                        init_system: "",
-                                        running: "",
-                                    });
+                    if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                        spinner.stop();
 
-                                    resolve();
-                                });
-                            }));
-                        }
+                        spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
+                        info = System.runtime.info(command.beta);
 
-                        waits.push(new Promise<void>((resolve) => {
-                            System.cli.info(command.beta).then((results: { [key: string]: any }) => {
-                                list.push({
-                                    application: "cli",
-                                    distribution: system.distribution,
-                                    package_manager: system.package_manager,
-                                    version: results.cli_version,
-                                    latest: results.cli_current,
-                                    upgraded: results.cli_upgraded,
-                                    init_system: "",
-                                    running: "",
-                                });
-
-                                resolve();
-                            });
-                        }));
-
-                        waits.push(new Promise<void>((resolve) => {
-                            System.hoobsd.info(command.beta).then((results: { [key: string]: any }) => {
-                                list.push({
-                                    application: "hoobsd",
-                                    distribution: system.distribution,
-                                    package_manager: system.package_manager,
-                                    version: results.hoobsd_version,
-                                    latest: results.hoobsd_current,
-                                    upgraded: results.hoobsd_upgraded,
-                                    init_system: system.init_system,
-                                    running: results.hoobsd_running,
-                                });
-
-                                resolve();
-                            });
-                        }));
-
-                        waits.push(new Promise<void>((resolve) => {
-                            System.gui.info(command.beta).then((results: { [key: string]: any }) => {
-                                if (results.gui_version) {
-                                    list.push({
-                                        application: "gui",
-                                        distribution: system.distribution,
-                                        package_manager: system.package_manager,
-                                        version: results.gui_version,
-                                        latest: results.gui_current,
-                                        upgraded: results.gui_upgraded,
-                                        init_system: "",
-                                        running: "",
-                                    });
-                                }
-
-                                resolve();
-                            });
-                        }));
-
-                        Promise.all(waits).then(() => {
-                            list.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
-                                if (a.application < b.application) return -1;
-                                if (a.application > b.application) return 1;
-
-                                return 0;
-                            });
-
-                            spinner.stop();
-
-                            console.info("");
-                            Console.table(list);
-                            console.info("");
+                        list.push({
+                            application: "node",
+                            distribution: system.distribution,
+                            package_manager: system.package_manager,
+                            version: process.version.replace("v", ""),
+                            latest: info.node_current,
+                            upgraded: info.node_upgraded,
+                            init_system: "",
+                            running: "",
                         });
+                    }
+
+                    spinner.stop();
+
+                    spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
+                    info = System.cli.info(command.beta);
+
+                    list.push({
+                        application: "cli",
+                        distribution: system.distribution,
+                        package_manager: system.package_manager,
+                        version: info.cli_version,
+                        latest: info.cli_current,
+                        upgraded: info.cli_upgraded,
+                        init_system: "",
+                        running: "",
                     });
 
+                    spinner.stop();
+
+                    spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
+                    info = System.hoobsd.info(command.beta);
+
+                    list.push({
+                        application: "hoobsd",
+                        distribution: system.distribution,
+                        package_manager: system.package_manager,
+                        version: info.hoobsd_version,
+                        latest: info.hoobsd_current,
+                        upgraded: info.hoobsd_upgraded,
+                        init_system: system.init_system,
+                        running: info.hoobsd_running,
+                    });
+
+                    spinner.stop();
+
+                    spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
+                    info = System.gui.info(command.beta);
+
+                    if (info.gui_version) {
+                        list.push({
+                            application: "gui",
+                            distribution: system.distribution,
+                            package_manager: system.package_manager,
+                            version: info.gui_version,
+                            latest: info.gui_current,
+                            upgraded: info.gui_upgraded,
+                            init_system: "",
+                            running: "",
+                        });
+                    }
+
+                    list.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+                        if (a.application < b.application) return -1;
+                        if (a.application > b.application) return 1;
+
+                        return 0;
+                    });
+
+                    spinner.stop();
+
+                    console.info("");
+                    Console.table(list);
+                    console.info("");
                     break;
 
                 case "backup":
@@ -1070,145 +1058,96 @@ export = function Main(): void {
 
                 case "update":
                 case "upgrade":
-                    spinner = Spinner({ stream: process.stdout }).start();
+                    system = System.info();
 
-                    System.info().then((system) => {
+                    if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                        spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
+                        info = System.runtime.info(command.beta);
+
                         spinner.stop();
 
-                        Promise.all([new Promise<void>((resolve) => {
-                            if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
-                                spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
-
-                                System.runtime.info(command.beta).then((results: { [key: string]: any }) => {
-                                    spinner.stop();
-
-                                    if (!results.node_upgraded) {
-                                        if (command.test) {
-                                            Console.info(Chalk.yellow(`node will be upgraded to ${results.node_current}`));
-                                        } else {
-                                            spinner = Spinner({ text: "upgrading node", stream: process.stdout }).start();
-
-                                            System.runtime.upgrade().then(() => {
-                                                spinner.stop();
-
-                                                Console.info(Chalk.green(`node upgraded to ${results.node_current}`));
-
-                                                resolve();
-                                            });
-                                        }
-                                    } else {
-                                        Console.info(Chalk.green("node is already up-to-date"));
-
-                                        resolve();
-                                    }
-                                });
+                        if (!info.node_upgraded) {
+                            if (command.test) {
+                                Console.info(Chalk.yellow(`node will be upgraded to ${info.node_current}`));
                             } else {
-                                resolve();
+                                await System.runtime.upgrade();
+
+                                Console.info(Chalk.green(`node upgraded to ${info.node_current}`));
                             }
-                        })]).then(() => {
-                            Promise.all([new Promise<void>((resolve) => {
-                                spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
+                        } else {
+                            Console.info(Chalk.green("node is already up-to-date"));
+                        }
+                    }
 
-                                System.cli.info(command.beta).then((results: { [key: string]: any }) => {
-                                    spinner.stop();
+                    spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
+                    info = System.cli.info(command.beta);
 
-                                    if (!results.cli_upgraded) {
-                                        if (command.test) {
-                                            Console.info(Chalk.yellow(`cli will be upgraded to ${results.cli_current}`));
-                                        } else {
-                                            spinner = Spinner({ text: "upgrading cli", stream: process.stdout }).start();
+                    spinner.stop();
 
-                                            System.cli.upgrade().then(() => {
-                                                spinner.stop();
+                    if (!info.cli_upgraded) {
+                        if (command.test) {
+                            Console.info(Chalk.yellow(`cli will be upgraded to ${info.cli_current}`));
+                        } else {
+                            await System.cli.upgrade();
 
-                                                Console.info(Chalk.green(`cli upgraded to ${results.cli_current}`));
+                            Console.info(Chalk.green(`cli upgraded to ${info.cli_current}`));
+                        }
+                    } else {
+                        Console.info(Chalk.green("cli is already up-to-date"));
+                    }
 
-                                                resolve();
-                                            });
-                                        }
-                                    } else {
-                                        Console.info(Chalk.green("cli is already up-to-date"));
+                    spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
+                    info = System.hoobsd.info(command.beta);
 
-                                        resolve();
-                                    }
-                                });
-                            })]).then(() => {
-                                Promise.all([new Promise<void>((resolve) => {
-                                    spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
+                    spinner.stop();
 
-                                    System.hoobsd.info(command.beta).then((results: { [key: string]: any }) => {
-                                        spinner.stop();
+                    if (!info.hoobsd_upgraded) {
+                        if (command.test) {
+                            Console.info(Chalk.yellow(`hoobsd will be upgraded to ${info.hoobsd_current}`));
+                        } else {
+                            reboot = info.hoobsd_running;
 
-                                        if (!results.hoobsd_upgraded) {
-                                            if (command.test) {
-                                                Console.info(Chalk.yellow(`hoobsd will be upgraded to ${results.hoobsd_current}`));
-                                            } else {
-                                                spinner = Spinner({ text: "upgrading hoobsd", stream: process.stdout }).start();
-                                                reboot = results.hoobsd_running;
+                            await System.hoobsd.upgrade();
 
-                                                System.hoobsd.upgrade().then(() => {
-                                                    spinner.stop();
+                            Console.info(Chalk.green(`hoobsd upgraded to ${info.hoobsd_current}`));
+                        }
+                    } else {
+                        Console.info(Chalk.green("hoobsd is already up-to-date"));
+                    }
 
-                                                    Console.info(Chalk.green(`hoobsd upgraded to ${results.hoobsd_current}`));
+                    spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
+                    info = System.gui.info(command.beta);
 
-                                                    resolve();
-                                                });
-                                            }
-                                        } else {
-                                            Console.info(Chalk.green("hoobsd is already up-to-date"));
+                    spinner.stop();
 
-                                            resolve();
-                                        }
-                                    });
-                                })]).then(() => {
-                                    Promise.all([new Promise<void>((resolve) => {
-                                        spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
+                    if (info.gui_version && !info.gui_upgraded) {
+                        if (command.test) {
+                            Console.info(Chalk.yellow(`gui will be upgraded to ${info.gui_current}`));
+                        } else {
+                            spinner = Spinner({ text: "upgrading gui", stream: process.stdout }).start();
 
-                                        System.gui.info(command.beta).then((results: { [key: string]: any }) => {
-                                            spinner.stop();
+                            await System.gui.upgrade();
 
-                                            if (results.gui_version && !results.gui_upgraded) {
-                                                if (command.test) {
-                                                    Console.info(Chalk.yellow(`gui will be upgraded to ${results.gui_current}`));
-                                                } else {
-                                                    spinner = Spinner({ text: "upgrading gui", stream: process.stdout }).start();
+                            Console.info(Chalk.green(`gui upgraded to ${info.gui_current}`));
+                        }
+                    } else if (info.gui_version) {
+                        Console.info(Chalk.green("gui is already up-to-date"));
+                    }
 
-                                                    System.gui.upgrade().then(() => {
-                                                        spinner.stop();
+                    if (!command.test && reboot && State.container && State.mode === "production") {
+                        Console.info(Chalk.yellow("you need to restart this container"));
+                    } else if (!command.test && reboot && State.mode === "production") {
+                        const { proceed } = (await prompt([{
+                            type: "confirm",
+                            name: "proceed",
+                            message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
+                            default: false,
+                        }]));
 
-                                                        Console.info(Chalk.green(`gui upgraded to ${results.gui_current}`));
-
-                                                        resolve();
-                                                    });
-                                                }
-                                            } else if (results.gui_version) {
-                                                Console.info(Chalk.green("gui is already up-to-date"));
-
-                                                resolve();
-                                            } else {
-                                                resolve();
-                                            }
-                                        });
-                                    })]).then(async () => {
-                                        if (!command.test && reboot && State.container && State.mode === "production") {
-                                            Console.info(Chalk.yellow("you need to restart this container"));
-                                        } else if (!command.test && reboot && State.mode === "production") {
-                                            const { proceed } = (await prompt([{
-                                                type: "confirm",
-                                                name: "proceed",
-                                                message: Chalk.yellow("the hoobsd service needs to restart, do you want to restart it now"),
-                                                default: false,
-                                            }]));
-
-                                            if (!proceed) System.restart();
-                                        } else if (command.test && reboot) {
-                                            Console.info(Chalk.yellow("this will require a reboot"));
-                                        }
-                                    });
-                                });
-                            });
-                        });
-                    });
+                        if (!proceed) System.restart();
+                    } else if (command.test && reboot) {
+                        Console.info(Chalk.yellow("this will require a reboot"));
+                    }
 
                     break;
 

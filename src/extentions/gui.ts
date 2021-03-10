@@ -23,12 +23,12 @@ import System from "../system";
 import Releases from "../system/releases";
 
 export default class GUI {
-    static async enable(): Promise<{ success: boolean, error?: string | undefined }> {
-        const release = await Releases.fetch("gui");
+    static enable(): { success: boolean, error?: string | undefined } {
+        const release = Releases.fetch("gui");
 
         if (release) {
             const utsname: Utsname = uname();
-            const system = await System.info();
+            const system = System.info();
 
             if ((utsname.sysname || "").toLowerCase() === "linux" && system.package_manager === "apt-get") {
                 execSync("apt-get update", { stdio: "ignore" });

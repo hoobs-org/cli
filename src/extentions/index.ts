@@ -34,88 +34,83 @@ export default class Extentions {
         }];
     }
 
-    static enable(name: string): Promise<{ [key: string]: any }> {
-        return new Promise((resolve) => {
-            switch (name) {
-                case "ffmpeg":
-                    FFMPEG.enable().then((results) => {
-                        if (results.error) {
-                            resolve({
-                                success: false,
-                                error: results.error,
-                            });
-                        } else {
-                            resolve({
-                                success: true,
-                            });
-                        }
-                    });
+    static enable(name: string): { [key: string]: any } {
+        let results: { success: boolean, error?: string | undefined };
 
-                    break;
+        switch (name) {
+            case "ffmpeg":
+                results = FFMPEG.enable();
 
-                case "gui":
-                    GUI.enable().then((results) => {
-                        if (results.error) {
-                            resolve({
-                                success: false,
-                                error: results.error,
-                            });
-                        } else {
-                            resolve({
-                                success: true,
-                            });
-                        }
-                    });
-
-                    break;
-
-                default:
-                    resolve({
+                if (results.error) {
+                    return {
                         success: false,
-                        warning: "invalid extention",
-                    });
-            }
-        });
+                        error: results.error,
+                    };
+                }
+
+                return {
+                    success: true,
+                };
+
+            case "gui":
+                results = GUI.enable();
+
+                if (results.error) {
+                    return {
+                        success: false,
+                        error: results.error,
+                    };
+                }
+
+                return {
+                    success: true,
+                };
+
+            default:
+                return {
+                    success: false,
+                    warning: "invalid extention",
+                };
+        }
     }
 
-    static disable(name: string): Promise<{ [key: string]: any }> {
-        return new Promise((resolve) => {
-            let results: { [key: string]: any } = {};
+    static disable(name: string): { [key: string]: any } {
+        let results: { [key: string]: any } = {};
 
-            switch (name) {
-                case "ffmpeg":
-                    results = FFMPEG.disable();
+        switch (name) {
+            case "ffmpeg":
+                results = FFMPEG.disable();
 
-                    if (results.error) {
-                        return resolve({
-                            success: false,
-                            error: results.error,
-                        });
-                    }
-
-                    return resolve({
-                        success: true,
-                    });
-
-                case "gui":
-                    results = GUI.disable();
-
-                    if (results.error) {
-                        return resolve({
-                            success: false,
-                            error: results.error,
-                        });
-                    }
-
-                    return resolve({
-                        success: true,
-                    });
-                default:
-                    return resolve({
+                if (results.error) {
+                    return {
                         success: false,
-                        warning: "invalid extention",
-                    });
-            }
-        });
+                        error: results.error,
+                    };
+                }
+
+                return {
+                    success: true,
+                };
+
+            case "gui":
+                results = GUI.disable();
+
+                if (results.error) {
+                    return {
+                        success: false,
+                        error: results.error,
+                    };
+                }
+
+                return {
+                    success: true,
+                };
+
+            default:
+                return {
+                    success: false,
+                    warning: "invalid extention",
+                };
+        }
     }
 }

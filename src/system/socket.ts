@@ -59,4 +59,10 @@ export default class Socket {
             });
         });
     }
+
+    static notify(event: Events, body: any): void {
+        (async () => {
+            await Socket.emit(event, body);
+        })();
+    }
 }
