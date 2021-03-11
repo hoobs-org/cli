@@ -643,14 +643,14 @@ export = function Main(): void {
                     State.id = sanitize(command.bridge || "hub");
 
                     if (!command.bridge || command.bridge === "" || State.id === "hub") {
-                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
-                            State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
+                        if (State.bridges.filter((item) => item.type !== "hub").length === 1) {
+                            State.id = State.bridges.filter((item) => item.type !== "hub")[0].id;
                         } else {
                             const { bridge } = (await prompt([{
                                 type: "list",
                                 name: "bridge",
                                 message: "Please select an bridge",
-                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
+                                choices: State.bridges.filter((item) => item.type !== "hub").map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
@@ -674,14 +674,14 @@ export = function Main(): void {
                     State.id = sanitize(command.bridge || "hub");
 
                     if (!command.bridge || command.bridge === "" || State.id === "hub") {
-                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
-                            State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
+                        if (State.bridges.filter((item) => item.type !== "hub").length === 1) {
+                            State.id = State.bridges.filter((item) => item.type !== "hub")[0].id;
                         } else {
                             const { bridge } = (await prompt([{
                                 type: "list",
                                 name: "bridge",
                                 message: "Please select an bridge",
-                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
+                                choices: State.bridges.filter((item) => item.type !== "hub").map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
