@@ -17,7 +17,6 @@
  **************************************************************************************************/
 
 import Os from "os";
-import Chalk from "chalk";
 import Unzip from "unzipper";
 import Archiver from "archiver";
 import Inquirer from "inquirer";
@@ -65,6 +64,7 @@ export interface BridgeRecord {
     host?: string;
     plugins?: string;
     advertiser?: string;
+    project?: string;
 }
 
 const reserved = [
@@ -244,7 +244,7 @@ export default class Bridges {
         }
     }
 
-    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number, advertiser: string) {
+    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number, advertiser: string, project?: string) {
         const bridges: BridgeRecord[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
@@ -296,6 +296,7 @@ export default class Bridges {
                 username,
                 autostart: autostart || 0,
                 advertiser,
+                project: type === "dev" ? project : undefined,
             });
         }
 
@@ -320,14 +321,6 @@ export default class Bridges {
                         icon: "layers",
                     },
                 }).then(() => {
-                    if (id === "hub") {
-                        console.log("hub created you can start the hub with this command");
-                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} hub`));
-                    } else {
-                        console.log("bridge created you can start the bridge with this command");
-                        console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${id}'`));
-                    }
-
                     Bridges.append(id, name, id === "hub" ? "hub" : "bridge", port, pin, Config.generateUsername(), autostart, advertiser || "bonjour");
 
                     resolve(true);
@@ -342,6 +335,30 @@ export default class Bridges {
                             if (!value || value === "") return "a name is required";
                             if (reserved.indexOf(sanitize(value)) >= 0) return "name reserved please choose a different name";
                             if (State.bridges.findIndex((n) => n.id === sanitize(value)) >= 0) return "bridge name must be uniqie";
+
+                            return true;
+                        },
+                    },
+                    {
+                        type: "list",
+                        name: "type",
+                        message: "select a bridgetype",
+                        choices: [{
+                            name: "Bridge",
+                            value: "bridge",
+                        }, {
+                            name: "Development",
+                            value: "dev",
+                        }],
+                    },
+                    {
+                        type: "input",
+                        name: "project",
+                        message: "set your project path",
+                        when: (answers) => answers.type === "dev",
+                        validate: (value: string | undefined) => {
+                            if (!value) return "a projact path is required";
+                            if (!existsSync(join(value || "", "package.json"))) return "invalid project path";
 
                             return true;
                         },
@@ -396,9 +413,9 @@ export default class Bridges {
                             return true;
                         },
                     },
-                ]).then((result) => {
-                    if (result && result.name && result.port) {
-                        id = sanitize(result.name);
+                ]).then((answers) => {
+                    if (answers && answers.name && answers.port) {
+                        id = sanitize(answers.name);
 
                         if (id === "hub" && State.mode === "production") Bridges.install();
 
@@ -406,20 +423,12 @@ export default class Bridges {
                             bridge: "hub",
                             data: {
                                 title: "Bridge Added",
-                                description: `Bridge "${result.name}" added.`,
+                                description: `Bridge "${answers.name}" added.`,
                                 type: NotificationType.SUCCESS,
                                 icon: "layers",
                             },
                         }).then(() => {
-                            Bridges.append(id, result.name, id === "hub" ? "hub" : "bridge", result.port, result.pin, Config.generateUsername(), result.autostart, result.advertiser);
-
-                            if (id === "hub") {
-                                console.log("hub created you can start the hub with this command");
-                                console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} hub`));
-                            } else {
-                                console.log("bridge created you can start the bridge with this command");
-                                console.log(Chalk.yellow(`${join(Bridges.locate(), "hoobsd")} start --bridge '${id}'`));
-                            }
+                            Bridges.append(id, answers.name, id === "hub" ? "hub" : answers.type, answers.port, answers.pin, Config.generateUsername(), answers.autostart, answers.advertiser, answers.project);
 
                             resolve(true);
                         });

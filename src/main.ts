@@ -580,15 +580,17 @@ export = function Main(): void {
 
                 case "rm":
                 case "remove":
-                    if (!command.bridge || command.bridge === "") {
-                        if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
-                            command.bridge = State.bridges.filter((item) => item.type === "bridge")[0].id;
+                    bridges = State.bridges.filter((item) => item.type !== "hub");
+
+                    if ((!command.bridge || command.bridge === "") && bridges.length > 0) {
+                        if (bridges.length === 1) {
+                            command.bridge = bridges[0].id;
                         } else {
                             const { bridge } = (await prompt([{
                                 type: "list",
                                 name: "bridge",
                                 message: "Please select an bridge",
-                                choices: State.bridges.filter((item) => item.type === "bridge").map((item) => ({
+                                choices: bridges.map((item) => ({
                                     name: item.display,
                                     value: item.id,
                                 })),
