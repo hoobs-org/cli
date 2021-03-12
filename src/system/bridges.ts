@@ -271,6 +271,7 @@ export default class Bridges {
                     username: bridge.username,
                     autostart: bridge.autostart,
                     advertiser: bridge.advertiser,
+                    project: bridge.project,
                 });
             }
         }
