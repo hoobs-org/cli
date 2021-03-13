@@ -17,7 +17,7 @@ sudo apt install -y hoobs-cli
 
 ## Documentation
 CLI documentation can be found here.  
-[CLI Documentation](https://github.com/hoobs-org/HOOBS/blob/main/docs/CLI.md)  
+[CLI Documentation](https://github.com/hoobs-org/HOOBS/blob/4.0.8/docs/CLI.md)  
 
 ## Legal
 HOOBS and the HOOBS logo are registered trademarks of HOOBS Inc. Copyright (C) 2020 HOOBS Inc. All rights reserved.
