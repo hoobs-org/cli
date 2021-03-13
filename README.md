@@ -3,20 +3,21 @@
 The HOOBS command line interface is the software that manages bridge bridges.
 
 ## Installing
-HOOBS recommends Yarn.
+First add the HOOBS repository to your sources.
 
 ```sh
-yarn global add --unsafe-perm @hoobs/cli
+wget -qO- https://support.hoobs.org/setup | sudo -E bash -
 ```
 
-Or using NPM.
+Now you can install hoobsd and the HOOBS CLI.
 
 ```sh
-npm install -g --unsafe-perm @hoobs/cli
+sudo apt install -y hoobs-cli
 ```
-
-> The `--unsafe-perm` flag needs to be used so the install can add a symlink in `/usr/bin`.
 
 ## Documentation
 CLI documentation can be found here.  
 [CLI Documentation](https://github.com/hoobs-org/HOOBS/blob/main/docs/CLI.md)  
+
+## Legal
+HOOBS and the HOOBS logo are registered trademarks of HOOBS Inc. Copyright (C) 2020 HOOBS Inc. All rights reserved.
