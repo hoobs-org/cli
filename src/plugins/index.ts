@@ -18,11 +18,7 @@
 
 import { spawn } from "child_process";
 import { join } from "path";
-
-import {
-    existsSync,
-    readFileSync,
-} from "fs-extra";
+import { existsSync, readFileSync } from "fs-extra";
 
 import {
     uuid,
@@ -38,7 +34,6 @@ import Paths from "../system/paths";
 import Socket from "../system/socket";
 import Config from "../config";
 import { Console, Events, NotificationType } from "../logger";
-import { loadJson } from "../formatters";
 
 export default class Plugins {
     static get directory(): string {
@@ -62,7 +57,7 @@ export default class Plugins {
 
     static load(bridge: string, callback: (name: string, scope: string, directory: string, pjson: { [key: string]: any }, library: string) => void): void {
         if (existsSync(join(Paths.data(bridge), "package.json"))) {
-            const plugins = Object.keys(loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
+            const plugins = Object.keys(Paths.loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 if (plugins[i] !== "hap-nodejs") {

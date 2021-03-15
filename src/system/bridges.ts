@@ -42,12 +42,7 @@ import Paths from "./paths";
 import Socket from "./socket";
 import Config from "../config";
 import { Events, NotificationType } from "../logger";
-
-import {
-    loadJson,
-    formatJson,
-    sanitize,
-} from "../formatters";
+import { sanitize } from "../formatters";
 
 const PROMPT: Inquirer.PromptModule = Inquirer.createPromptModule();
 const BRIDGE_TEARDOWN_DELAY = 1000;
@@ -106,7 +101,7 @@ export default class Bridges {
 
         let bridges: BridgeRecord[] = [];
 
-        if (existsSync(Paths.bridges)) bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
+        if (existsSync(Paths.bridges)) bridges = Paths.loadJson<BridgeRecord[]>(Paths.bridges, []);
 
         for (let i = 0; i < bridges.length; i += 1) {
             bridges[i].host = host;
@@ -142,7 +137,7 @@ export default class Bridges {
 
                         State.bridges.splice(index, 1);
 
-                        writeFileSync(Paths.bridges, formatJson(State.bridges));
+                        Paths.saveJson(Paths.bridges, State.bridges);
 
                         resolve(true);
                     });
@@ -301,7 +296,7 @@ export default class Bridges {
             });
         }
 
-        writeFileSync(Paths.bridges, formatJson(bridges));
+        Paths.saveJson(Paths.bridges, bridges);
     }
 
     static create(name: string, port: number, pin: string, autostart: number, advertiser?: string): Promise<boolean> {
@@ -442,7 +437,7 @@ export default class Bridges {
     }
 
     static cache(): { [key: string]: any }[] {
-        const working = loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
+        const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
 
         return working.map((item: { [key: string]: any }) => ({
             uuid: item.UUID,
@@ -455,7 +450,7 @@ export default class Bridges {
     static purge(uuid?: string): Promise<void> {
         return new Promise((resolve) => {
             if (uuid) {
-                const working = loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
+                const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
                 let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
                 while (index >= 0) {
@@ -463,7 +458,7 @@ export default class Bridges {
                     index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
                 }
 
-                writeFileSync(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), formatJson(working));
+                Paths.saveJson(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), working);
 
                 resolve();
             } else {
@@ -526,7 +521,7 @@ export default class Bridges {
 
             const bridge = State.bridges.find((item) => item.id === id);
 
-            writeFileSync(join(Paths.data(), "meta"), formatJson({
+            Paths.saveJson(join(Paths.data(), "meta"), {
                 date: (new Date()).getTime(),
                 type: "bridge",
                 data: {
@@ -538,7 +533,7 @@ export default class Bridges {
                 product: "hoobs",
                 generator: "hbs",
                 version: State.version,
-            }));
+            });
 
             if (!bridge) reject(new Error("bridge does not exist"));
 
@@ -570,13 +565,13 @@ export default class Bridges {
 
     static backup(): Promise<string> {
         return new Promise((resolve, reject) => {
-            writeFileSync(join(Paths.data(), "meta"), formatJson({
+            Paths.saveJson(join(Paths.data(), "meta"), {
                 date: (new Date()).getTime(),
                 type: "full",
                 product: "hoobs",
                 generator: "hbs",
                 version: State.version,
-            }));
+            });
 
             const filename = `${new Date().getTime()}`;
             const entries = readdirSync(Paths.data());
@@ -684,7 +679,7 @@ export default class Bridges {
                         unlinkSync(filename);
 
                         setTimeout(() => {
-                            const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
+                            const bridges = Paths.loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
                                 execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {

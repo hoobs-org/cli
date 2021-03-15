@@ -23,12 +23,8 @@ import { gunzipSync } from "zlib";
 import { readFileSync } from "fs-extra";
 import State from "../state";
 import Paths from "../system/paths";
-
-import {
-    formatJson,
-    parseJson,
-    colorize,
-} from "../formatters";
+import { formatJson, parseJson } from "../json";
+import { colorize } from "../formatters";
 
 export const enum LogLevel {
     INFO = "info",

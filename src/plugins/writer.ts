@@ -23,8 +23,9 @@ import { join } from "path";
 import File from "fs-extra";
 import Inquirer from "inquirer";
 import Chalk from "chalk";
+import Paths from "../system/paths";
 import { Console } from "../logger";
-import { formatJson, sanitize } from "../formatters";
+import { sanitize } from "../formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
@@ -226,7 +227,7 @@ export default class Writer {
     }
 
     static schema(data: { [key: string]: any }): void {
-        File.writeFileSync(join(data.path, "config.schema.json"), formatJson({
+        Paths.saveJson(join(data.path, "config.schema.json"), {
             pluginAlias: data.display,
             pluginType: "platform",
             singular: true,
@@ -241,7 +242,7 @@ export default class Writer {
                     },
                 },
             },
-        }));
+        }, true);
     }
 
     static async features(): Promise<{ [key: string]: any }> {
@@ -518,7 +519,7 @@ export default class Writer {
             scripts.test = "jest";
         }
 
-        File.writeFileSync(join(data.path, "package.json"), formatJson({
+        Paths.saveJson(join(data.path, "package.json"), {
             name: data.identifier,
             version: data.version,
             license: data.license,
@@ -530,7 +531,7 @@ export default class Writer {
             scripts,
             dependencies: {},
             devDependencies: {},
-        }));
+        }, true);
     }
 
     static nodemon(data: { [key: string]: any }): void {
@@ -553,7 +554,7 @@ export default class Writer {
             content.exec = `homebridge -I -D -P ${data.path}`;
         }
 
-        File.writeFileSync(join(data.path, "nodemon.json"), formatJson(content));
+        Paths.saveJson(join(data.path, "nodemon.json"), content, true);
     }
 
     static eslintrc(data: { [key: string]: any }): void {

@@ -23,8 +23,8 @@ import { join } from "path";
 import { spawn, execSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
+import Paths from "./paths";
 import Releases from "./releases";
-import { loadJson } from "../formatters";
 
 const CACHE: { [key: string]: any } = {};
 
@@ -194,7 +194,7 @@ export default class System {
 
                 if (!existsSync(join(path, "package.json"))) path = join(__dirname, "../../../../gui");
                 if (!existsSync(join(path, "package.json"))) path = undefined;
-                if (path) installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
+                if (path) installed = (Paths.loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
                 const release = await System.gui.release(beta);

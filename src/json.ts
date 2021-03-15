@@ -16,43 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { join } from "path";
-import { existsSync } from "fs-extra";
-import { BridgeRecord } from "./system/bridges";
-import Paths from "./system/paths";
-
-export interface Application {
-    mode: string;
-
-    id: string;
-    display: string;
-
-    debug: boolean;
-    verbose: boolean;
-    timestamps: boolean;
-    container: boolean;
-
-    version: string;
-    bridges: BridgeRecord[];
-
-    plugins: { [key: string]: any };
+export function parseJson<T>(value: string, replacement: T): T {
+    try {
+        return <T>JSON.parse(value);
+    } catch (_error) {
+        return replacement;
+    }
 }
 
-const state: Application = {
-    mode: "production",
+export function jsonEquals(source: any, value: any): boolean {
+    if (JSON.stringify(source) === JSON.stringify(value)) return true;
 
-    id: "default",
-    display: "Default",
+    return false;
+}
 
-    debug: false,
-    verbose: false,
-    timestamps: false,
-    container: false,
+export function cloneJson(object: any): any {
+    return JSON.parse(JSON.stringify(object));
+}
 
-    version: Paths.loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
-    bridges: [],
+export function formatJson(object: any, pretty?: boolean): string {
+    if (pretty) return JSON.stringify(object, null, 4);
 
-    plugins: {},
-};
-
-export default state;
+    return JSON.stringify(object);
+}
