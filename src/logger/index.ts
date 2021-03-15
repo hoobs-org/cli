@@ -19,11 +19,9 @@
 import Utility from "util";
 import Chalk from "chalk";
 import Table from "as-table";
-import { gunzipSync } from "zlib";
-import { readFileSync } from "fs-extra";
 import State from "../state";
 import Paths from "../system/paths";
-import { formatJson, parseJson } from "../json";
+import { formatJson } from "../json";
 import { colorize } from "../formatters";
 
 export const enum LogLevel {
@@ -88,13 +86,7 @@ class Logger {
     }
 
     load(tail?: number, bridge?: string): Message[] {
-        let results: Message[] = [];
-
-        try {
-            results = (parseJson<Message[]>(gunzipSync(readFileSync(Paths.log)).toString(), [])).filter((m) => (bridge ? m.bridge === bridge : true));
-        } catch (_error) {
-            results = [];
-        }
+        let results: Message[] = Paths.loadJson<Message[]>(Paths.log, [], undefined, true).filter((m) => (bridge ? m.bridge === bridge : true));
 
         if (!State.debug) results = results.filter((message) => message.level !== LogLevel.DEBUG);
         if (tail && tail > 0 && tail < results.length) results.splice(0, results.length - tail);

@@ -437,7 +437,7 @@ export default class Bridges {
     }
 
     static cache(): { [key: string]: any }[] {
-        const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
+        const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
 
         return working.map((item: { [key: string]: any }) => ({
             uuid: item.UUID,
@@ -450,7 +450,7 @@ export default class Bridges {
     static purge(uuid?: string): Promise<void> {
         return new Promise((resolve) => {
             if (uuid) {
-                const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), []);
+                const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
                 let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
                 while (index >= 0) {
@@ -458,7 +458,7 @@ export default class Bridges {
                     index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
                 }
 
-                Paths.saveJson(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), working);
+                Paths.saveJson(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), working, false, undefined, true);
 
                 resolve();
             } else {
