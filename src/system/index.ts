@@ -416,7 +416,7 @@ export default class System {
                 const system = System.info();
                 const release = await Releases.fetch("node", beta) || {};
 
-                if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
                     let data: any = "";
 
                     data = System.shell("apt-cache show nodejs | grep Version");
@@ -437,7 +437,7 @@ export default class System {
             upgrade: async (): Promise<void> => {
                 const system = System.info();
 
-                if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
                     execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash", { stdio: "ignore" });
 
                     await System.execute("apt-get", "update");

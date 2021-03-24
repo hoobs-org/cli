@@ -905,7 +905,7 @@ export = function Main(): void {
                     spinner = Spinner({ stream: process.stdout }).start();
                     system = System.info();
 
-                    if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                    if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
                         spinner.stop();
 
                         spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
@@ -1062,7 +1062,7 @@ export = function Main(): void {
                 case "upgrade":
                     system = System.info();
 
-                    if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                    if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
                         spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
                         info = await System.runtime.info(command.beta);
 
