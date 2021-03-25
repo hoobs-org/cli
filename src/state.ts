@@ -17,9 +17,8 @@
  **************************************************************************************************/
 
 import { join } from "path";
-import { existsSync } from "fs-extra";
+import { existsSync, readJSONSync } from "fs-extra";
 import { BridgeRecord } from "./system/bridges";
-import { loadJson } from "./formatters";
 
 export interface Application {
     mode: string;
@@ -49,7 +48,7 @@ const state: Application = {
     timestamps: false,
     container: false,
 
-    version: loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
+    version: readJSONSync(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json")).version,
     bridges: [],
 
     plugins: {},

@@ -23,8 +23,8 @@ import { join } from "path";
 import { spawn, execSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
+import Paths from "./paths";
 import Releases from "./releases";
-import { loadJson } from "../formatters";
 
 const CACHE: { [key: string]: any } = {};
 
@@ -194,7 +194,7 @@ export default class System {
 
                 if (!existsSync(join(path, "package.json"))) path = join(__dirname, "../../../../gui");
                 if (!existsSync(join(path, "package.json"))) path = undefined;
-                if (path) installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
+                if (path) installed = (Paths.loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
                 const release = await System.gui.release(beta);
@@ -416,7 +416,7 @@ export default class System {
                 const system = System.info();
                 const release = await Releases.fetch("node", beta) || {};
 
-                if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
                     let data: any = "";
 
                     data = System.shell("apt-cache show nodejs | grep Version");
@@ -437,7 +437,7 @@ export default class System {
             upgrade: async (): Promise<void> => {
                 const system = System.info();
 
-                if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
                     execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash", { stdio: "ignore" });
 
                     await System.execute("apt-get", "update");

@@ -18,16 +18,11 @@
 
 import _ from "lodash";
 import { join } from "path";
-import { existsSync, writeFileSync } from "fs-extra";
+import { existsSync } from "fs-extra";
 import State from "../state";
 import { BridgeRecord } from "../system/bridges";
 import Paths from "../system/paths";
-
-import {
-    loadJson,
-    formatJson,
-    jsonEquals,
-} from "../formatters";
+import { jsonEquals } from "../json";
 
 export default class Config {
     static generateUsername(): string {
@@ -52,7 +47,7 @@ export default class Config {
             dependencies: {},
         };
 
-        if (existsSync(join(Paths.data(State.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.data(State.id), "package.json"), {}));
+        if (existsSync(join(Paths.data(State.id), "package.json"))) pjson = _.extend(pjson, Paths.loadJson<any>(join(Paths.data(State.id), "package.json"), {}));
 
         Config.savePackage(pjson);
 
@@ -66,18 +61,17 @@ export default class Config {
             };
         } else {
             config = {
-                plugins: [],
                 accessories: [],
                 platforms: [],
             };
         }
 
-        if (existsSync(Paths.config)) config = _.extend(config, loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+        if (existsSync(Paths.config)) config = _.extend(config, Paths.loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
 
         if (State.id !== "hub") {
             let bridges: any = [];
 
-            if (existsSync(Paths.bridges)) bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
+            if (existsSync(Paths.bridges)) bridges = Paths.loadJson<BridgeRecord[]>(Paths.bridges, []);
 
             const index = bridges.findIndex((n: any) => n.id === State.id);
 
@@ -92,7 +86,7 @@ export default class Config {
     static saveConfig(config: any): void {
         let current: any = {};
 
-        if (existsSync(Paths.config)) current = loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
+        if (existsSync(Paths.config)) current = Paths.loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
         if (State.id !== "hub") {
             config.accessories = config?.accessories || [];
@@ -103,16 +97,16 @@ export default class Config {
         }
 
         if (!jsonEquals(current, config)) {
-            writeFileSync(Paths.config, formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+            Paths.saveJson(Paths.config, config, false, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
         }
     }
 
     static touchConfig(): void {
         let config: any = {};
 
-        if (existsSync(Paths.config)) config = loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
+        if (existsSync(Paths.config)) config = Paths.loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
-        writeFileSync(Paths.config, formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+        Paths.saveJson(Paths.config, config, false, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
     }
 
     static filterConfig(value: any): void {
@@ -139,11 +133,11 @@ export default class Config {
         let current: any = {};
 
         if (existsSync(join(Paths.data(State.id), "package.json"))) {
-            current = loadJson<any>(join(Paths.data(State.id), "package.json"), {});
+            current = Paths.loadJson<any>(join(Paths.data(State.id), "package.json"), {});
         }
 
         if (!jsonEquals(current, pjson)) {
-            writeFileSync(join(Paths.data(State.id), "package.json"), formatJson(pjson));
+            Paths.saveJson(join(Paths.data(State.id), "package.json"), pjson, true);
         }
     }
 }

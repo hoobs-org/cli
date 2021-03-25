@@ -16,42 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Sanitize from "sanitize-filename";
-import Chalk from "chalk";
-
-export function sanitize(value: string, prevent?: string): string {
-    if (!value || value === "") return "default";
-    if (prevent && prevent !== "" && prevent.toLowerCase() === value.toLowerCase()) return "default";
-
-    return Sanitize(value).toLowerCase().replace(/ /gi, "");
+export function parseJson<T>(value: string, replacement: T): T {
+    try {
+        return <T>JSON.parse(value);
+    } catch (_error) {
+        return replacement;
+    }
 }
 
-export function colorize(value: number | string, bright?: boolean): any {
-    let index = 0;
+export function jsonEquals(source: any, value: any): boolean {
+    if (JSON.stringify(source) === JSON.stringify(value)) return true;
 
-    if (typeof value === "string") {
-        index = parseInt(`${Number(Buffer.from(value.replace(/hoobs/gi, "").replace(/homebridge/gi, ""), "utf-8").toString("hex"))}`, 10) % 6;
-    } else if (typeof value === "number") {
-        index = value % 6;
-    }
+    return false;
+}
 
-    switch (index) {
-        case 1:
-            return bright ? Chalk.cyanBright : Chalk.cyan;
+export function cloneJson(object: any): any {
+    return JSON.parse(JSON.stringify(object));
+}
 
-        case 2:
-            return bright ? Chalk.blueBright : Chalk.blue;
+export function formatJson(object: any, pretty?: boolean): string {
+    if (pretty) return JSON.stringify(object, null, 4);
 
-        case 3:
-            return bright ? Chalk.magentaBright : Chalk.magenta;
-
-        case 4:
-            return bright ? Chalk.greenBright : Chalk.green;
-
-        case 5:
-            return bright ? Chalk.yellowBright : Chalk.yellow;
-
-        default:
-            return bright ? Chalk.redBright : Chalk.red;
-    }
+    return JSON.stringify(object);
 }

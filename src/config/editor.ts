@@ -18,13 +18,12 @@
 
 import { join } from "path";
 import { spawn } from "child_process";
-import { writeFileSync, unlinkSync } from "fs-extra";
+import { unlinkSync } from "fs-extra";
 import Spinner from "ora";
 import State from "../state";
 import Config from "./index";
 import Paths from "../system/paths";
 import { Console } from "../logger";
-import { loadJson, formatJson } from "../formatters";
 
 export default class Editor {
     static nano(): void {
@@ -35,7 +34,7 @@ export default class Editor {
         const index = State.bridges.findIndex((item) => item.id === State.id);
 
         if (index >= 0) {
-            writeFileSync(join(Paths.data(), `${State.id}.config.json`), formatJson(Config.configuration()));
+            Paths.saveJson(join(Paths.data(), `${State.id}.config.json`), Config.configuration(), true);
 
             spinner.stop();
 
@@ -45,7 +44,7 @@ export default class Editor {
             }).on("data", (data) => {
                 process.stdout.pipe(data);
             }).on("close", () => {
-                Config.saveConfig(loadJson<any>(join(Paths.data(), `${State.id}.config.json`), {}));
+                Config.saveConfig(Paths.loadJson<any>(join(Paths.data(), `${State.id}.config.json`), {}));
 
                 unlinkSync(join(Paths.data(), `${State.id}.config.json`));
             });
