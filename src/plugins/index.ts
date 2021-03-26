@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import Axios from "axios";
 import { spawn } from "child_process";
 import { join } from "path";
 import { existsSync, readFileSync } from "fs-extra";
@@ -405,5 +406,15 @@ export default class Plugins {
         }
 
         return results;
+    }
+
+    static async definition(identifier: string): Promise<{ [key: string]: any } | undefined> {
+        try {
+            return ((await Axios.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
+        } catch (_error) {
+            Console.warn("plugin site unavailable");
+        }
+
+        return undefined;
     }
 }

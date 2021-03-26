@@ -179,17 +179,13 @@ export default class Writer {
 
     static gui(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
-        File.ensureDirSync(join(data.path, "static"));
+        File.ensureDirSync(join(data.path, "hoobs"));
+        File.ensureDirSync(join(data.path, "hoobs/public"));
 
-        File.writeFileSync(join(data.path, "static", "index.html"), File.readFileSync(join(__dirname, "../static/index.html")).toString());
+        File.ensureDirSync(join(data.path, "hoobs/public"));
+        File.writeFileSync(join(data.path, "hoobs/public", "index.html"), File.readFileSync(join(__dirname, "../static/index.html")).toString());
 
-        if (data.typescript) {
-            File.ensureDirSync(join(data.path, "src"));
-            File.writeFileSync(join(data.path, "src", "routes.ts"), File.readFileSync(join(__dirname, "../static/typescript/routes.ts")).toString());
-        } else {
-            File.ensureDirSync(join(data.path, "lib"));
-            File.writeFileSync(join(data.path, "lib", "routes.js"), File.readFileSync(join(__dirname, "../static/javascript/routes.js")).toString());
-        }
+        File.writeFileSync(join(data.path, "hoobs", "routes.js"), File.readFileSync(join(__dirname, "../static/javascript/routes.js")).toString());
     }
 
     static typescript(data: { [key: string]: any }): void {
@@ -524,7 +520,7 @@ export default class Writer {
             version: data.version,
             license: data.license,
             keywords,
-            main: data.typescript ? "lib/index.js" : "index.js",
+            main: "lib/index.js",
             engines: {
                 node: ">=10.17.0",
             },
