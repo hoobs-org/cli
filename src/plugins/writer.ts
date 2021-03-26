@@ -180,10 +180,10 @@ export default class Writer {
     static gui(data: { [key: string]: any }): void {
         File.ensureDirSync(data.path);
         File.ensureDirSync(join(data.path, "hoobs"));
-        File.ensureDirSync(join(data.path, "hoobs/public"));
+        File.ensureDirSync(join(data.path, "hoobs/ui"));
 
-        File.ensureDirSync(join(data.path, "hoobs/public"));
-        File.writeFileSync(join(data.path, "hoobs/public", "index.html"), File.readFileSync(join(__dirname, "../static/index.html")).toString());
+        File.ensureDirSync(join(data.path, "hoobs/ui"));
+        File.writeFileSync(join(data.path, "hoobs/ui", "index.html"), File.readFileSync(join(__dirname, "../static/index.html")).toString());
 
         File.writeFileSync(join(data.path, "hoobs", "routes.js"), File.readFileSync(join(__dirname, "../static/javascript/routes.js")).toString());
     }
