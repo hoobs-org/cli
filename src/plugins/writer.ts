@@ -183,6 +183,9 @@ export default class Writer {
         File.ensureDirSync(join(data.path, "hoobs/ui"));
 
         File.ensureDirSync(join(data.path, "hoobs/ui"));
+        File.writeFileSync(join(data.path, "hoobs/ui", "sdk.js"), File.readFileSync(join(__dirname, "../static/sdk.js")).toString());
+        File.writeFileSync(join(data.path, "hoobs/ui", "app.js"), File.readFileSync(join(__dirname, "../static/app.js")).toString());
+        File.writeFileSync(join(data.path, "hoobs/ui", "style.css"), File.readFileSync(join(__dirname, "../static/style.css")).toString());
         File.writeFileSync(join(data.path, "hoobs/ui", "index.html"), File.readFileSync(join(__dirname, "../static/index.html")).toString());
 
         File.writeFileSync(join(data.path, "hoobs", "routes.js"), File.readFileSync(join(__dirname, "../static/javascript/routes.js")).toString());
