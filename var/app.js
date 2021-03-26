@@ -18,6 +18,10 @@ async function login() {
 
     // note: updating the config will auto restart the current bridge
     // it is best to call this once after you are done updating
+
+    // you can also update the value you have the button configured
+    // updating the $value will not auto save the config ($hoobs.config is recommended for updating config values)
+    $value = "hello world";
 }
 
 function close() {
