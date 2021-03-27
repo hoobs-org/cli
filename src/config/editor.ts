@@ -34,7 +34,19 @@ export default class Editor {
         const index = State.bridges.findIndex((item) => item.id === State.id);
 
         if (index >= 0) {
-            Paths.saveJson(join(Paths.data(), `${State.id}.config.json`), Config.configuration(), true);
+            const config = Config.configuration();
+
+            if (State.id !== "hub") {
+                for (let i = 0; i < (config?.accessories || []).length; i += 1) {
+                    delete config.accessories[i].plugin_map;
+                }
+
+                for (let i = 0; i < (config?.platforms || []).length; i += 1) {
+                    delete config.platforms[i].plugin_map;
+                }
+            }
+
+            Paths.saveJson(join(Paths.data(), `${State.id}.config.json`), config, true);
 
             spinner.stop();
 
