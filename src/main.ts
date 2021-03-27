@@ -31,7 +31,6 @@ import Bridges from "./system/bridges";
 import Editor from "./config/editor";
 import Extentions from "./extentions";
 import Plugins from "./plugins";
-import Sidecar from "./plugins/sidecar";
 import Writer from "./plugins/writer";
 import { Console, LogLevel } from "./logger";
 import { sanitize } from "./formatters";
@@ -193,31 +192,15 @@ export = function Main(): void {
                         plugins = Plugins.installed();
 
                         if (plugins.length > 0) {
-                            Plugins.definition(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).then((definition) => {
-                                if ((definition || {}).sidecar) {
-                                    Sidecar.install(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, definition?.sidecar).finally(() => {
-                                        console.info("");
+                            console.info("");
 
-                                        Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                            name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                            version: item.version,
-                                            path: item.directory,
-                                        })));
+                            Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                version: item.version,
+                                path: item.directory,
+                            })));
 
-                                        console.info("");
-                                    });
-                                } else {
-                                    console.info("");
-
-                                    Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                        name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                        version: item.version,
-                                        path: item.directory,
-                                    })));
-
-                                    console.info("");
-                                }
-                            });
+                            console.info("");
                         } else {
                             Console.warn("no plugins installed");
                         }
@@ -274,31 +257,15 @@ export = function Main(): void {
                         plugins = Plugins.installed();
 
                         if (plugins.length > 0) {
-                            Plugins.definition(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).then((definition) => {
-                                if ((definition || {}).sidecar) {
-                                    Sidecar.uninstall(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, definition?.sidecar).finally(() => {
-                                        console.info("");
+                            console.info("");
 
-                                        Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                            name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                            version: item.version,
-                                            path: item.directory,
-                                        })));
+                            Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                version: item.version,
+                                path: item.directory,
+                            })));
 
-                                        console.info("");
-                                    });
-                                } else {
-                                    console.info("");
-
-                                    Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                        name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                        version: item.version,
-                                        path: item.directory,
-                                    })));
-
-                                    console.info("");
-                                }
-                            });
+                            console.info("");
                         } else {
                             Console.warn("no plugins installed");
                         }
@@ -355,31 +322,15 @@ export = function Main(): void {
                         plugins = Plugins.installed();
 
                         if (plugins.length > 0) {
-                            Plugins.definition(scope && scope !== "" ? `@${scope}/${plugin}` : plugin).then((definition) => {
-                                if ((definition || {}).sidecar) {
-                                    Sidecar.upgrade(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, definition?.sidecar).finally(() => {
-                                        console.info("");
+                            console.info("");
 
-                                        Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                            name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                            version: item.version,
-                                            path: item.directory,
-                                        })));
+                            Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                version: item.version,
+                                path: item.directory,
+                            })));
 
-                                        console.info("");
-                                    });
-                                } else {
-                                    console.info("");
-
-                                    Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                        name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                        version: item.version,
-                                        path: item.directory,
-                                    })));
-
-                                    console.info("");
-                                }
-                            });
+                            console.info("");
                         } else {
                             Console.warn("no plugins installed");
                         }
