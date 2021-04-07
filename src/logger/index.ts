@@ -19,8 +19,11 @@
 import Utility from "util";
 import Chalk from "chalk";
 import Table from "as-table";
+import { join } from "path";
+import { existsSync } from "fs-extra";
 import State from "../state";
 import Paths from "../system/paths";
+import Socket from "../system/socket";
 import { formatJson } from "../json";
 import { colorize } from "../formatters";
 
@@ -85,8 +88,14 @@ class Logger {
         Chalk.level = 1;
     }
 
-    load(tail?: number, bridge?: string): Message[] {
-        let results: Message[] = Paths.loadJson<Message[]>(Paths.log, [], undefined, true).filter((m) => (bridge ? m.bridge === bridge : true));
+    async load(tail?: number, bridge?: string): Promise<Message[]> {
+        let results: Message[] = [];
+
+        if (existsSync(join(Paths.data(), "api.sock"))) {
+            results = await Socket.fetch("log");
+        } else {
+            results = Paths.loadJson<Message[]>(Paths.log, [], undefined, true).filter((m) => (bridge ? m.bridge === bridge : true));
+        }
 
         if (!State.debug) results = results.filter((message) => message.level !== LogLevel.DEBUG);
         if (tail && tail > 0 && tail < results.length) results.splice(0, results.length - tail);
