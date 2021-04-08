@@ -37,7 +37,7 @@ import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
-if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
