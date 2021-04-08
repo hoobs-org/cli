@@ -434,7 +434,7 @@ export = function Main(): void {
         .description("show the combined log from the hub and bridges")
         .option("-b, --bridge <name>", "set the bridge name")
         .option("-t, --tail <lines>", "set the number of lines")
-        .action((command) => {
+        .action(async (command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
 
@@ -453,17 +453,15 @@ export = function Main(): void {
 
             let bridge: string;
 
-            if (command.bridge) {
-                bridge = sanitize(command.bridge);
-            }
+            if (command.bridge) bridge = sanitize(command.bridge);
 
-            const messages = Console.load(parseInt(command.tail, 10) || 50, bridge!);
+            const messages = await Console.load(parseInt(command.tail, 10) || 50, bridge!);
 
             for (let i = 0; i < messages.length; i += 1) {
-                if (messages[i].message && messages[i].message !== "") {
-                    Console.log(LogLevel.INFO, messages[i]);
-                }
+                if (messages[i].message && messages[i].message !== "") Console.log(LogLevel.INFO, messages[i]);
             }
+
+            process.exit();
         });
 
     Program.command("config")
