@@ -16,94 +16,49 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import RawIPC from "node-ipc";
+import { IPCClient } from "@hoobs/ipc";
 import { existsSync } from "fs-extra";
 import { join } from "path";
 import Paths from "./paths";
-import { Events } from "../logger";
-
-const SOCKETS: { [key: string]: any } = {};
-const SOCKET_CONNECTION_DELAY = 500;
 
 export default class Socket {
-    static emit(event: Events, body: any): Promise<void> {
+    declare private clients: { [key: string]: IPCClient };
+
+    constructor() {
+        this.clients = {};
+    }
+
+    static emit(event: string, data?: any): Promise<void> {
         return new Promise((resolve) => {
-            const session = `${new Date().getTime()}:${Math.random()}`;
+            const socket = Socket.connect("api");
 
-            if (!existsSync(join(Paths.data(), "api.sock"))) {
+            if (!socket) {
                 resolve();
-
-                return;
-            }
-
-            if (!SOCKETS["api.sock"]) {
-                SOCKETS["api.sock"] = new RawIPC.IPC();
-
-                SOCKETS["api.sock"].config.appspace = "/";
-                SOCKETS["api.sock"].config.socketRoot = Paths.data();
-                SOCKETS["api.sock"].config.logInColor = true;
-                SOCKETS["api.sock"].config.logger = () => { };
-                SOCKETS["api.sock"].config.maxRetries = 0;
-                SOCKETS["api.sock"].config.stopRetrying = true;
-            }
-
-            SOCKETS["api.sock"].connectTo("api.sock", () => {
-                SOCKETS["api.sock"].of["api.sock"].emit(event, {
-                    session,
-                    body,
-                });
-
-                setTimeout(() => {
+            } else {
+                socket.emit(event, data).then(() => {
                     resolve();
-                }, SOCKET_CONNECTION_DELAY);
-            });
+                });
+            }
         });
     }
 
     static fetch(path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
         return new Promise((resolve) => {
-            const session = `${new Date().getTime()}:${Math.random()}`;
+            const socket = Socket.connect("api");
 
-            if (!existsSync(join(Paths.data(), "api.sock"))) {
-                resolve(null);
-
-                return;
+            if (!socket) {
+                resolve(undefined);
+            } else {
+                socket.fetch(path, params, body).then((response) => {
+                    resolve(response);
+                });
             }
-
-            if (!SOCKETS["api.sock"]) {
-                SOCKETS["api.sock"] = new RawIPC.IPC();
-
-                SOCKETS["api.sock"].config.appspace = "/";
-                SOCKETS["api.sock"].config.socketRoot = Paths.data();
-                SOCKETS["api.sock"].config.logInColor = true;
-                SOCKETS["api.sock"].config.logger = () => { };
-                SOCKETS["api.sock"].config.maxRetries = 0;
-                SOCKETS["api.sock"].config.stopRetrying = true;
-                SOCKETS["api.sock"].config.id = "api.sock";
-            }
-
-            SOCKETS["api.sock"].connectTo("api.sock", () => {
-                SOCKETS["api.sock"].of["api.sock"].on(session, (data: any) => {
-                    SOCKETS["api.sock"].of["api.sock"].off(session, "*");
-                    SOCKETS["api.sock"].disconnect();
-
-                    resolve(data);
-                });
-
-                SOCKETS["api.sock"].of["api.sock"].on("error", () => {
-                    SOCKETS["api.sock"].of["api.sock"].off(session, "*");
-                    SOCKETS["api.sock"].disconnect();
-
-                    resolve(null);
-                });
-
-                SOCKETS["api.sock"].of["api.sock"].emit(Events.REQUEST, {
-                    path,
-                    session,
-                    params,
-                    body,
-                });
-            });
         });
+    }
+
+    static connect(id: string): IPCClient | undefined {
+        if (!existsSync(join(Paths.data(), `${id}.sock`))) return undefined;
+
+        return new IPCClient({ id, root: `${Paths.data()}/` });
     }
 }
