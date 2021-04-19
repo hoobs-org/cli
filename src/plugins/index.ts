@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import Axios from "axios";
 import { spawn } from "child_process";
 import { join } from "path";
 import { existsSync, readFileSync } from "fs-extra";
@@ -105,142 +106,170 @@ export default class Plugins {
         const tag = version || "latest";
 
         return new Promise((resolve, reject) => {
-            const flags = [];
+            Plugins.definition(name).then((definition) => {
+                const flags = [];
 
-            flags.push("add");
-            flags.push("--unsafe-perm");
-            flags.push("--ignore-engines");
-            flags.push(`${name}@${tag}`);
+                flags.push("add");
+                flags.push("--unsafe-perm");
+                flags.push("--ignore-engines");
+                flags.push(`${name}@${tag}`);
 
-            const proc = spawn(Paths.yarn, flags, {
-                cwd: Paths.data(State.id),
-                stdio: ["inherit", "inherit", "inherit"],
-            });
+                if ((definition || {}).sidecar) {
+                    flags.push(definition?.sidecar);
+                }
 
-            proc.on("close", async () => {
-                Plugins.linkLibs();
+                const proc = spawn(Paths.yarn, flags, {
+                    cwd: Paths.data(State.id),
+                    stdio: ["inherit", "inherit", "inherit"],
+                });
 
-                const path = join(Plugins.directory, name);
+                proc.on("close", async () => {
+                    Plugins.linkLibs();
 
-                if (existsSync(path) && existsSync(join(path, "package.json"))) {
-                    const pjson = Plugins.loadPackage(path);
-                    const config = Config.configuration();
+                    const path = join(Plugins.directory, name);
 
-                    if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
-                        let found = false;
-                        let alias = "";
+                    if ((definition || {}).sidecar) {
+                        const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.id), "sidecars.json"), {});
 
-                        const details: any[] = await Plugins.getPluginType(name, path, pjson) || [];
+                        sidecars[name] = definition?.sidecar;
 
-                        for (let i = 0; i < details.length; i += 1) {
-                            if (details[i].type === "platform") {
-                                const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
+                        Paths.saveJson(join(Paths.data(State.id), "sidecars.json"), sidecars, true);
+                    }
 
-                                if (index >= 0) {
-                                    config.platforms[index].plugin_map = {
-                                        plugin_name: name,
-                                    };
+                    if (existsSync(path) && existsSync(join(path, "package.json"))) {
+                        const pjson = Plugins.loadPackage(path);
+                        const config = Config.configuration();
 
-                                    found = true;
-                                } else if (alias === "") {
-                                    alias = details[i].alias;
+                        if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
+                            let found = false;
+                            let alias = "";
+
+                            const details: any[] = await Plugins.getPluginType(name, path, pjson) || [];
+
+                            for (let i = 0; i < details.length; i += 1) {
+                                if (details[i].type === "platform") {
+                                    const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
+
+                                    if (index >= 0) {
+                                        config.platforms[index].plugin_map = {
+                                            plugin_name: name,
+                                        };
+
+                                        found = true;
+                                    } else if (alias === "") {
+                                        alias = details[i].alias;
+                                    }
                                 }
+                            }
+
+                            if (!found && alias !== "") {
+                                config.platforms.push({
+                                    platform: alias,
+                                    plugin_map: {
+                                        plugin_name: name,
+                                    },
+                                });
                             }
                         }
 
-                        if (!found && alias !== "") {
-                            config.platforms.push({
-                                platform: alias,
-                                plugin_map: {
-                                    plugin_name: name,
-                                },
-                            });
-                        }
+                        Socket.emit(Events.NOTIFICATION, {
+                            bridge: State.id,
+                            data: {
+                                title: "Plugin Installed",
+                                description: `${tag !== "latest" ? `${name} ${tag}` : name} has been installed.`,
+                                type: NotificationType.SUCCESS,
+                                icon: "puzzle",
+                            },
+                        }).then(() => {
+                            Config.saveConfig(config);
+
+                            resolve();
+                        });
+                    } else {
+                        Socket.emit(Events.NOTIFICATION, {
+                            bridge: State.id,
+                            data: {
+                                title: "Plugin Not Installed",
+                                description: `Unable to install ${name}.`,
+                                type: NotificationType.ERROR,
+                            },
+                        }).then(() => {
+                            reject();
+                        });
                     }
-
-                    Socket.emit(Events.NOTIFICATION, {
-                        bridge: State.id,
-                        data: {
-                            title: "Plugin Installed",
-                            description: `${tag !== "latest" ? `${name} ${tag}` : name} has been installed.`,
-                            type: NotificationType.SUCCESS,
-                            icon: "puzzle",
-                        },
-                    }).then(() => {
-                        Config.saveConfig(config);
-
-                        resolve();
-                    });
-                } else {
-                    Socket.emit(Events.NOTIFICATION, {
-                        bridge: State.id,
-                        data: {
-                            title: "Plugin Not Installed",
-                            description: `Unable to install ${name}.`,
-                            type: NotificationType.ERROR,
-                        },
-                    }).then(() => {
-                        reject();
-                    });
-                }
+                });
             });
         });
     }
 
     static uninstall(name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            const flags = [];
+            Plugins.definition(name).then((definition) => {
+                const flags = [];
 
-            flags.push("remove");
-            flags.push(name);
+                flags.push("remove");
+                flags.push(name);
 
-            const proc = spawn(Paths.yarn, flags, {
-                cwd: Paths.data(State.id),
-                stdio: ["inherit", "inherit", "inherit"],
-            });
-
-            proc.on("close", () => {
-                if (!existsSync(join(Plugins.directory, name, "package.json"))) {
-                    const config = Config.configuration();
-                    let index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
-
-                    while (index >= 0) {
-                        config.platforms.splice(index, 1);
-                        index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
-                    }
-
-                    index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
-
-                    while (index >= 0) {
-                        config.accessories.splice(index, 1);
-                        index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
-                    }
-
-                    Socket.emit(Events.NOTIFICATION, {
-                        bridge: State.id,
-                        data: {
-                            title: "Plugin Uninstalled",
-                            description: `${name} has been removed.`,
-                            type: NotificationType.WARN,
-                            icon: "puzzle",
-                        },
-                    }).then(() => {
-                        Config.saveConfig(config);
-
-                        resolve();
-                    });
-                } else {
-                    Socket.emit(Events.NOTIFICATION, {
-                        bridge: State.id,
-                        data: {
-                            title: "Plugin Not Uninstalled",
-                            description: `Unable to uninstall ${name}.`,
-                            type: NotificationType.ERROR,
-                        },
-                    }).then(() => {
-                        reject();
-                    });
+                if ((definition || {}).sidecar) {
+                    flags.push(definition?.sidecar);
                 }
+
+                const proc = spawn(Paths.yarn, flags, {
+                    cwd: Paths.data(State.id),
+                    stdio: ["inherit", "inherit", "inherit"],
+                });
+
+                proc.on("close", () => {
+                    if (!existsSync(join(Plugins.directory, name, "package.json"))) {
+                        if ((definition || {}).sidecar) {
+                            const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.id), "sidecars.json"), {});
+
+                            delete sidecars[name];
+
+                            Paths.saveJson(join(Paths.data(State.id), "sidecars.json"), sidecars, true);
+                        }
+
+                        const config = Config.configuration();
+                        let index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+
+                        while (index >= 0) {
+                            config.platforms.splice(index, 1);
+                            index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+                        }
+
+                        index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+
+                        while (index >= 0) {
+                            config.accessories.splice(index, 1);
+                            index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+                        }
+
+                        Socket.emit(Events.NOTIFICATION, {
+                            bridge: State.id,
+                            data: {
+                                title: "Plugin Uninstalled",
+                                description: `${name} has been removed.`,
+                                type: NotificationType.WARN,
+                                icon: "puzzle",
+                            },
+                        }).then(() => {
+                            Config.saveConfig(config);
+
+                            resolve();
+                        });
+                    } else {
+                        Socket.emit(Events.NOTIFICATION, {
+                            bridge: State.id,
+                            data: {
+                                title: "Plugin Not Uninstalled",
+                                description: `Unable to uninstall ${name}.`,
+                                type: NotificationType.ERROR,
+                            },
+                        }).then(() => {
+                            reject();
+                        });
+                    }
+                });
             });
         });
     }
@@ -249,33 +278,74 @@ export default class Plugins {
         const tag = version || "latest";
 
         return new Promise((resolve) => {
-            const flags = [];
+            const flags: string[] = [];
 
-            flags.push("upgrade");
-            flags.push("--ignore-engines");
+            if (name) {
+                flags.push("add");
+                flags.push("--unsafe-perm");
+                flags.push("--ignore-engines");
 
-            if (name) flags.push(`${name}@${tag}`);
+                flags.push(`${name}@${tag}`);
 
-            const proc = spawn(Paths.yarn, flags, {
-                cwd: Paths.data(State.id),
-                stdio: ["inherit", "inherit", "inherit"],
-            });
+                Plugins.definition(name).then((definition) => {
+                    if ((definition || {}).sidecar) {
+                        flags.push(definition?.sidecar);
+                    }
 
-            proc.on("close", () => {
-                Socket.emit(Events.NOTIFICATION, {
-                    bridge: State.id,
-                    data: {
-                        title: name ? "Plugin Upgraded" : "Plugins Upgraded",
-                        description: name ? `${tag !== "latest" ? `${name} ${tag}` : name} has been upgraded.` : "All plugins have been upgraded",
-                        type: NotificationType.SUCCESS,
-                        icon: "puzzle",
-                    },
-                }).then(() => {
-                    Config.touchConfig();
+                    const proc = spawn(Paths.yarn, flags, {
+                        cwd: Paths.data(State.id),
+                        stdio: ["inherit", "inherit", "inherit"],
+                    });
 
-                    resolve();
+                    proc.on("close", () => {
+                        if ((definition || {}).sidecar) {
+                            const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.id), "sidecars.json"), {});
+
+                            sidecars[name] = definition?.sidecar;
+
+                            Paths.saveJson(join(Paths.data(State.id), "sidecars.json"), sidecars, true);
+                        }
+
+                        Socket.emit(Events.NOTIFICATION, {
+                            bridge: State.id,
+                            data: {
+                                title: "Plugin Upgraded",
+                                description: `${tag !== "latest" ? `${name} ${tag}` : name} has been upgraded.`,
+                                type: NotificationType.SUCCESS,
+                                icon: "puzzle",
+                            },
+                        }).then(() => {
+                            Config.touchConfig();
+
+                            resolve();
+                        });
+                    });
                 });
-            });
+            } else {
+                flags.push("upgrade");
+                flags.push("--ignore-engines");
+
+                const proc = spawn(Paths.yarn, flags, {
+                    cwd: Paths.data(State.id),
+                    stdio: ["inherit", "inherit", "inherit"],
+                });
+
+                proc.on("close", () => {
+                    Socket.emit(Events.NOTIFICATION, {
+                        bridge: State.id,
+                        data: {
+                            title: "Plugins Upgraded",
+                            description: "All plugins have been upgraded",
+                            type: NotificationType.SUCCESS,
+                            icon: "puzzle",
+                        },
+                    }).then(() => {
+                        Config.touchConfig();
+
+                        resolve();
+                    });
+                });
+            }
         });
     }
 
@@ -405,5 +475,15 @@ export default class Plugins {
         }
 
         return results;
+    }
+
+    static async definition(identifier: string): Promise<{ [key: string]: any } | undefined> {
+        try {
+            return ((await Axios.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
+        } catch (_error) {
+            Console.warn("plugin site unavailable");
+        }
+
+        return undefined;
     }
 }

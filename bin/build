@@ -52,6 +52,7 @@ Program.command("cli", { isDefault: true })
 
         execSync(`${join(root, "node_modules", ".bin", "tsc")}`, { cwd: root, stdio: "inherit" });
         copySync(join(root, "var"), join(root, "lib/hbs/static"));
+        copySync(join(root, "node_modules/@hoobs/sdk/dist/sdk.js"), join(root, "lib/hbs/static/sdk.js"));
 
         if (command.pack) {
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });;

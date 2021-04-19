@@ -1,4 +1,4 @@
-function register(logger, config, api, request, response) {
+function register(_logger, _config, _api, _request, response) {
     response.send({
         success: true,
     });

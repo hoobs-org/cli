@@ -52,7 +52,7 @@ export default class System {
 
         if (existsSync("/etc/systemd/system")) results.init_system = "systemd";
         if (existsSync("/Library/LaunchDaemons/")) results.init_system = "launchd";
-        if (System.shell("cat /proc/version | grep microsoft") !== "") results.init_system = "";
+        if (!existsSync("/proc/version") || (existsSync("/proc/version") && System.shell("cat /proc/version | grep microsoft") !== "")) results.init_system = "";
 
         switch (results.distribution) {
             case "alpine":
@@ -358,7 +358,7 @@ export default class System {
                     hoobsd_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
                     hoobsd_download: download,
                     hoobsd_mode: mode,
-                    hoobsd_running: System.shell("pidof hoobsd") !== "",
+                    hoobsd_running: System.shell("command -v pidof") !== "" && System.shell("pidof hoobsd") !== "",
                 };
             },
 

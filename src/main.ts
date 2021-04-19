@@ -37,7 +37,7 @@ import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
-if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
@@ -283,6 +283,12 @@ export = function Main(): void {
                         return;
                     }
 
+                    if (!plugin) {
+                        Console.warn("please define a plugin");
+
+                        return;
+                    }
+
                     if (!command.bridge || command.bridge === "" || State.id === "hub") {
                         if (State.bridges.filter((item) => item.type === "bridge").length === 1) {
                             State.id = State.bridges.filter((item) => item.type === "bridge")[0].id;
@@ -301,58 +307,36 @@ export = function Main(): void {
                         }
                     }
 
-                    if (plugin) {
-                        if (plugin.startsWith("@")) {
-                            plugin = plugin.substring(1);
-                            scope = plugin.split("/").shift() || "";
-                            plugin = plugin.split("/").pop() || "";
-                        }
-
-                        if (plugin.indexOf("@") >= 0) {
-                            tag = plugin.split("@").pop() || "latest";
-                            plugin = plugin.split("@").shift() || "";
-                        }
-
-                        Plugins.upgrade(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
-                            plugins = Plugins.installed();
-
-                            if (plugins.length > 0) {
-                                console.info("");
-
-                                Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                    name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                    version: item.version,
-                                    path: item.directory,
-                                })));
-
-                                console.info("");
-                            } else {
-                                Console.warn("no plugins installed");
-                            }
-
-                            process.exit();
-                        });
-                    } else {
-                        Plugins.upgrade().finally(() => {
-                            plugins = Plugins.installed();
-
-                            if (plugins.length > 0) {
-                                console.info("");
-
-                                Console.table(plugins.map((item: { [key: string]: any }) => ({
-                                    name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
-                                    version: item.version,
-                                    path: item.directory,
-                                })));
-
-                                console.info("");
-                            } else {
-                                Console.warn("no plugins installed");
-                            }
-
-                            process.exit();
-                        });
+                    if (plugin.startsWith("@")) {
+                        plugin = plugin.substring(1);
+                        scope = plugin.split("/").shift() || "";
+                        plugin = plugin.split("/").pop() || "";
                     }
+
+                    if (plugin.indexOf("@") >= 0) {
+                        tag = plugin.split("@").pop() || "latest";
+                        plugin = plugin.split("@").shift() || "";
+                    }
+
+                    Plugins.upgrade(scope && scope !== "" ? `@${scope}/${plugin}` : plugin, tag).finally(() => {
+                        plugins = Plugins.installed();
+
+                        if (plugins.length > 0) {
+                            console.info("");
+
+                            Console.table(plugins.map((item: { [key: string]: any }) => ({
+                                name: item.scope && item.scope !== "" ? `@${item.scope}/${item.name}` : item.name,
+                                version: item.version,
+                                path: item.directory,
+                            })));
+
+                            console.info("");
+                        } else {
+                            Console.warn("no plugins installed");
+                        }
+
+                        process.exit();
+                    });
 
                     break;
 
@@ -450,7 +434,7 @@ export = function Main(): void {
         .description("show the combined log from the hub and bridges")
         .option("-b, --bridge <name>", "set the bridge name")
         .option("-t, --tail <lines>", "set the number of lines")
-        .action((command) => {
+        .action(async (command) => {
             if (process.env.USER !== "root") {
                 Console.warn("you are running in user mode, did you forget to use 'sudo'?");
 
@@ -469,17 +453,15 @@ export = function Main(): void {
 
             let bridge: string;
 
-            if (command.bridge) {
-                bridge = sanitize(command.bridge);
-            }
+            if (command.bridge) bridge = sanitize(command.bridge);
 
-            const messages = Console.load(parseInt(command.tail, 10) || 50, bridge!);
+            const messages = await Console.load(parseInt(command.tail, 10) || 50, bridge!);
 
             for (let i = 0; i < messages.length; i += 1) {
-                if (messages[i].message && messages[i].message !== "") {
-                    Console.log(LogLevel.INFO, messages[i]);
-                }
+                if (messages[i].message && messages[i].message !== "") Console.log(LogLevel.INFO, messages[i]);
             }
+
+            process.exit();
         });
 
     Program.command("config")
