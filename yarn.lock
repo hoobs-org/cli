@@ -69,10 +69,10 @@
   resolved "https://registry.yarnpkg.com/@hoobs/ipc/-/ipc-1.0.6.tgz#769beaba65237ce5ca61775077ab13f292040330"
   integrity sha512-uGkM7v4aQyH50LuOWPqCl8UmSizzVYPA0J0+8b9XvvdU3RtgS8uwcVVYN5s5mkar7xaXCbLgqI+FNJIa4NjiiA==
 
-"@hoobs/sdk@^4.3.17":
-  version "4.3.17"
-  resolved "https://registry.yarnpkg.com/@hoobs/sdk/-/sdk-4.3.17.tgz#ce68d085ba15425a85fbfd7ce773759c32a41b6c"
-  integrity sha512-UQ32zvEuWAWUKllVIWMCD6A7PLcFeJ6ghLtx5jAMHGdzUMruzL1vP2x0A2vtU7UAkinTBqbGOmtnbEVyqxaaog==
+"@hoobs/sdk@^4.4.2":
+  version "4.4.2"
+  resolved "https://registry.yarnpkg.com/@hoobs/sdk/-/sdk-4.4.2.tgz#6d82c88760950739e24f791a1dee4bd8d2f5b4da"
+  integrity sha512-GOLn74LvtOW9tEn7vCOT4fqPYsrGm6wplIhhnwGcfC2/yctG/2YMvidfoOQ+vKdFBNkETWxEZ3qA/+Ww2pjVNw==
   dependencies:
     axios "^0.21.1"
     sanitize-filename "^1.6.3"
