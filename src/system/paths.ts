@@ -24,19 +24,33 @@ import State from "../state";
 import { parseJson, formatJson } from "../json";
 
 export default class Paths {
+    static touch(filename: string) {
+        const now = new Date();
+
+        try {
+            File.utimesSync(filename, now, now);
+        } catch (err) {
+            File.closeSync(File.openSync(filename, "w"));
+        }
+    }
+
     static loadJson<T>(file: string, replacement: T, key?: string, compressed?: boolean): T {
         if (!File.existsSync(file)) return replacement;
 
-        const contents = compressed ? gunzipSync(File.readFileSync(file)) : File.readFileSync(file);
+        try {
+            const contents = compressed ? gunzipSync(File.readFileSync(file)) : File.readFileSync(file);
 
-        if (key) {
-            const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
-            const decrypted = cipher.update(contents.toString(), "hex", "utf8") + cipher.final("utf8");
+            if (key) {
+                const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+                const decrypted = cipher.update(contents.toString(), "hex", "utf8") + cipher.final("utf8");
 
-            return parseJson<T>(decrypted, replacement);
+                return parseJson<T>(decrypted, replacement);
+            }
+
+            return parseJson<T>(contents.toString(), replacement);
+        } catch (_error) {
+            return replacement;
         }
-
-        return parseJson<T>(contents.toString(), replacement);
     }
 
     static saveJson<T>(file: string, value: T, pretty?: boolean, key?: string, compress?: boolean): void {

@@ -101,7 +101,6 @@ export = function Main(): void {
                                 id: item.id,
                                 type: item.type,
                                 display: item.display,
-                                running: existsSync(join(Paths.data(), `${item.id}.sock`)),
                                 port: item.port,
                                 pin: item.pin,
                                 username: item.username,
@@ -455,13 +454,13 @@ export = function Main(): void {
 
             if (command.bridge) bridge = sanitize(command.bridge);
 
-            const messages = await Console.load(parseInt(command.tail, 10) || 50, bridge!);
+            Console.load(parseInt(command.tail, 10) || 50, bridge!).then((messages) => {
+                for (let i = 0; i < messages.length; i += 1) {
+                    if (messages[i].message && messages[i].message !== "") Console.log(LogLevel.INFO, messages[i]);
+                }
 
-            for (let i = 0; i < messages.length; i += 1) {
-                if (messages[i].message && messages[i].message !== "") Console.log(LogLevel.INFO, messages[i]);
-            }
-
-            process.exit();
+                process.exit();
+            });
         });
 
     Program.command("config")
@@ -542,7 +541,6 @@ export = function Main(): void {
                                     id: item.id,
                                     type: item.type,
                                     display: item.display,
-                                    running: existsSync(join(Paths.data(), `${item.id}.sock`)),
                                     port: item.port,
                                     pin: item.pin,
                                     username: item.username,
@@ -585,36 +583,31 @@ export = function Main(): void {
                     if (sanitize(command.bridge) !== "hub") {
                         spinner = Spinner({ stream: process.stdout }).start();
 
-                        Bridges.uninstall(command.bridge).then((results) => {
-                            if (results) {
-                                bridges = Bridges.list();
+                        if (Bridges.uninstall(command.bridge)) {
+                            bridges = Bridges.list();
 
-                                spinner.stop();
+                            spinner.stop();
 
-                                if (bridges.length > 0) {
-                                    console.info("");
+                            if (bridges.length > 0) {
+                                console.info("");
 
-                                    Console.table(bridges.map((item) => ({
-                                        id: item.id,
-                                        type: item.type,
-                                        display: item.display,
-                                        running: existsSync(join(Paths.data(), `${item.id}.sock`)),
-                                        port: item.port,
-                                        pin: item.pin,
-                                        username: item.username,
-                                        advertiser: item.advertiser,
-                                    })));
+                                Console.table(bridges.map((item) => ({
+                                    id: item.id,
+                                    type: item.type,
+                                    display: item.display,
+                                    port: item.port,
+                                    pin: item.pin,
+                                    username: item.username,
+                                    advertiser: item.advertiser,
+                                })));
 
-                                    console.info("");
-                                }
-                            } else {
-                                spinner.stop();
-
-                                Console.error("unable to remove bridge.");
+                                console.info("");
                             }
+                        } else {
+                            spinner.stop();
 
-                            process.exit();
-                        });
+                            Console.error("unable to remove bridge.");
+                        }
                     } else {
                         Console.warn("this is not an bridge, to remove the hub run a system reset.");
                     }
@@ -678,12 +671,10 @@ export = function Main(): void {
 
                         spinner = Spinner({ stream: process.stdout }).start();
 
-                        Bridges.purge(command.uuid).then(() => {
-                            spinner.stop();
+                        Bridges.purge(command.uuid);
+                        spinner.stop();
 
-                            Console.info("bridge caches purged");
-                            process.exit();
-                        });
+                        Console.info("bridge caches purged");
                     } else {
                         Console.warn("not a valid bridge.");
                     }
@@ -741,7 +732,6 @@ export = function Main(): void {
                             id: item.id,
                             type: item.type,
                             display: item.display,
-                            running: existsSync(join(Paths.data(), `${item.id === "hub" ? "api" : item.id}.sock`)),
                             port: item.port,
                             pin: item.pin,
                             username: item.username,

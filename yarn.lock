@@ -64,15 +64,10 @@
     source-map-support "^0.5.19"
     tslib "^2.0.3"
 
-"@hoobs/ipc@^1.0.6":
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/@hoobs/ipc/-/ipc-1.0.6.tgz#769beaba65237ce5ca61775077ab13f292040330"
-  integrity sha512-uGkM7v4aQyH50LuOWPqCl8UmSizzVYPA0J0+8b9XvvdU3RtgS8uwcVVYN5s5mkar7xaXCbLgqI+FNJIa4NjiiA==
-
-"@hoobs/sdk@^4.4.2":
-  version "4.4.2"
-  resolved "https://registry.yarnpkg.com/@hoobs/sdk/-/sdk-4.4.2.tgz#6d82c88760950739e24f791a1dee4bd8d2f5b4da"
-  integrity sha512-GOLn74LvtOW9tEn7vCOT4fqPYsrGm6wplIhhnwGcfC2/yctG/2YMvidfoOQ+vKdFBNkETWxEZ3qA/+Ww2pjVNw==
+"@hoobs/sdk@^4.4.4":
+  version "4.4.4"
+  resolved "https://registry.yarnpkg.com/@hoobs/sdk/-/sdk-4.4.4.tgz#d83efe6320394538d0392ca44d77db5f2aaa38d6"
+  integrity sha512-jM/7zF0uvgWVyf79bthHpA7AmfmbmOmYnGUzahRWgZBlWaSdqHPnRgGrAtk+ThPr+QGS0oQpp7q5jBjNRjvVXA==
   dependencies:
     axios "^0.21.1"
     sanitize-filename "^1.6.3"
