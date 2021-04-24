@@ -24,6 +24,16 @@ import State from "../state";
 import { parseJson, formatJson } from "../json";
 
 export default class Paths {
+    static touch(filename: string) {
+        const now = new Date();
+
+        try {
+            File.utimesSync(filename, now, now);
+        } catch (err) {
+            File.closeSync(File.openSync(filename, "w"));
+        }
+    }
+
     static loadJson<T>(file: string, replacement: T, key?: string, compressed?: boolean): T {
         if (!File.existsSync(file)) return replacement;
 

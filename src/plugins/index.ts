@@ -32,9 +32,8 @@ import {
 
 import State from "../state";
 import Paths from "../system/paths";
-import Socket from "../system/socket";
 import Config from "../config";
-import { Console, Events, NotificationType } from "../logger";
+import { Console } from "../logger";
 
 export default class Plugins {
     static get directory(): string {
@@ -172,30 +171,11 @@ export default class Plugins {
                             }
                         }
 
-                        Socket.emit(Events.NOTIFICATION, {
-                            bridge: State.id,
-                            data: {
-                                title: "Plugin Installed",
-                                description: `${tag !== "latest" ? `${name} ${tag}` : name} has been installed.`,
-                                type: NotificationType.SUCCESS,
-                                icon: "puzzle",
-                            },
-                        }).then(() => {
-                            Config.saveConfig(config);
+                        Config.saveConfig(config);
 
-                            resolve();
-                        });
+                        resolve();
                     } else {
-                        Socket.emit(Events.NOTIFICATION, {
-                            bridge: State.id,
-                            data: {
-                                title: "Plugin Not Installed",
-                                description: `Unable to install ${name}.`,
-                                type: NotificationType.ERROR,
-                            },
-                        }).then(() => {
-                            reject();
-                        });
+                        reject();
                     }
                 });
             });
@@ -244,30 +224,11 @@ export default class Plugins {
                             index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
                         }
 
-                        Socket.emit(Events.NOTIFICATION, {
-                            bridge: State.id,
-                            data: {
-                                title: "Plugin Uninstalled",
-                                description: `${name} has been removed.`,
-                                type: NotificationType.WARN,
-                                icon: "puzzle",
-                            },
-                        }).then(() => {
-                            Config.saveConfig(config);
+                        Config.saveConfig(config);
 
-                            resolve();
-                        });
+                        resolve();
                     } else {
-                        Socket.emit(Events.NOTIFICATION, {
-                            bridge: State.id,
-                            data: {
-                                title: "Plugin Not Uninstalled",
-                                description: `Unable to uninstall ${name}.`,
-                                type: NotificationType.ERROR,
-                            },
-                        }).then(() => {
-                            reject();
-                        });
+                        reject();
                     }
                 });
             });
@@ -306,19 +267,9 @@ export default class Plugins {
                             Paths.saveJson(join(Paths.data(State.id), "sidecars.json"), sidecars, true);
                         }
 
-                        Socket.emit(Events.NOTIFICATION, {
-                            bridge: State.id,
-                            data: {
-                                title: "Plugin Upgraded",
-                                description: `${tag !== "latest" ? `${name} ${tag}` : name} has been upgraded.`,
-                                type: NotificationType.SUCCESS,
-                                icon: "puzzle",
-                            },
-                        }).then(() => {
-                            Config.touchConfig();
+                        Config.touchConfig();
 
-                            resolve();
-                        });
+                        resolve();
                     });
                 });
             } else {
@@ -331,19 +282,9 @@ export default class Plugins {
                 });
 
                 proc.on("close", () => {
-                    Socket.emit(Events.NOTIFICATION, {
-                        bridge: State.id,
-                        data: {
-                            title: "Plugins Upgraded",
-                            description: "All plugins have been upgraded",
-                            type: NotificationType.SUCCESS,
-                            icon: "puzzle",
-                        },
-                    }).then(() => {
-                        Config.touchConfig();
+                    Config.touchConfig();
 
-                        resolve();
-                    });
+                    resolve();
                 });
             }
         });

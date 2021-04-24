@@ -21,9 +21,7 @@ import { execSync, ExecSyncOptions } from "child_process";
 import { join, basename } from "path";
 import { uname, Utsname } from "node-uname";
 import Paths from "../system/paths";
-import Socket from "../system/socket";
 import Releases from "../system/releases";
-import { Events, NotificationType } from "../logger";
 
 export default class FFMPEG {
     static async enable(): Promise<{ success: boolean, error?: string | undefined }> {
@@ -70,31 +68,12 @@ export default class FFMPEG {
                 execSync("ldconfig -n /usr/local/lib", options);
                 execSync("ldconfig", options);
 
-                await Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Installed",
-                        description: "FFMPEG has been installed and is ready to use.",
-                        type: NotificationType.SUCCESS,
-                        icon: "wrench",
-                    },
-                });
-
                 return {
                     success: true,
                 };
             }
 
             if ((utsname.sysname || "").toLowerCase() !== "linux") {
-                await Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Not Installed",
-                        description: "This version of FFMPEG is only supported on linux.",
-                        type: NotificationType.ERROR,
-                    },
-                });
-
                 return {
                     success: false,
                     error: "this version of ffmpeg is only supported on linux",
@@ -102,15 +81,6 @@ export default class FFMPEG {
             }
 
             if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
-                await Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Not Installed",
-                        description: "This version of FFMPEG is only supported on ARM processors.",
-                        type: NotificationType.ERROR,
-                    },
-                });
-
                 return {
                     success: false,
                     error: "this version of ffmpeg is only supported on arm processors",
@@ -118,15 +88,6 @@ export default class FFMPEG {
             }
 
             if (!Paths.tryCommand("apt-get")) {
-                await Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "FFMPEG Not Installed",
-                        description: "This version of FFMPEG requires the APT package manager.",
-                        type: NotificationType.ERROR,
-                    },
-                });
-
                 return {
                     success: false,
                     error: "this version of ffmpeg requires the apt package manager",
@@ -414,29 +375,10 @@ export default class FFMPEG {
             Paths.tryUnlink("/usr/local/share/man/man3/libswresample.3");
             Paths.tryUnlink("/usr/local/share/man/man3/libswscale.3");
 
-            Socket.emit(Events.NOTIFICATION, {
-                bridge: "hub",
-                data: {
-                    title: "FFMPEG Removed",
-                    description: "FFMPEG has been removed.",
-                    type: NotificationType.WARN,
-                    icon: "wrench",
-                },
-            });
-
             return {
                 success: true,
             };
         }
-
-        Socket.emit(Events.NOTIFICATION, {
-            bridge: "hub",
-            data: {
-                title: "FFMPEG Not Removed",
-                description: "This can only remove FFMPEG installed by HOOBS.",
-                type: NotificationType.ERROR,
-            },
-        });
 
         return {
             success: false,

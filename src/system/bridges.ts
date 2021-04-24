@@ -39,9 +39,7 @@ import { execSync } from "child_process";
 import { join, basename } from "path";
 import State from "../state";
 import Paths from "./paths";
-import Socket from "./socket";
 import Config from "../config";
-import { Events, NotificationType } from "../logger";
 import { sanitize } from "../formatters";
 
 const PROMPT: Inquirer.PromptModule = Inquirer.createPromptModule();
@@ -112,49 +110,26 @@ export default class Bridges {
         return bridges;
     }
 
-    static uninstall(name: string): Promise<boolean> {
-        return new Promise((resolve) => {
-            if (!name) {
-                resolve(false);
-            } else {
-                const id = sanitize(name);
-                const index = State.bridges.findIndex((n: BridgeRecord) => n.id === id);
+    static uninstall(name: string): boolean {
+        if (!name) return false;
 
-                if (index >= 0) {
-                    Socket.emit(Events.NOTIFICATION, {
-                        bridge: "hub",
-                        data: {
-                            title: "Bridge Removed",
-                            description: `Bridge "${name}" removed.`,
-                            type: NotificationType.WARN,
-                            icon: "layers",
-                        },
-                    }).then(() => {
-                        removeSync(join(Paths.data(), id));
-                        removeSync(join(Paths.data(), `${id}.accessories`));
-                        removeSync(join(Paths.data(), `${id}.persist`));
-                        removeSync(join(Paths.data(), `${id}.conf`));
+        const id = sanitize(name);
+        const index = State.bridges.findIndex((n: BridgeRecord) => n.id === id);
 
-                        State.bridges.splice(index, 1);
+        if (index >= 0) {
+            removeSync(join(Paths.data(), id));
+            removeSync(join(Paths.data(), `${id}.accessories`));
+            removeSync(join(Paths.data(), `${id}.persist`));
+            removeSync(join(Paths.data(), `${id}.conf`));
 
-                        Paths.saveJson(Paths.bridges, State.bridges);
+            State.bridges.splice(index, 1);
 
-                        resolve(true);
-                    });
-                } else {
-                    Socket.emit(Events.NOTIFICATION, {
-                        bridge: "hub",
-                        data: {
-                            title: "Bridge Not Removed",
-                            description: `Unable to remove bridge "${name}".`,
-                            type: NotificationType.ERROR,
-                        },
-                    }).then(() => {
-                        resolve(false);
-                    });
-                }
-            }
-        });
+            Paths.saveJson(Paths.bridges, State.bridges);
+
+            return true;
+        }
+
+        return false;
     }
 
     static install(): boolean {
@@ -308,19 +283,9 @@ export default class Bridges {
             if (name && reserved.indexOf(id) === -1 && port && State.bridges.findIndex((n) => n.id === id) === -1 && State.bridges.findIndex((n) => n.port === port) === -1) {
                 if (id === "hub" && State.mode === "production") Bridges.install();
 
-                Socket.emit(Events.NOTIFICATION, {
-                    bridge: "hub",
-                    data: {
-                        title: "Bridge Added",
-                        description: `Bridge "${name}" added.`,
-                        type: NotificationType.SUCCESS,
-                        icon: "layers",
-                    },
-                }).then(() => {
-                    Bridges.append(id, name, id === "hub" ? "hub" : "bridge", port, pin, Config.generateUsername(), autostart, advertiser || "bonjour");
+                Bridges.append(id, name, id === "hub" ? "hub" : "bridge", port, pin, Config.generateUsername(), autostart, advertiser || "bonjour");
 
-                    resolve(true);
-                });
+                resolve(true);
             } else {
                 PROMPT([
                     {
@@ -415,19 +380,9 @@ export default class Bridges {
 
                         if (id === "hub" && State.mode === "production") Bridges.install();
 
-                        Socket.emit(Events.NOTIFICATION, {
-                            bridge: "hub",
-                            data: {
-                                title: "Bridge Added",
-                                description: `Bridge "${answers.name}" added.`,
-                                type: NotificationType.SUCCESS,
-                                icon: "layers",
-                            },
-                        }).then(() => {
-                            Bridges.append(id, answers.name, id === "hub" ? "hub" : answers.type, answers.port, answers.pin, Config.generateUsername(), answers.autostart, answers.advertiser, answers.project);
+                        Bridges.append(id, answers.name, id === "hub" ? "hub" : answers.type, answers.port, answers.pin, Config.generateUsername(), answers.autostart, answers.advertiser, answers.project);
 
-                            resolve(true);
-                        });
+                        resolve(true);
                     } else {
                         resolve(false);
                     }
@@ -447,42 +402,26 @@ export default class Bridges {
         }));
     }
 
-    static purge(uuid?: string): Promise<void> {
-        return new Promise((resolve) => {
-            if (uuid) {
-                const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
-                let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+    static purge(uuid?: string): void {
+        if (uuid) {
+            const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
+            let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
-                while (index >= 0) {
-                    working.splice(index, 1);
-                    index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
-                }
-
-                Paths.saveJson(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), working, false, undefined, true);
-
-                resolve();
-            } else {
-                if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
-
-                ensureDirSync(join(Paths.data(), `${State.id}.persist`));
-
-                if (existsSync(join(Paths.data(), `${State.id}.accessories`))) removeSync(join(Paths.data(), `${State.id}.accessories`));
-
-                ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
-
-                Socket.emit(Events.NOTIFICATION, {
-                    bridge: State.id,
-                    data: {
-                        title: "Caches Purged",
-                        description: "Accessory and connection cache purged.",
-                        type: NotificationType.SUCCESS,
-                        icon: "memory",
-                    },
-                }).then(() => {
-                    resolve();
-                });
+            while (index >= 0) {
+                working.splice(index, 1);
+                index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
             }
-        });
+
+            Paths.saveJson(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), working, false, undefined, true);
+        } else {
+            if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
+
+            ensureDirSync(join(Paths.data(), `${State.id}.persist`));
+
+            if (existsSync(join(Paths.data(), `${State.id}.accessories`))) removeSync(join(Paths.data(), `${State.id}.accessories`));
+
+            ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
+        }
     }
 
     static async reset(): Promise<void> {

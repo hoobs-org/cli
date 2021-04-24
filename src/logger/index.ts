@@ -19,11 +19,8 @@
 import Utility from "util";
 import Chalk from "chalk";
 import Table from "as-table";
-import { join } from "path";
-import { existsSync } from "fs-extra";
 import State from "../state";
 import Paths from "../system/paths";
-import Socket from "../system/socket";
 import { formatJson } from "../json";
 import { colorize } from "../formatters";
 
@@ -44,35 +41,6 @@ export interface Message {
     message: string;
 }
 
-export const enum NotificationType {
-    INFO = "info",
-    SUCCESS = "success",
-    WARN = "warn",
-    ERROR = "error",
-    DEBUG = "debug",
-}
-
-export const enum Events {
-    PING = "ping",
-    PONG = "pong",
-    LOG = "log",
-    LISTENING = "listening",
-    MONITOR = "monitor",
-    HEARTBEAT = "heartbeat",
-    NOTIFICATION = "notification",
-    ACCESSORY_CHANGE = "accessory_change",
-    PUBLISH_SETUP_URI = "publish_setup_uri",
-    REQUEST = "request",
-    COMPLETE = "complete",
-    SHELL_OUTPUT = "shell_output",
-    SHELL_INPUT = "shell_input",
-    SHELL_RESIZE = "shell_resize",
-    SHELL_CLEAR = "shell_clear",
-    SHELL_CONNECT = "shell_connect",
-    SHELL_DISCONNECT = "shell_disconnect",
-    SHUTDOWN = "shutdown",
-}
-
 const CONSOLE_LOG = console.log;
 const CONSOLE_ERROR = console.error;
 
@@ -88,19 +56,19 @@ class Logger {
         Chalk.level = 1;
     }
 
-    async load(tail?: number, bridge?: string): Promise<Message[]> {
-        let results: Message[] = [];
+    load(tail?: number, bridge?: string): Promise<Message[]> {
+        return new Promise((resolve) => {
+            Paths.touch(Paths.log);
 
-        if (existsSync(join(Paths.data(), "api.sock"))) {
-            results = await Socket.fetch("log");
-        } else {
-            results = Paths.loadJson<Message[]>(Paths.log, [], undefined, true).filter((m) => (bridge ? m.bridge === bridge : true));
-        }
+            setTimeout(() => {
+                let results: Message[] = Paths.loadJson<Message[]>(Paths.log, [], undefined, true).filter((m) => (bridge ? m.bridge === bridge : true));
 
-        if (!State.debug) results = results.filter((message) => message.level !== LogLevel.DEBUG);
-        if (tail && tail > 0 && tail < results.length) results.splice(0, results.length - tail);
+                if (!State.debug) results = results.filter((message) => message.level !== LogLevel.DEBUG);
+                if (tail && tail > 0 && tail < results.length) results.splice(0, results.length - tail);
 
-        return results;
+                resolve(results);
+            }, 250);
+        });
     }
 
     table(value: any) {
