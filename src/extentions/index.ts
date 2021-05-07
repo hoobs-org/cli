@@ -69,7 +69,7 @@ export default class Extentions {
             default:
                 return {
                     success: false,
-                    warning: "invalid extention",
+                    warning: "invalid extension",
                 };
         }
     }
@@ -109,7 +109,7 @@ export default class Extentions {
             default:
                 return {
                     success: false,
-                    warning: "invalid extention",
+                    warning: "invalid extension",
                 };
         }
     }
