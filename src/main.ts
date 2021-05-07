@@ -751,7 +751,7 @@ export = function Main(): void {
             }
         });
 
-    Program.command("extention [action] [name]")
+    Program.command("extension [action] [name]")
         .description("manage extentions")
         .action(async (action, name) => {
             if (process.env.USER !== "root") {
