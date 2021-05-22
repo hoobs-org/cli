@@ -152,7 +152,7 @@ export default class Bridges {
                     execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} hub" >> /etc/systemd/system/hoobsd.service`);
                     execSync("echo \"Restart=always\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"KillSignal=SIGINT\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"[Install]\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"WantedBy=multi-user.target\" >> /etc/systemd/system/hoobsd.service");
