@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Request from "@hoobs/sdk/lib/request";
+import Request from "axios";
 import { spawn } from "child_process";
 import { join } from "path";
 import { existsSync, readFileSync } from "fs-extra";
