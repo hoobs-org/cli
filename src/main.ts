@@ -77,7 +77,7 @@ export = function Main(): void {
                         {
                             type: "number",
                             name: "port",
-                            default: "50826",
+                            default: "80",
                             message: "enter the port for the hub",
                             validate: (value: number | undefined) => {
                                 if (!value || Number.isNaN(value)) return "invalid port number";
