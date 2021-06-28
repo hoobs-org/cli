@@ -205,8 +205,8 @@ setup() {
 
     echo "Adding the HOOBS repository"
 
-    exec_cmd "wget -qO- https://repo.hoobs.org/debian/pubkey.gpg | apt-key add -"
-    exec_cmd "echo 'deb https://repo.hoobs.org/debian/ buster main' | tee /etc/apt/sources.list.d/hoobs.list"
+    exec_cmd "wget -qO- https://dl.hoobs.org/deb/key.gpg | apt-key add -"
+    exec_cmd "echo 'deb https://dl.hoobs.org/deb/stable/ buster main' | tee /etc/apt/sources.list.d/hoobs.list"
 
     echo "Updating packages"
 
