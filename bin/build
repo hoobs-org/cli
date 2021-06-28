@@ -45,6 +45,8 @@ Program.command("cli", { isDefault: true })
     .option("-l, --lint", "lint the code before building")
     .option("-p, --pack", "create pack file for offline testing")
     .action((command) => {
+        const repo = command.repo || "bleeding";
+
         if (command.lint) execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, { cwd: root, stdio: "inherit" });
         if (existsSync(join(root, "lib"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, { cwd: root, stdio: "inherit" });
 
@@ -77,11 +79,11 @@ Program.command("cli", { isDefault: true })
 
             if (!existsSync(join(root, "../repo/src")))  mkdirSync(join(root, "../repo/src"));
             if (existsSync(join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`))) unlinkSync(join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`))
-            if (existsSync(join(root, "../repo", "setup"))) unlinkSync(join(root, "../repo", "setup"))
+            if (existsSync(join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup"))) unlinkSync(join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup"))
 
             moveSync(join(root, "dist", `hoobs-cli-v${pjson.version}.tar.gz`), join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`));
-            copyFileSync(join(root, "bin", "setup"), join(root, "../repo", "setup"));
-            execSync(`chmod 755 ${join(root, "../repo", "setup")}`, { cwd: root, stdio: "inherit" });
+            copyFileSync(join(root, "bin", repo === "edge" || repo === "bleeding" ? repo : "setup"), join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup"));
+            execSync(`chmod 755 ${join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup")}`, { cwd: root, stdio: "inherit" });
             mkdirSync(join(root, "dist/DEBIAN"));
 
             let control = "";
@@ -102,11 +104,11 @@ Program.command("cli", { isDefault: true })
             execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postinst")}`, { cwd: root, stdio: "inherit" });
             execSync("dpkg-deb --build dist", { cwd: root, stdio: "inherit" });
 
-            if (!existsSync(join(root, "../repo/deb", command.repo || "edge")))  mkdirSync(join(root, "../repo/deb", command.repo || "edge"));
-            if (existsSync(join(root, "../repo/deb", command.repo || "edge", `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb", command.repo || "edge", `hoobs-cli-v${pjson.version}.deb`));
+            if (!existsSync(join(root, "../repo/deb", repo)))  mkdirSync(join(root, "../repo/deb", repo));
+            if (existsSync(join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`));
 
-            moveSync(join(root, "dist.deb"), join(root, "../repo/deb", command.repo || "edge", `hoobs-cli-v${pjson.version}.deb`));
-            execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb", command.repo || "edge", `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+            moveSync(join(root, "dist.deb"), join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`));
+            execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
         }

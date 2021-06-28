@@ -186,6 +186,22 @@ export default class System {
         execSync(`${path} service restart`);
     }
 
+    static switch(level: string): void {
+        switch (level) {
+            case "bleeding":
+                execSync("wget -qO- https://dl.hoobs.org/bleeding | bash -", { stdio: ["inherit", "inherit", "inherit"] });
+                break;
+
+            case "edge":
+                execSync("wget -qO- https://dl.hoobs.org/edge | bash -", { stdio: ["inherit", "inherit", "inherit"] });
+                break;
+
+            default:
+                execSync(" wget -qO- https://dl.hoobs.org/setup | bash -", { stdio: ["inherit", "inherit", "inherit"] });
+                break;
+        }
+    }
+
     static get gui(): { [key: string]: any } {
         return {
             info: async (beta: boolean): Promise<{ [key: string]: any }> => {

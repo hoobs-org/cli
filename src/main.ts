@@ -857,6 +857,10 @@ export = function Main(): void {
             let reboot = false;
 
             switch (action) {
+                case "repo":
+                    System.switch(file);
+                    break;
+
                 case "hostname":
                     system = System.info();
 
