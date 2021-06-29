@@ -49,6 +49,7 @@ export default class System {
 
         results.arch = System.shell("uname -m");
         results.init_system = "";
+        results.repo = "stable";
 
         if (existsSync("/etc/systemd/system")) results.init_system = "systemd";
         if (existsSync("/Library/LaunchDaemons/")) results.init_system = "launchd";
@@ -63,6 +64,10 @@ export default class System {
             case "debian":
             case "raspbian":
                 results.package_manager = System.shell("command -v apt-get") !== "" ? "apt-get" : "";
+
+                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") results.repo = "bleeding";
+                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") results.repo = "edge";
+
                 break;
 
             case "fedora":
@@ -186,6 +191,22 @@ export default class System {
         execSync(`${path} service restart`);
     }
 
+    static switch(level: string): void {
+        switch (level) {
+            case "bleeding":
+                execSync("wget -qO- https://dl.hoobs.org/bleeding | bash -", { stdio: ["inherit", "inherit", "inherit"] });
+                break;
+
+            case "edge":
+                execSync("wget -qO- https://dl.hoobs.org/edge | bash -", { stdio: ["inherit", "inherit", "inherit"] });
+                break;
+
+            default:
+                execSync(" wget -qO- https://dl.hoobs.org/stable | bash -", { stdio: ["inherit", "inherit", "inherit"] });
+                break;
+        }
+    }
+
     static get gui(): { [key: string]: any } {
         return {
             info: async (beta: boolean): Promise<{ [key: string]: any }> => {
@@ -197,7 +218,14 @@ export default class System {
                 if (path) installed = (Paths.loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
-                const release = await System.gui.release(beta);
+                let repo = "stable";
+
+                if (System.shell("command -v apt-get") !== "") {
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
+                }
+
+                const release = await System.gui.release(beta || repo === "edge" || repo === "bleeding");
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -268,7 +296,14 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = await System.cli.release(beta);
+                let repo = "stable";
+
+                if (System.shell("command -v apt-get") !== "") {
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
+                }
+
+                const release = await System.cli.release(beta || repo === "edge" || repo === "bleeding");
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -337,7 +372,14 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = await System.hoobsd.release(beta);
+                let repo = "stable";
+
+                if (System.shell("command -v apt-get") !== "") {
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
+                }
+
+                const release = await System.hoobsd.release(beta || repo === "edge" || repo === "bleeding");
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -399,7 +441,14 @@ export default class System {
 
                 if (!existsSync(path)) path = "";
 
-                let current = await System.runtime.release(beta);
+                let repo = "stable";
+
+                if (System.shell("command -v apt-get") !== "") {
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
+                }
+
+                let current = await System.runtime.release(beta || repo === "edge" || repo === "bleeding");
 
                 if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) {
                     current = process.version.replace("v", "");
@@ -438,7 +487,7 @@ export default class System {
                 const system = System.info();
 
                 if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
-                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash", { stdio: "ignore" });
+                    System.switch(system.repo);
 
                     await System.execute("apt-get", "update");
                     await System.execute("apt-get", "install", "-y", "curl", "tar", "git", "python3", "make", "gcc", "g++", "nodejs", "yarn");

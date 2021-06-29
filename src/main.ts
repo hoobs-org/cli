@@ -872,6 +872,18 @@ export = function Main(): void {
 
                     break;
 
+                case "stable":
+                    System.switch("stable");
+                    break;
+
+                case "edge":
+                    System.switch("edge");
+                    break;
+
+                case "bleeding":
+                    System.switch("bleeding");
+                    break;
+
                 case "version":
                 case "versions":
                     spinner = Spinner({ stream: process.stdout }).start();
