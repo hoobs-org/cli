@@ -79,11 +79,43 @@ Program.command("cli", { isDefault: true })
 
             if (!existsSync(join(root, "../repo/src")))  mkdirSync(join(root, "../repo/src"));
             if (existsSync(join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`))) unlinkSync(join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`))
-            if (existsSync(join(root, "../repo", repo))) unlinkSync(join(root, "../repo", repo))
 
             moveSync(join(root, "dist", `hoobs-cli-v${pjson.version}.tar.gz`), join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`));
-            copyFileSync(join(root, "bin", repo), join(root, "../repo", repo));
-            execSync(`chmod 755 ${join(root, "../repo", repo)}`, { cwd: root, stdio: "inherit" });
+
+            switch (repo) {
+                case "stable":
+                    if (existsSync(join(root, "../repo/stable"))) unlinkSync(join(root, "../repo/stable"));
+                    if (existsSync(join(root, "../repo/edge"))) unlinkSync(join(root, "../repo/edge"));
+                    if (existsSync(join(root, "../repo/bleeding"))) unlinkSync(join(root, "../repo/bleeding"));
+
+                    copyFileSync(join(root, "bin/stable"), join(root, "../repo", "stable"));
+                    copyFileSync(join(root, "bin/edge"), join(root, "../repo", "edge"));
+                    copyFileSync(join(root, "bin/bleeding"), join(root, "../repo/bleeding"));
+
+                    execSync(`chmod 755 ${join(root, "../repo/stable")}`, { cwd: root, stdio: "inherit" });
+                    execSync(`chmod 755 ${join(root, "../repo/edge")}`, { cwd: root, stdio: "inherit" });
+                    execSync(`chmod 755 ${join(root, "../repo/bleeding")}`, { cwd: root, stdio: "inherit" });
+                    break;
+
+                case "edge":
+                    if (existsSync(join(root, "../repo/edge"))) unlinkSync(join(root, "../repo/edge"));
+                    if (existsSync(join(root, "../repo/bleeding"))) unlinkSync(join(root, "../repo/bleeding"));
+
+                    copyFileSync(join(root, "bin/edge"), join(root, "../repo/edge"));
+                    copyFileSync(join(root, "bin/bleeding"), join(root, "../repo/bleeding"));
+
+                    execSync(`chmod 755 ${join(root, "../repo/edge")}`, { cwd: root, stdio: "inherit" });
+                    execSync(`chmod 755 ${join(root, "../repo/bleeding")}`, { cwd: root, stdio: "inherit" });
+                    break;
+
+                default:
+                    if (existsSync(join(root, "../repo/bleeding"))) unlinkSync(join(root, "../repo/bleeding"));
+
+                    copyFileSync(join(root, "bin/bleeding"), join(root, "../repo/bleeding"));
+                    execSync(`chmod 755 ${join(root, "../repo/bleeding")}`, { cwd: root, stdio: "inherit" });
+                    break;
+            }
+
             mkdirSync(join(root, "dist/DEBIAN"));
 
             let control = "";
@@ -100,15 +132,58 @@ Program.command("cli", { isDefault: true })
             control += "Description: Command line interface for the certified HOOBS smart home stack.\n";
 
             writeFileSync(join(root, "dist/DEBIAN/control"), control);
+
             copyFileSync(join(root, "bin", "postinst"), join(root, "dist/DEBIAN", "postinst"));
+
             execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postinst")}`, { cwd: root, stdio: "inherit" });
             execSync("dpkg-deb --build dist", { cwd: root, stdio: "inherit" });
 
-            if (!existsSync(join(root, "../repo/deb", repo)))  mkdirSync(join(root, "../repo/deb", repo));
-            if (existsSync(join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`));
+            switch (repo) {
+                case "stable":
+                    if (!existsSync(join(root, "../repo/deb/stable")))  mkdirSync(join(root, "../repo/deb/stable"));
+                    if (!existsSync(join(root, "../repo/deb/edge")))  mkdirSync(join(root, "../repo/deb/edge"));
+                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
 
-            moveSync(join(root, "dist.deb"), join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`));
-            execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb", repo, `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    if (existsSync(join(root, "../repo/deb/stable", `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/stable", `hoobs-cli-v${pjson.version}.deb`));
+                    if (existsSync(join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`));
+                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`));
+
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/stable", `hoobs-cli-v${pjson.version}.deb`));
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`));
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`));
+
+                    unlinkSync(join(root, "dist.deb"));
+
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/stable", `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    break;
+
+                case "edge":
+                    if (!existsSync(join(root, "../repo/deb/edge")))  mkdirSync(join(root, "../repo/deb/edge"));
+                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
+
+                    if (existsSync(join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`));
+                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`));
+
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`));
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`));
+
+                    unlinkSync(join(root, "dist.deb"));
+
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/edge", `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    break;
+
+                default:
+                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
+                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`));
+
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`));
+                    unlinkSync(join(root, "dist.deb"));
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobs-cli-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    break;
+            }
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
         }
