@@ -79,11 +79,11 @@ Program.command("cli", { isDefault: true })
 
             if (!existsSync(join(root, "../repo/src")))  mkdirSync(join(root, "../repo/src"));
             if (existsSync(join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`))) unlinkSync(join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`))
-            if (existsSync(join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup"))) unlinkSync(join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup"))
+            if (existsSync(join(root, "../repo", repo))) unlinkSync(join(root, "../repo", repo))
 
             moveSync(join(root, "dist", `hoobs-cli-v${pjson.version}.tar.gz`), join(root, "../repo/src", `hoobs-cli-v${pjson.version}.tar.gz`));
-            copyFileSync(join(root, "bin", repo === "edge" || repo === "bleeding" ? repo : "setup"), join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup"));
-            execSync(`chmod 755 ${join(root, "../repo", repo === "edge" || repo === "bleeding" ? repo : "setup")}`, { cwd: root, stdio: "inherit" });
+            copyFileSync(join(root, "bin", repo), join(root, "../repo", repo));
+            execSync(`chmod 755 ${join(root, "../repo", repo)}`, { cwd: root, stdio: "inherit" });
             mkdirSync(join(root, "dist/DEBIAN"));
 
             let control = "";
