@@ -857,10 +857,6 @@ export = function Main(): void {
             let reboot = false;
 
             switch (action) {
-                case "repo":
-                    System.switch(file);
-                    break;
-
                 case "hostname":
                     system = System.info();
 
@@ -874,6 +870,18 @@ export = function Main(): void {
                         Console.info(Program.helpInformation());
                     }
 
+                    break;
+
+                case "stable":
+                    System.switch("stable");
+                    break;
+
+                case "edge":
+                    System.switch("edge");
+                    break;
+
+                case "bleeding":
+                    System.switch("bleeding");
                     break;
 
                 case "version":
