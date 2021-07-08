@@ -58,6 +58,7 @@ export interface BridgeRecord {
     plugins?: string;
     advertiser?: string;
     project?: string;
+    debugging?: boolean,
 }
 
 const reserved = [
