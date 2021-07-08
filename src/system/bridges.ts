@@ -622,7 +622,7 @@ export default class Bridges {
                             const bridges = Paths.loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
+                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines --network-timeout 100000`, {
                                     cwd: Paths.data(bridges[i].id),
                                     stdio: "inherit",
                                 });

@@ -85,6 +85,7 @@ export default class Plugins {
                 flags.push("add");
                 flags.push("--unsafe-perm");
                 flags.push("--ignore-engines");
+                flags.push("--network-timeout 100000");
                 flags.push("hap-nodejs");
 
                 const proc = spawn(Paths.yarn, flags, {
@@ -111,6 +112,7 @@ export default class Plugins {
                 flags.push("add");
                 flags.push("--unsafe-perm");
                 flags.push("--ignore-engines");
+                flags.push("--network-timeout 100000");
                 flags.push(`${name}@${tag}`);
 
                 if ((definition || {}).sidecar) {
@@ -245,7 +247,7 @@ export default class Plugins {
                 flags.push("add");
                 flags.push("--unsafe-perm");
                 flags.push("--ignore-engines");
-
+                flags.push("--network-timeout 100000");
                 flags.push(`${name}@${tag}`);
 
                 Plugins.definition(name).then((definition) => {
@@ -275,6 +277,7 @@ export default class Plugins {
             } else {
                 flags.push("upgrade");
                 flags.push("--ignore-engines");
+                flags.push("--network-timeout 100000");
 
                 const proc = spawn(Paths.yarn, flags, {
                     cwd: Paths.data(State.id),
