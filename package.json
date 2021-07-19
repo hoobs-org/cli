@@ -1,6 +1,6 @@
 {
     "name": "hbs",
-    "version": "4.0.33",
+    "version": "4.0.40",
     "description": "Command line interface for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
     "repository": {
@@ -20,7 +20,7 @@
         "debug": "sudo bin/hbs --mode development"
     },
     "dependencies": {
-        "@hoobs/sdk": "^4.4.7",
+        "@hoobs/sdk": "^4.4.11",
         "archiver": "^5.2.0",
         "as-table": "^1.0.55",
         "axios": "^0.21.1",

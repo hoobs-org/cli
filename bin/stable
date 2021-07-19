@@ -215,4 +215,9 @@ setup() {
     echo "Run \"${bold}sudo apt install -y hoobs${normal}\" to install HOOBS, node and yarn"
 }
 
+clean() {
+    exec_cmd "rm -f /etc/apt/sources.list.d/hoobs.list"
+}
+
+clean
 setup

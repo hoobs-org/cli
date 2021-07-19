@@ -41,6 +41,7 @@ import State from "../state";
 import Paths from "./paths";
 import Config from "../config";
 import { sanitize } from "../formatters";
+import { cloneJson } from "../json";
 
 const PROMPT: Inquirer.PromptModule = Inquirer.createPromptModule();
 const BRIDGE_TEARDOWN_DELAY = 1000;
@@ -58,6 +59,7 @@ export interface BridgeRecord {
     plugins?: string;
     advertiser?: string;
     project?: string;
+    debugging?: boolean,
 }
 
 const reserved = [
@@ -218,7 +220,7 @@ export default class Bridges {
         const bridges: BridgeRecord[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            const { ...bridge } = State.bridges[i];
+            const bridge = cloneJson(State.bridges[i]);
 
             if (bridge.id === "hub") {
                 bridges.unshift({
@@ -621,7 +623,7 @@ export default class Bridges {
                             const bridges = Paths.loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
+                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines --network-timeout 100000 --network-concurrency 1 --force --verbose`, {
                                     cwd: Paths.data(bridges[i].id),
                                     stdio: "inherit",
                                 });
