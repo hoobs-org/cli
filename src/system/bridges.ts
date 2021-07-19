@@ -41,6 +41,7 @@ import State from "../state";
 import Paths from "./paths";
 import Config from "../config";
 import { sanitize } from "../formatters";
+import { cloneJson } from "../json";
 
 const PROMPT: Inquirer.PromptModule = Inquirer.createPromptModule();
 const BRIDGE_TEARDOWN_DELAY = 1000;
@@ -219,7 +220,7 @@ export default class Bridges {
         const bridges: BridgeRecord[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            const { ...bridge } = State.bridges[i];
+            const bridge = cloneJson(State.bridges[i]);
 
             if (bridge.id === "hub") {
                 bridges.unshift({
