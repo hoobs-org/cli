@@ -332,7 +332,7 @@ export default class Bridges {
                         default: () => {
                             port = port || 50826;
 
-                            while (State.bridges.findIndex((item) => parseInt(`${item.port}`, 10) === port) >= 0) port += 1000;
+                            while (State.bridges.findIndex((item) => parseInt(`${item.port}`, 10) === port) >= 0) port += 10;
 
                             return `${port}`;
                         },
