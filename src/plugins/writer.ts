@@ -450,6 +450,7 @@ export default class Writer {
                     packages.push("typescript");
                     packages.push("ts-node");
                     packages.push("@tsconfig/node10");
+                    packages.push("@types/node");
                     packages.push("rimraf");
                 }
 
