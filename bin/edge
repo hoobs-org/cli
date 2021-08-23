@@ -219,5 +219,7 @@ clean() {
     exec_cmd "rm -f /etc/apt/sources.list.d/hoobs.list"
 }
 
+apt update --allow-releaseinfo-change
+
 clean
 setup
