@@ -29,7 +29,6 @@ import State from "./state";
 import System from "./system";
 import Bridges from "./system/bridges";
 import Editor from "./config/editor";
-import Extentions from "./extentions";
 import Plugins from "./plugins";
 import Writer from "./plugins/writer";
 import { Console, LogLevel } from "./logger";
@@ -743,90 +742,6 @@ export = function Main(): void {
                         Console.warn("no bridges");
                     }
 
-                    break;
-
-                default:
-                    Console.info(Program.helpInformation());
-                    break;
-            }
-        });
-
-    Program.command("extension [action] [name]")
-        .description("manage extentions")
-        .action(async (action, name) => {
-            if (process.env.USER !== "root") {
-                Console.warn("root is required, did you forget to use 'sudo'?");
-
-                return;
-            }
-
-            State.bridges = Bridges.list();
-
-            let spinner: Spinner.Ora;
-            let results: { [key: string]: any };
-            let list: { [key: string]: any }[] = [];
-
-            switch (action) {
-                case "add":
-                case "install":
-                    if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
-                        Console.warn("system is not initilized, please initilize the system first.");
-
-                        return;
-                    }
-
-                    spinner = Spinner({ stream: process.stdout }).start();
-                    results = await Extentions.enable(name);
-
-                    spinner.stop();
-
-                    if (!results.success && results.warning) {
-                        Console.error(results.warning);
-                    } else if (!results.success) {
-                        Console.error(results.error || "unhandled error");
-                    } else {
-                        Extentions.list();
-                    }
-
-                    break;
-
-                case "rm":
-                case "remove":
-                case "uninstall":
-                    if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
-                        Console.warn("system is not initilized, please initilize the system first.");
-
-                        return;
-                    }
-
-                    spinner = Spinner({ stream: process.stdout }).start();
-                    results = Extentions.disable(name);
-
-                    spinner.stop();
-
-                    if (!results.success && results.warning) {
-                        Console.error(results.warning);
-                    } else if (!results.success) {
-                        Console.error(results.error || "unhandled error");
-                    } else {
-                        Extentions.list();
-                    }
-
-                    break;
-
-                case "ls":
-                case "list":
-                    if (State.bridges.findIndex((n) => n.id === "hub") === -1) {
-                        Console.warn("system is not initilized, please initilize the system first.");
-
-                        return;
-                    }
-
-                    list = Extentions.list();
-
-                    console.info("");
-                    Console.table(list);
-                    console.info("");
                     break;
 
                 default:
