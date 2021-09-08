@@ -12,7 +12,7 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "outDir": "./lib/hbs",
+        "outDir": "./cache/hbs",
         "rootDir": "./src",
         "strict": true,
         "esModuleInterop": true,
@@ -24,6 +24,9 @@
     ],
     "exclude": [
         "**/*.test.js",
-        "var"
+        "var/",
+        "cache/*",
+        "debug",
+        "main"
     ]
 }

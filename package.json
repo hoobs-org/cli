@@ -14,10 +14,8 @@
     "author": {
         "name": "Michael J Kellsy"
     },
-    "scripts": {
-        "lint": "eslint 'src/**/*.ts'",
-        "build": "bin/build --lint",
-        "debug": "sudo bin/hbs --mode development"
+    "engines": {
+        "nodesource": "node_14.x"
     },
     "dependencies": {
         "@hoobs/sdk": "^4.5.2",
