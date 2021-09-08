@@ -36,7 +36,7 @@ import {
 } from "fs-extra";
 
 import { execSync } from "child_process";
-import { join, basename } from "path";
+import Path from "path";
 import State from "../state";
 import Paths from "./paths";
 import Config from "../config";
@@ -73,10 +73,12 @@ const reserved = [
 
 export default class Bridges {
     static locate() {
+        if (State.mode === "development") return Path.join(Path.resolve(Path.join(Paths.application, "../hoobsd")), "debug");
+
         const paths = (process.env.PATH || "").split(":");
 
         for (let i = 0; i < paths.length; i += 1) {
-            if (existsSync(join(paths[i], "hoobsd"))) return paths[i];
+            if (existsSync(Path.join(paths[i], "hoobsd"))) return paths[i];
         }
 
         return "";
@@ -106,7 +108,7 @@ export default class Bridges {
         for (let i = 0; i < bridges.length; i += 1) {
             bridges[i].host = host;
 
-            if (existsSync(join(Paths.data(bridges[i].id), "package.json"))) bridges[i].plugins = join(Paths.data(bridges[i].id), "node_modules");
+            if (existsSync(Path.join(Paths.data(bridges[i].id), "package.json"))) bridges[i].plugins = Path.join(Paths.data(bridges[i].id), "node_modules");
         }
 
         return bridges;
@@ -119,10 +121,10 @@ export default class Bridges {
         const index = State.bridges.findIndex((n: BridgeRecord) => n.id === id);
 
         if (index >= 0) {
-            removeSync(join(Paths.data(), id));
-            removeSync(join(Paths.data(), `${id}.accessories`));
-            removeSync(join(Paths.data(), `${id}.persist`));
-            removeSync(join(Paths.data(), `${id}.conf`));
+            removeSync(Path.join(Paths.data(), id));
+            removeSync(Path.join(Paths.data(), `${id}.accessories`));
+            removeSync(Path.join(Paths.data(), `${id}.persist`));
+            removeSync(Path.join(Paths.data(), `${id}.conf`));
 
             State.bridges.splice(index, 1);
 
@@ -151,7 +153,7 @@ export default class Bridges {
                     execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
-                    execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} hub" >> /etc/systemd/system/hoobsd.service`);
+                    execSync(`echo "ExecStart=${Path.join(Bridges.locate(), "hoobsd")} hub" >> /etc/systemd/system/hoobsd.service`);
                     execSync("echo \"Restart=always\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"KillSignal=SIGINT\" >> /etc/systemd/system/hoobsd.service");
@@ -189,10 +191,10 @@ export default class Bridges {
                     execSync("echo \"            <string>/var/root</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>Program</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync(`echo "        <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
+                    execSync(`echo "        <string>${Path.join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
                     execSync("echo \"        <key>ProgramArguments</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync(`echo "            <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
+                    execSync(`echo "            <string>${Path.join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
                     execSync("echo \"            <string>hub</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
@@ -321,7 +323,7 @@ export default class Bridges {
                         when: (answers) => answers.type === "dev",
                         validate: (value: string | undefined) => {
                             if (!value) return "a projact path is required";
-                            if (!existsSync(join(value || "", "package.json"))) return "invalid project path";
+                            if (!existsSync(Path.join(value || "", "package.json"))) return "invalid project path";
 
                             return true;
                         },
@@ -394,7 +396,7 @@ export default class Bridges {
     }
 
     static cache(): { [key: string]: any }[] {
-        const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
+        const working = Paths.loadJson<{ [key: string]: any }[]>(Path.join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
 
         return working.map((item: { [key: string]: any }) => ({
             uuid: item.UUID,
@@ -406,7 +408,7 @@ export default class Bridges {
 
     static purge(uuid?: string): void {
         if (uuid) {
-            const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
+            const working = Paths.loadJson<{ [key: string]: any }[]>(Path.join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), [], undefined, true);
             let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
             while (index >= 0) {
@@ -414,15 +416,15 @@ export default class Bridges {
                 index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
             }
 
-            Paths.saveJson(join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), working, false, undefined, true);
+            Paths.saveJson(Path.join(Paths.data(), `${State.id}.accessories`, "cachedAccessories"), working, false, undefined, true);
         } else {
-            if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
+            if (existsSync(Path.join(Paths.data(), `${State.id}.persist`))) removeSync(Path.join(Paths.data(), `${State.id}.persist`));
 
-            ensureDirSync(join(Paths.data(), `${State.id}.persist`));
+            ensureDirSync(Path.join(Paths.data(), `${State.id}.persist`));
 
-            if (existsSync(join(Paths.data(), `${State.id}.accessories`))) removeSync(join(Paths.data(), `${State.id}.accessories`));
+            if (existsSync(Path.join(Paths.data(), `${State.id}.accessories`))) removeSync(Path.join(Paths.data(), `${State.id}.accessories`));
 
-            ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
+            ensureDirSync(Path.join(Paths.data(), `${State.id}.accessories`));
         }
     }
 
@@ -432,7 +434,7 @@ export default class Bridges {
         const entries = readdirSync(Paths.data());
 
         for (let i = 0; i < entries.length; i += 1) {
-            const path = join(Paths.data(), entries[i]);
+            const path = Path.join(Paths.data(), entries[i]);
 
             if (path !== Paths.backups) {
                 if (lstatSync(path).isDirectory()) {
@@ -462,7 +464,7 @@ export default class Bridges {
 
             const bridge = State.bridges.find((item) => item.id === id);
 
-            Paths.saveJson(join(Paths.data(), "meta"), {
+            Paths.saveJson(Path.join(Paths.data(), "meta"), {
                 date: (new Date()).getTime(),
                 type: "bridge",
                 data: {
@@ -479,12 +481,12 @@ export default class Bridges {
             if (!bridge) reject(new Error("bridge does not exist"));
 
             const filename = `${id}_${new Date().getTime()}`;
-            const output = createWriteStream(join(Paths.backups, `${filename}.zip`));
+            const output = createWriteStream(Path.join(Paths.backups, `${filename}.zip`));
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backups, `${filename}.zip`), join(Paths.backups, `${filename}.bridge`));
-                unlinkSync(join(Paths.data(), "meta"));
+                renameSync(Path.join(Paths.backups, `${filename}.zip`), Path.join(Paths.backups, `${filename}.bridge`));
+                unlinkSync(Path.join(Paths.data(), "meta"));
 
                 resolve(`${filename}.bridge`);
             });
@@ -495,10 +497,10 @@ export default class Bridges {
 
             archive.pipe(output);
 
-            archive.file(join(Paths.data(), "meta"), { name: "meta" });
-            archive.file(join(Paths.data(), `${bridge?.id}.conf`), { name: `${bridge?.id}.conf` });
+            archive.file(Path.join(Paths.data(), "meta"), { name: "meta" });
+            archive.file(Path.join(Paths.data(), `${bridge?.id}.conf`), { name: `${bridge?.id}.conf` });
 
-            Bridges.dig(archive, join(Paths.data(), `${bridge?.id}`));
+            Bridges.dig(archive, Path.join(Paths.data(), `${bridge?.id}`));
 
             archive.finalize();
         });
@@ -506,7 +508,7 @@ export default class Bridges {
 
     static backup(): Promise<string> {
         return new Promise((resolve, reject) => {
-            Paths.saveJson(join(Paths.data(), "meta"), {
+            Paths.saveJson(Path.join(Paths.data(), "meta"), {
                 date: (new Date()).getTime(),
                 type: "full",
                 product: "hoobs",
@@ -516,12 +518,12 @@ export default class Bridges {
 
             const filename = `${new Date().getTime()}`;
             const entries = readdirSync(Paths.data());
-            const output = createWriteStream(join(Paths.backups, `${filename}.zip`));
+            const output = createWriteStream(Path.join(Paths.backups, `${filename}.zip`));
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backups, `${filename}.zip`), join(Paths.backups, `${filename}.backup`));
-                unlinkSync(join(Paths.data(), "meta"));
+                renameSync(Path.join(Paths.backups, `${filename}.zip`), Path.join(Paths.backups, `${filename}.backup`));
+                unlinkSync(Path.join(Paths.data(), "meta"));
 
                 resolve(`${filename}.backup`);
             });
@@ -533,7 +535,7 @@ export default class Bridges {
             archive.pipe(output);
 
             for (let i = 0; i < entries.length; i += 1) {
-                const path = join(Paths.data(), entries[i]);
+                const path = Path.join(Paths.data(), entries[i]);
 
                 if (path !== Paths.backups) {
                     if (lstatSync(path).isDirectory()) {
@@ -552,13 +554,13 @@ export default class Bridges {
         const entries = readdirSync(directory);
 
         for (let i = 0; i < entries.length; i += 1) {
-            const path = join(directory, entries[i]);
+            const path = Path.join(directory, entries[i]);
 
-            if (basename(path) !== "node_modules" && basename(path) !== "cache") {
+            if (Path.basename(path) !== "node_modules" && Path.basename(path) !== "cache") {
                 if (lstatSync(path).isDirectory()) {
-                    archive.directory(path, join(basename(directory), entries[i]));
+                    archive.directory(path, Path.join(Path.basename(directory), entries[i]));
                 } else {
-                    archive.file(path, { name: join(basename(directory), entries[i]) });
+                    archive.file(path, { name: Path.join(Path.basename(directory), entries[i]) });
                 }
             }
         }
@@ -593,11 +595,11 @@ export default class Bridges {
         return new Promise((resolve) => {
             Bridges.metadata(file).then((metadata) => {
                 if (metadata.type === "full") {
-                    const filename = join(Paths.data(), `restore-${new Date().getTime()}.zip`);
+                    const filename = Path.join(Paths.data(), `restore-${new Date().getTime()}.zip`);
                     const entries = readdirSync(Paths.data());
 
                     for (let i = 0; i < entries.length; i += 1) {
-                        const path = join(Paths.data(), entries[i]);
+                        const path = Path.join(Paths.data(), entries[i]);
 
                         if (path !== Paths.backups) {
                             if (lstatSync(path).isDirectory()) {
