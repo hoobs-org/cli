@@ -74,6 +74,7 @@ package:
 build:
 	./node_modules/.bin/tsc
 	cp -R var cache/hbs/static
+	cp LICENSE cache/hbs/
 	cp -R node_modules/@hoobs/sdk/dist/sdk.js cache/hbs/static/sdk.js
 
 clean:
