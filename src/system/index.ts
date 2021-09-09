@@ -21,7 +21,14 @@
 
 import Path from "path";
 import { spawn, execSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync } from "fs-extra";
+
+import {
+    existsSync,
+    readFileSync,
+    writeFileSync,
+    unlinkSync,
+} from "fs-extra";
+
 import Semver from "semver";
 import State from "../state";
 import Paths from "./paths";
@@ -208,6 +215,10 @@ export default class System {
                 execSync(" wget -qO- https://dl.hoobs.org/stable | bash -", { stdio: ["inherit", "inherit", "inherit"] });
                 break;
         }
+    }
+
+    static resetAuthentication() {
+        if (existsSync("/var/lib/hoobs/access")) unlinkSync("/var/lib/hoobs/access");
     }
 
     static get gui(): { [key: string]: any } {

@@ -950,11 +950,28 @@ export = function Main(): void {
                     break;
 
                 case "reset":
-                    Console.warn("this will remove all settings and plugins, you will need to restore or initilize this device");
+                    switch (file) {
+                        case "auth":
+                        case "password":
+                        case "passwords":
+                            Console.warn("this will remove all users and passwords, you will need to re-configure authentication in the interface");
 
-                    Bridges.reset();
+                            System.resetAuthentication();
 
-                    Console.info("configuration and plugins removed");
+                            Console.info("users and passwords removed");
+
+                            break;
+
+                        default:
+                            Console.warn("this will remove all settings and plugins, you will need to restore or initilize this device");
+
+                            Bridges.reset();
+
+                            Console.info("configuration and plugins removed");
+
+                            break;
+                    }
+
                     break;
 
                 case "update":
