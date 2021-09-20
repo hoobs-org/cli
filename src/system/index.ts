@@ -30,9 +30,9 @@ import {
 } from "fs-extra";
 
 import Semver from "semver";
+import ReadLines from "n-readlines";
 import State from "../state";
 import Paths from "./paths";
-import Releases from "./releases";
 
 const CACHE: { [key: string]: any } = {};
 
@@ -73,8 +73,17 @@ export default class System {
             case "raspbian":
                 results.package_manager = System.shell("command -v apt-get") !== "" ? "apt-get" : "";
 
-                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") results.repo = "bleeding";
-                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") results.repo = "edge";
+                if (existsSync("/etc/apt/sources.list.d/hoobs.list")) {
+                    const match = System.grep("/etc/apt/sources.list.d/hoobs.list", "bleeding", "edge");
+
+                    if (match && match.indexOf("edge")) {
+                        results.repo = "edge";
+                    } else if (match && match.indexOf("bleeding")) {
+                        results.repo = "bleeding";
+                    }
+
+                    System.switch(results.package_manager, results.repo);
+                }
 
                 break;
 
@@ -169,16 +178,38 @@ export default class System {
 
     static execute(command: string, ...flags: string[]): Promise<void> {
         return new Promise((resolve) => {
-            const proc = spawn(command, flags, { detached: true });
-
-            proc.stdout?.on("data", (data) => {
-                process.stdout.pipe(data);
-            });
+            const proc = spawn(command, flags, { detached: true, stdio: ["ignore", "ignore", "ignore"] });
 
             proc.on("close", () => {
                 resolve();
             });
         });
+    }
+
+    static grep(file: string, ...search: string[]) {
+        if (!existsSync(file)) return undefined;
+
+        const reader = new ReadLines(file);
+        const expression = new RegExp(`(${search.join("|")})`);
+
+        let line: false | Buffer = reader.next();
+
+        while (line) {
+            if (line.toString().match(expression)) return line.toString();
+
+            line = reader.next();
+        }
+
+        return undefined;
+    }
+
+    static async upgrade(...components: string[]): Promise<void> {
+        const system = System.info();
+
+        if (State.mode === "production" && system.package_manager === "apt-get" && components.length > 0) {
+            await System.execute("apt-get", "update");
+            await System.execute("apt-get", "install", "-y", ...components);
+        }
     }
 
     static restart(): void {
@@ -201,19 +232,21 @@ export default class System {
         }
     }
 
-    static switch(level: string): void {
-        switch (level) {
-            case "bleeding":
-                execSync("wget -qO- https://dl.hoobs.org/bleeding | bash -", { stdio: ["inherit", "inherit", "inherit"] });
-                break;
+    static switch(manager: string, level: string): void {
+        if (State.mode === "production" && manager === "apt-get") {
+            switch (level) {
+                case "bleeding":
+                    execSync("wget -qO- https://dl.hoobs.org/bleeding | bash -", { stdio: "ignore" });
+                    break;
 
-            case "edge":
-                execSync("wget -qO- https://dl.hoobs.org/edge | bash -", { stdio: ["inherit", "inherit", "inherit"] });
-                break;
+                case "edge":
+                    execSync("wget -qO- https://dl.hoobs.org/edge | bash -", { stdio: "ignore" });
+                    break;
 
-            default:
-                execSync(" wget -qO- https://dl.hoobs.org/stable | bash -", { stdio: ["inherit", "inherit", "inherit"] });
-                break;
+                default:
+                    execSync(" wget -qO- https://dl.hoobs.org/stable | bash -", { stdio: "ignore" });
+                    break;
+            }
         }
     }
 
@@ -223,7 +256,7 @@ export default class System {
 
     static get gui(): { [key: string]: any } {
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (): { [key: string]: any } => {
                 let path: string | undefined = "/usr/lib/hoobs";
                 let installed: string | undefined = "";
 
@@ -232,14 +265,7 @@ export default class System {
                 if (path) installed = (Paths.loadJson<{ [key: string]: any }>(Path.join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
-                let repo = "stable";
-
-                if (System.shell("command -v apt-get") !== "") {
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
-                }
-
-                const release = await System.gui.release(beta || repo === "edge" || repo === "bleeding");
+                const release = System.gui.release();
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -265,33 +291,31 @@ export default class System {
                 return results;
             },
 
-            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
-                const release = await Releases.fetch("gui", beta) || {};
+            release: (): string => {
+                const system = System.info();
 
-                return {
-                    version: release.version || "",
-                    download: release.download || "",
-                };
-            },
+                if (system.package_manager === "apt-get") {
+                    let data: any = "";
 
-            upgrade: async (): Promise<void> => {
-                if (State.mode === "production") {
-                    const system = System.info();
+                    data = System.shell("apt-cache show hoobs-gui | grep Version");
+                    data = data.split("\n")[0] || "";
+                    data = (data.split(":")[1] || "").trim();
 
-                    System.switch(system.repo);
-
-                    if (system.package_manager === "apt-get") {
-                        await System.execute("apt-get", "update");
-                        await System.execute("apt-get", "install", "-y", "hoobs-gui");
-                    }
+                    return data || "";
                 }
+
+                return "";
             },
+
+            components: [
+                "hoobs-gui",
+            ],
         };
     }
 
     static get cli(): { [key: string]: any } {
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (): { [key: string]: any } => {
                 let path = "/usr/bin/hbs";
                 let prefix = "/usr/";
 
@@ -319,14 +343,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                let repo = "stable";
-
-                if (System.shell("command -v apt-get") !== "") {
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
-                }
-
-                const release = await System.cli.release(beta || repo === "edge" || repo === "bleeding");
+                const release = System.cli.release();
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -350,33 +367,31 @@ export default class System {
                 };
             },
 
-            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
-                const release = await Releases.fetch("hbs", beta) || {};
+            release: (): string => {
+                const system = System.info();
 
-                return {
-                    version: release.version || "",
-                    download: release.download || "",
-                };
-            },
+                if (system.package_manager === "apt-get") {
+                    let data: any = "";
 
-            upgrade: async (): Promise<void> => {
-                if (State.mode === "production") {
-                    const system = System.info();
+                    data = System.shell("apt-cache show hoobs-cli | grep Version");
+                    data = data.split("\n")[0] || "";
+                    data = (data.split(":")[1] || "").trim();
 
-                    System.switch(system.repo);
-
-                    if (system.package_manager === "apt-get") {
-                        await System.execute("apt-get", "update");
-                        await System.execute("apt-get", "install", "-y", "hoobs-cli");
-                    }
+                    return data || "";
                 }
+
+                return "";
             },
+
+            components: [
+                "hoobs-cli",
+            ],
         };
     }
 
     static get hoobsd(): { [key: string]: any } {
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (): { [key: string]: any } => {
                 let path = "/usr/bin/hoobsd";
                 let prefix = "/usr/";
 
@@ -404,14 +419,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                let repo = "stable";
-
-                if (System.shell("command -v apt-get") !== "") {
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
-                }
-
-                const release = await System.hoobsd.release(beta || repo === "edge" || repo === "bleeding");
+                const release = System.hoobsd.release();
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -436,33 +444,31 @@ export default class System {
                 };
             },
 
-            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
-                const release = await Releases.fetch("hoobsd", beta) || {};
+            release: (): string => {
+                const system = System.info();
 
-                return {
-                    version: release.version || "",
-                    download: release.download || "",
-                };
-            },
+                if (system.package_manager === "apt-get") {
+                    let data: any = "";
 
-            upgrade: async (): Promise<void> => {
-                if (State.mode === "production") {
-                    const system = System.info();
+                    data = System.shell("apt-cache show hoobsd | grep Version");
+                    data = data.split("\n")[0] || "";
+                    data = (data.split(":")[1] || "").trim();
 
-                    System.switch(system.repo);
-
-                    if (system.package_manager === "apt-get") {
-                        await System.execute("apt-get", "update");
-                        await System.execute("apt-get", "install", "-y", "hoobsd");
-                    }
+                    return data || "";
                 }
+
+                return "";
             },
+
+            components: [
+                "hoobsd",
+            ],
         };
     }
 
     static get runtime(): { [key: string]: any } {
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (): { [key: string]: any } => {
                 let path = "/usr/bin/node";
 
                 const paths = (process.env.PATH || "").split(":");
@@ -477,14 +483,7 @@ export default class System {
 
                 if (!existsSync(path)) path = "";
 
-                let repo = "stable";
-
-                if (System.shell("command -v apt-get") !== "") {
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") repo = "bleeding";
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") repo = "edge";
-                }
-
-                let current = await System.runtime.release(beta || repo === "edge" || repo === "bleeding");
+                let current = System.runtime.release();
 
                 if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) {
                     current = process.version.replace("v", "");
@@ -497,40 +496,33 @@ export default class System {
                 };
             },
 
-            release: async (beta: boolean): Promise<string> => {
+            release: (): string => {
                 const system = System.info();
-                const release = await Releases.fetch("node", beta) || {};
 
-                if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
+                if (system.package_manager === "apt-get") {
                     let data: any = "";
 
-                    data = System.shell("apt-cache show nodejs | grep Version");
+                    data = System.shell("apt-cache show nodejs | grep Version | grep nodesource");
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
                     data = (data.split(/[-~]+/)[0] || "").trim();
 
-                    if (Semver.valid(release.version) && Semver.valid(data) && Semver.gt(release.version, data)) {
-                        return release.version || "";
-                    }
-
                     return data || "";
                 }
 
-                return release.version || "";
+                return "";
             },
 
-            upgrade: async (): Promise<void> => {
-                if (State.mode === "production") {
-                    const system = System.info();
-
-                    if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
-                        System.switch(system.repo);
-
-                        await System.execute("apt-get", "update");
-                        await System.execute("apt-get", "install", "-y", "curl", "tar", "git", "python3", "make", "gcc", "g++", "nodejs", "yarn");
-                    }
-                }
-            },
+            components: [
+                "curl",
+                "tar",
+                "git",
+                "python3",
+                "make",
+                "gcc",
+                "g++",
+                "nodejs",
+            ],
         };
     }
 }
