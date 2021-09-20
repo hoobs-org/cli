@@ -848,9 +848,10 @@ export = function Main(): void {
 
             State.bridges = Bridges.list();
 
+            const components: string[] = [];
             const list: { [key: string]: any }[] = [];
+            const system = System.info();
 
-            let system: { [key: string]: any };
             let info: { [key: string]: any };
             let spinner: Spinner.Ora;
             let entries: string[] = [];
@@ -858,8 +859,6 @@ export = function Main(): void {
 
             switch (action) {
                 case "hostname":
-                    system = System.info();
-
                     if (system.mdns && file) {
                         Console.info("setting hostname");
 
@@ -873,27 +872,21 @@ export = function Main(): void {
                     break;
 
                 case "stable":
-                    System.switch("stable");
+                    System.switch(system.package_manager, "stable");
                     break;
 
                 case "edge":
-                    System.switch("edge");
+                    System.switch(system.package_manager, "edge");
                     break;
 
                 case "bleeding":
-                    System.switch("bleeding");
+                    System.switch(system.package_manager, "bleeding");
                     break;
 
                 case "version":
                 case "versions":
-                    spinner = Spinner({ stream: process.stdout }).start();
-                    system = System.info();
-
-                    if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
-                        spinner.stop();
-
-                        spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
-                        info = await System.runtime.info(command.beta);
+                    if (system.package_manager === "apt-get") {
+                        info = System.runtime.info();
 
                         list.push({
                             application: "node",
@@ -907,10 +900,7 @@ export = function Main(): void {
                         });
                     }
 
-                    spinner.stop();
-
-                    spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
-                    info = await System.cli.info(command.beta);
+                    info = System.cli.info();
 
                     list.push({
                         application: "cli",
@@ -923,10 +913,7 @@ export = function Main(): void {
                         running: "",
                     });
 
-                    spinner.stop();
-
-                    spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
-                    info = await System.hoobsd.info(command.beta);
+                    info = System.hoobsd.info();
 
                     list.push({
                         application: "hoobsd",
@@ -939,10 +926,7 @@ export = function Main(): void {
                         running: info.hoobsd_running,
                     });
 
-                    spinner.stop();
-
-                    spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
-                    info = await System.gui.info(command.beta);
+                    info = System.gui.info();
 
                     if (info.gui_version) {
                         list.push({
@@ -963,8 +947,6 @@ export = function Main(): void {
 
                         return 0;
                     });
-
-                    spinner.stop();
 
                     console.info("");
                     Console.table(list);
@@ -1044,80 +1026,63 @@ export = function Main(): void {
 
                 case "update":
                 case "upgrade":
-                    system = System.info();
+                    info = System.runtime.info();
 
-                    if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
-                        spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
-                        info = await System.runtime.info(command.beta);
+                    if (!info.node_upgraded) {
+                        Console.info(Chalk.yellow(`node will be upgraded to ${info.node_current}`));
 
-                        spinner.stop();
+                        if (!command.test) {
+                            components.push(...System.runtime.components);
 
-                        if (!info.node_upgraded) {
-                            if (command.test) {
-                                Console.info(Chalk.yellow(`node will be upgraded to ${info.node_current}`));
-                            } else {
-                                await System.runtime.upgrade();
-
-                                Console.info(Chalk.green(`node upgraded to ${info.node_current}`));
-                            }
-                        } else {
-                            Console.info(Chalk.green("node is already up-to-date"));
+                            reboot = true;
                         }
+                    } else {
+                        Console.info(Chalk.green("node is already up-to-date"));
                     }
 
-                    spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
-                    info = await System.cli.info(command.beta);
-
-                    spinner.stop();
+                    info = System.cli.info();
 
                     if (!info.cli_upgraded) {
-                        if (command.test) {
-                            Console.info(Chalk.yellow(`cli will be upgraded to ${info.cli_current}`));
-                        } else {
-                            await System.cli.upgrade();
+                        Console.info(Chalk.yellow(`cli will be upgraded to ${info.cli_current}`));
 
-                            Console.info(Chalk.green(`cli upgraded to ${info.cli_current}`));
-                        }
+                        if (!command.test) components.push(...System.cli.components);
                     } else {
                         Console.info(Chalk.green("cli is already up-to-date"));
                     }
 
-                    spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
-                    info = await System.hoobsd.info(command.beta);
-
-                    spinner.stop();
+                    info = System.hoobsd.info();
 
                     if (!info.hoobsd_upgraded) {
-                        if (command.test) {
-                            Console.info(Chalk.yellow(`hoobsd will be upgraded to ${info.hoobsd_current}`));
-                        } else {
-                            reboot = info.hoobsd_running;
+                        Console.info(Chalk.yellow(`hoobsd will be upgraded to ${info.hoobsd_current}`));
 
-                            await System.hoobsd.upgrade();
+                        if (!command.test) {
+                            components.push(...System.hoobsd.components);
 
-                            Console.info(Chalk.green(`hoobsd upgraded to ${info.hoobsd_current}`));
+                            reboot = true;
                         }
                     } else {
                         Console.info(Chalk.green("hoobsd is already up-to-date"));
                     }
 
-                    spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
-                    info = await System.gui.info(command.beta);
-
-                    spinner.stop();
+                    info = System.gui.info();
 
                     if (info.gui_version && !info.gui_upgraded) {
-                        if (command.test) {
-                            Console.info(Chalk.yellow(`gui will be upgraded to ${info.gui_current}`));
-                        } else {
-                            spinner = Spinner({ text: "upgrading gui", stream: process.stdout }).start();
+                        Console.info(Chalk.yellow(`gui will be upgraded to ${info.gui_current}`));
 
-                            await System.gui.upgrade();
-
-                            Console.info(Chalk.green(`gui upgraded to ${info.gui_current}`));
-                        }
+                        if (!command.test) components.push(...System.gui.components);
                     } else if (info.gui_version) {
                         Console.info(Chalk.green("gui is already up-to-date"));
+                    }
+
+                    if (!command.test && components.length > 0) {
+                        spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
+
+                        await System.upgrade(...components);
+
+                        spinner.stop();
+                    } else if (components.length > 0) {
+                        Console.info("the following components will be upgraded");
+                        Console.info(components.join("\n"));
                     }
 
                     if (!command.test && reboot && State.container && State.mode === "production") {

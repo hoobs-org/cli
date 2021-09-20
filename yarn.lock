@@ -165,6 +165,13 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.4.tgz#f0ec25dbf2f0e4b18647313ac031134ca5b24b21"
   integrity sha512-1z8k4wzFnNjVK/tlxvrWuK5WMt6mydWWP7+zvH5eFep4oj+UkrfiJTRtjCeBXNpwaA/FYqqtb4/QS4ianFpIRA==
 
+"@types/n-readlines@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/@types/n-readlines/-/n-readlines-1.0.2.tgz#fbded905bc129188170002f7326231a4fb78b17f"
+  integrity sha512-jEpAbqwRa7bwMU44zSWE0ritLzeaHpEqPMBDCDRHp0Xle4V8xrE2jvqlVewm3KOFFjfYGaDrjpEk2j5Edr1Prw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/node-persist@^3.1.1":
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/@types/node-persist/-/node-persist-3.1.1.tgz#de444e87561e8ad022e1f31ad4fee377d9db1b13"
@@ -1918,6 +1925,11 @@ mute-stream@0.0.8:
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
+
+n-readlines@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/n-readlines/-/n-readlines-1.0.1.tgz#bbb7364d38bc31a170a199f986fcacfa76b95f6e"
+  integrity sha512-z4SyAIVgMy7CkgsoNw7YVz40v0g4+WWvvqy8+ZdHrCtgevcEO758WQyrYcw3XPxcLxF+//RszTz/rO48nzD0wQ==
 
 natural-compare@^1.4.0:
   version "1.4.0"
