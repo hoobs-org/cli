@@ -799,12 +799,7 @@ export = function Main(): void {
 
                 case "version":
                 case "versions":
-                    spinner = Spinner({ stream: process.stdout }).start();
-
                     if (system.package_manager === "apt-get") {
-                        spinner.stop();
-
-                        spinner = Spinner({ text: "checking node", stream: process.stdout }).start();
                         info = System.runtime.info();
 
                         list.push({
@@ -819,9 +814,6 @@ export = function Main(): void {
                         });
                     }
 
-                    spinner.stop();
-
-                    spinner = Spinner({ text: "checking cli", stream: process.stdout }).start();
                     info = System.cli.info();
 
                     list.push({
@@ -835,9 +827,6 @@ export = function Main(): void {
                         running: "",
                     });
 
-                    spinner.stop();
-
-                    spinner = Spinner({ text: "checking hoobsd", stream: process.stdout }).start();
                     info = System.hoobsd.info();
 
                     list.push({
@@ -851,9 +840,6 @@ export = function Main(): void {
                         running: info.hoobsd_running,
                     });
 
-                    spinner.stop();
-
-                    spinner = Spinner({ text: "checking gui", stream: process.stdout }).start();
                     info = System.gui.info();
 
                     if (info.gui_version) {
@@ -875,8 +861,6 @@ export = function Main(): void {
 
                         return 0;
                     });
-
-                    spinner.stop();
 
                     console.info("");
                     Console.table(list);
@@ -973,20 +957,18 @@ export = function Main(): void {
 
                 case "update":
                 case "upgrade":
-                    if (system.package_manager === "apt-get") {
-                        info = System.runtime.info();
+                    info = System.runtime.info();
 
-                        if (!info.node_upgraded) {
-                            Console.info(Chalk.yellow(`node will be upgraded to ${info.node_current}`));
+                    if (!info.node_upgraded) {
+                        Console.info(Chalk.yellow(`node will be upgraded to ${info.node_current}`));
 
-                            if (!command.test) {
-                                components.push(...System.runtime.components);
+                        if (!command.test) {
+                            components.push(...System.runtime.components);
 
-                                reboot = true;
-                            }
-                        } else {
-                            Console.info(Chalk.green("node is already up-to-date"));
+                            reboot = true;
                         }
+                    } else {
+                        Console.info(Chalk.green("node is already up-to-date"));
                     }
 
                     info = System.cli.info();
