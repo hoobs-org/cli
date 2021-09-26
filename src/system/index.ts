@@ -233,20 +233,11 @@ export default class System {
     }
 
     static switch(manager: string, level: string): void {
-        if (State.mode === "production" && manager === "apt-get") {
-            switch (level) {
-                case "bleeding":
-                    execSync("wget -qO- https://dl.hoobs.org/bleeding | bash -", { stdio: "ignore" });
-                    break;
+        switch (manager) {
+            case "apt-get":
+                if (State.mode === "production") execSync(`wget -qO- https://dl.hoobs.org/${level || "stable"} | bash -`, { stdio: "ignore" });
 
-                case "edge":
-                    execSync("wget -qO- https://dl.hoobs.org/edge | bash -", { stdio: "ignore" });
-                    break;
-
-                default:
-                    execSync(" wget -qO- https://dl.hoobs.org/stable | bash -", { stdio: "ignore" });
-                    break;
-            }
+                break;
         }
     }
 
@@ -265,10 +256,7 @@ export default class System {
                 if (path) installed = (Paths.loadJson<{ [key: string]: any }>(Path.join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
-                const release = System.gui.release();
-                const download = release.download || "";
-
-                let current = release.version || "";
+                let current = System.gui.release() || "";
 
                 if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed || "", current)) || !Semver.valid(current)) {
                     current = installed;
@@ -283,8 +271,7 @@ export default class System {
                     gui_prefix: "/usr/",
                     gui_version: installed,
                     gui_current: current,
-                    gui_upgraded: (installed || current) === current ? true : !Semver.gt(current, installed || ""),
-                    gui_download: download,
+                    gui_upgraded: !Semver.gt(current, installed || ""),
                     gui_mode: mode,
                 };
 
@@ -343,10 +330,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = System.cli.release();
-                const download = release.download || "";
-
-                let current = release.version || "";
+                let current = System.cli.release() || "";
 
                 if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
                     current = installed;
@@ -361,8 +345,7 @@ export default class System {
                     cli_prefix: prefix,
                     cli_version: installed,
                     cli_current: current,
-                    cli_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
-                    cli_download: download,
+                    cli_upgraded: !Semver.gt(current, installed),
                     cli_mode: mode,
                 };
             },
@@ -419,10 +402,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = System.hoobsd.release();
-                const download = release.download || "";
-
-                let current = release.version || "";
+                let current = System.hoobsd.release() || "";
 
                 if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
                     current = installed;
@@ -437,8 +417,7 @@ export default class System {
                     hoobsd_prefix: prefix,
                     hoobsd_version: installed,
                     hoobsd_current: current,
-                    hoobsd_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
-                    hoobsd_download: download,
+                    hoobsd_upgraded: !Semver.gt(current, installed),
                     hoobsd_mode: mode,
                     hoobsd_running: System.shell("command -v pidof") !== "" && System.shell("pidof hoobsd") !== "",
                 };
@@ -492,7 +471,7 @@ export default class System {
                 return {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
                     node_current: current,
-                    node_upgraded: process.version.replace("v", "") === current || current === "" || process.version.replace("v", "") === "" ? true : !Semver.gt(current, process.version.replace("v", "")),
+                    node_upgraded: !Semver.gt(current, process.version.replace("v", "")),
                 };
             },
 
