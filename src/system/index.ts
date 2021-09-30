@@ -228,7 +228,7 @@ export default class System {
 
             if (existsSync(path)) path = "";
 
-            execSync(`${path} service restart`);
+            if (existsSync(path)) setTimeout(() => execSync(`${path} service restart`), 3 * 1000);
         }
     }
 
