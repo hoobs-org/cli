@@ -75,7 +75,7 @@ export default class System {
                         results.repo = "bleeding";
                     }
 
-                    System.switch(results.package_manager, results.repo);
+                    execSync("apt-get update", { stdio: "ignore" });
                 }
 
                 break;
