@@ -6,7 +6,7 @@ The HOOBS command line interface is the software that manages bridge bridges.
 First add the HOOBS repository to your sources.
 
 ```sh
-wget -qO- https://support.hoobs.org/setup | sudo -E bash -
+wget -qO- https://support.hoobs.org/setup | sudo bash -
 ```
 
 Now you can install hoobsd and the HOOBS CLI.
