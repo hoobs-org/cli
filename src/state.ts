@@ -33,8 +33,6 @@ export interface Application {
 
     version: string;
     bridges: BridgeRecord[];
-
-    plugins: { [key: string]: any };
 }
 
 const state: Application = {
@@ -50,8 +48,6 @@ const state: Application = {
 
     version: readJSONSync(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json")).version,
     bridges: [],
-
-    plugins: {},
 };
 
 export default state;

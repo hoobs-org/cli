@@ -289,14 +289,6 @@ export default class Plugins {
     }
 
     static async getPluginType(name: string, path: string, pjson: any): Promise<any[]> {
-        if (
-            State.plugins[name]
-         && Array.isArray(State.plugins[name])
-         && State.plugins[name].length > 0
-        ) {
-            return State.plugins[name];
-        }
-
         const registered: any[] = [];
         const schema = Plugins.loadSchema(path);
 
@@ -368,8 +360,6 @@ export default class Plugins {
 
             delete require.cache[require.resolve(join(Plugins.directory, main))];
         }
-
-        if (registered.length > 0) State.plugins[name] = registered;
 
         return registered;
     }
