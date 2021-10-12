@@ -12,7 +12,9 @@
     "ignorePatterns": [
         "bin/",
         "lib/",
-        "var/"
+        "var/",
+        "main",
+        "debug"
     ],
     "rules": {
         "quotes": [
