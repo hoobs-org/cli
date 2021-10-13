@@ -408,7 +408,7 @@ export default class Plugins {
 
     static async definition(identifier: string): Promise<{ [key: string]: any } | undefined> {
         try {
-            return ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
+            return (<any>(await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
         } catch (_error) {
             Console.warn("plugin site unavailable");
         }
