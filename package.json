@@ -1,6 +1,6 @@
 {
     "name": "hoobs-cli",
-    "version": "4.1.4",
+    "version": "4.1.5",
     "description": "Command line interface for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
     "repository": {
@@ -18,7 +18,7 @@
         "nodesource": "node_14.x"
     },
     "dependencies": {
-        "@hoobs/sdk": "^4.5.10",
+        "@hoobs/sdk": "^4.5.11",
         "archiver": "^5.2.0",
         "as-table": "^1.0.55",
         "axios": "^0.23.0",
