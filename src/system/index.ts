@@ -81,9 +81,9 @@ export default class System {
                     } else if (match && match.indexOf("bleeding")) {
                         results.repo = "bleeding";
                     }
-
-                    execSync("apt-get update", { stdio: "ignore" });
                 }
+
+                if (results.package_manager === "apt-get") execSync("apt-get update --allow-releaseinfo-change", { stdio: "ignore" });
 
                 break;
 

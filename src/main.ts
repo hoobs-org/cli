@@ -799,20 +799,18 @@ export = function Main(): void {
 
                 case "version":
                 case "versions":
-                    if (system.package_manager === "apt-get") {
-                        info = System.runtime.info();
+                    info = System.runtime.info();
 
-                        list.push({
-                            application: "node",
-                            distribution: system.distribution,
-                            package_manager: system.package_manager,
-                            version: process.version.replace("v", ""),
-                            latest: info.node_current,
-                            upgraded: info.node_upgraded,
-                            init_system: "",
-                            running: "",
-                        });
-                    }
+                    list.push({
+                        application: "node",
+                        distribution: system.distribution,
+                        package_manager: system.package_manager,
+                        version: process.version.replace("v", ""),
+                        latest: info.node_current,
+                        upgraded: info.node_upgraded,
+                        init_system: "",
+                        running: "",
+                    });
 
                     info = System.cli.info();
 
