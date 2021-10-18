@@ -36,17 +36,12 @@ import { sanitize } from "./formatters";
 
 const prompt: Inquirer.PromptModule = Inquirer.createPromptModule();
 
-if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
-    State.container = true;
-}
-
 export = function Main(): void {
     Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
     Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { State.mode = mode; })
         .option("-d, --debug", "turn on debug level logging", () => { State.debug = true; })
-        .option("--container", "run in a container", () => { State.container = true; })
         .option("--verbose", "turn on verbose logging", () => { State.verbose = true; });
 
     Program.command("install")
@@ -1014,7 +1009,7 @@ export = function Main(): void {
                         Console.info(components.join("\n"));
                     }
 
-                    if (!command.test && reboot && State.container && State.mode === "production") {
+                    if (!command.test && reboot && System.platform === "docker" && State.mode === "production") {
                         Console.info(Chalk.yellow("you need to restart this container"));
                     } else if (!command.test && reboot && State.mode === "production") {
                         const { proceed } = (await prompt([{

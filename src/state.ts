@@ -29,7 +29,6 @@ export interface Application {
     debug: boolean;
     verbose: boolean;
     timestamps: boolean;
-    container: boolean;
 
     version: string;
     bridges: BridgeRecord[];
@@ -44,7 +43,6 @@ const state: Application = {
     debug: false,
     verbose: false,
     timestamps: false,
-    container: false,
 
     version: readJSONSync(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json")).version,
     bridges: [],

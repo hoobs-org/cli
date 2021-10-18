@@ -37,6 +37,12 @@ import Paths from "./paths";
 const CACHE: { [key: string]: any } = {};
 
 export default class System {
+    static get platform(): string {
+        if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") return "docker";
+
+        return <string>process.platform;
+    }
+
     static info(): { [key: string]: any } {
         if (CACHE.system) return CACHE.system;
 
