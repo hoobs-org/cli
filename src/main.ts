@@ -781,15 +781,30 @@ export = function Main(): void {
                     break;
 
                 case "stable":
-                    System.switch(system.package_manager, "stable");
+                    if (System.platform === "linux") {
+                        System.switch(system.package_manager, "stable");
+                    } else {
+                        Console.info(Program.helpInformation());
+                    }
+
                     break;
 
                 case "edge":
-                    System.switch(system.package_manager, "edge");
+                    if (System.platform === "linux") {
+                        System.switch(system.package_manager, "edge");
+                    } else {
+                        Console.info(Program.helpInformation());
+                    }
+
                     break;
 
                 case "bleeding":
-                    System.switch(system.package_manager, "bleeding");
+                    if (System.platform === "linux") {
+                        System.switch(system.package_manager, "bleeding");
+                    } else {
+                        Console.info(Program.helpInformation());
+                    }
+
                     break;
 
                 case "version":
