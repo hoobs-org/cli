@@ -13,6 +13,7 @@
         "bin/",
         "lib/",
         "var/",
+        "cache/",
         "main",
         "debug"
     ],
