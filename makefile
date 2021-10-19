@@ -61,6 +61,12 @@ hbs-armhf.yaml:
 	sed "s/__DEPENDS__/nodejs (>= 14.15.0), git, python3, make, gcc, g++/" | \
 	sed "s/__ARCH__/armhf/" > cache/control
 
+hbs-darwin: clean lint paths package
+	./node_modules/.bin/tsc
+	cp -R var cache/hbs/static
+	cp LICENSE cache/hbs/
+	cp -R node_modules/@hoobs/sdk/dist/sdk.js cache/hbs/static/sdk.js
+
 lint:
 	./node_modules/.bin/eslint 'src/**/*.ts'
 
