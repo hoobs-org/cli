@@ -111,7 +111,12 @@ export default class Plugins {
                 flags.push("add");
                 flags.push("--unsafe-perm");
                 flags.push("--ignore-engines");
-                flags.push(`${name}@${tag}`);
+
+                if (name.startsWith("http://") || name.startsWith("https://")) {
+                    flags.push(name);
+                } else {
+                    flags.push(`${name}@${tag}`);
+                }
 
                 if ((definition || {}).sidecar) flags.push(definition?.sidecar);
 
@@ -243,7 +248,12 @@ export default class Plugins {
                 flags.push("add");
                 flags.push("--unsafe-perm");
                 flags.push("--ignore-engines");
-                flags.push(`${name}@${tag}`);
+
+                if (name.startsWith("http://") || name.startsWith("https://")) {
+                    flags.push(name);
+                } else {
+                    flags.push(`${name}@${tag}`);
+                }
 
                 Plugins.definition(name).then((definition) => {
                     if ((definition || {}).sidecar) {
